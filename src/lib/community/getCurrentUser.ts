@@ -5,7 +5,8 @@ import type { AuthUser } from "@/lib/auth/authTypes";
 export const AUTH_COOKIE_NAME = "rubbyfilm_session";
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
-  const token = cookies().get(AUTH_COOKIE_NAME)?.value;
+  const jar = await cookies();
+  const token = jar.get(AUTH_COOKIE_NAME)?.value;
   if (!token) return null;
   const s = await authRepository.getSession(token);
   return s?.user ?? null;
