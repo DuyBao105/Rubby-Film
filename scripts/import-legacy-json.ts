@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
-import { db } from "../db/client";
-import { users, authenticationIdentities, sessions } from "../db/schema";
+import { db } from "@db/client";
+import { users, authenticationIdentities, sessions } from "@db/schema";
 import { genId } from "../src/lib/community/ids";
 
 const DATA = path.join(process.cwd(), "data");

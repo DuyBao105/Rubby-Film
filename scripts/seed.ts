@@ -1,6 +1,6 @@
 import crypto from "node:crypto";
-import { db } from "../db/client";
-import { users, authenticationIdentities } from "../db/schema";
+import { db } from "@db/client";
+import { users, authenticationIdentities } from "@db/schema";
 import { genId } from "../src/lib/community/ids";
 
 function hash(p: string, salt: string) {
