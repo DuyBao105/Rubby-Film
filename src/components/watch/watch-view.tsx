@@ -126,7 +126,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       setInitialTime(0);
       setResumePromptVisible(false);
     }
-  }, [currentEpisode?.id, currentEpisode?.episodeNumber, movie.id, getEpisodeProgress, getMovieProgress, history]);
+  }, [currentEpisode, movie.id, getEpisodeProgress, getMovieProgress, history]);
 
   // Synchronize playback progress immediately when page is hidden or unloaded (e.g. mobile tab switch/close)
   React.useEffect(() => {

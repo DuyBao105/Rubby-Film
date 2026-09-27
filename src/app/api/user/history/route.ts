@@ -2,7 +2,8 @@ import { NextRequest } from "next/server";
 import { authRepository, AUTH_COOKIE_NAME } from "@/lib/auth/authService";
 import { userDataRepository } from "@/lib/server/userDataRepository";
 import { apiSuccess, apiError } from "@/lib/server/apiResponse";
-
+import type { WatchHistoryItem } from "@/types/user";
+import type { Movie } from "@/types/movie";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 

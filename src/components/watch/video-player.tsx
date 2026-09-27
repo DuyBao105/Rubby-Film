@@ -354,7 +354,7 @@ export function VideoPlayer({
         attemptSeekToInitialTime();
       }
     }
-  }, [source.url, source.type]);
+  }, [source.url, source.type, attemptSeekToInitialTime]);
 
   // Effect when source changes
   React.useEffect(() => {
