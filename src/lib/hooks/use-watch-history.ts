@@ -46,35 +46,40 @@ export function useWatchHistory() {
     (movieId: string): WatchHistoryItem | undefined => {
       return watchHistoryService.getMovieProgress(movieId);
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history]
   );
 
   const getEpisodeProgress = useCallback(
     (movieId: string, episodeNumber: number): EpisodeWatchedState | undefined => {
       return watchHistoryService.getEpisodeProgress(movieId, episodeNumber);
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history]
   );
 
   const isEpisodeWatched = useCallback(
     (movieId: string, episodeNumber: number): boolean => {
       return watchHistoryService.isEpisodeWatched(movieId, episodeNumber);
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history]
   );
 
   const getRecentlyViewed = useCallback(
     (limit?: number): WatchHistoryItem[] => {
       return watchHistoryService.getRecentlyViewed(limit);
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history]
   );
 
   const getContinueWatching = useCallback(
     (limit?: number): WatchHistoryItem[] => {
       return watchHistoryService.getContinueWatching(limit);
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [history]
   );
 
   return {

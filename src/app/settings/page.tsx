@@ -63,14 +63,33 @@ export default function SettingsPage() {
     showSaved();
   };
 
-  // Guest to Account Migration action
-  const handleMigrateGuestData = () => {
+  // Guest to Account Migration & Cloud Sync action
+  const handleMigrateGuestData = async () => {
     if (!isAuthenticated) return;
-    setMigrationNotice("Đang đồng bộ dữ liệu vào tài khoản...");
-    setTimeout(() => {
-      setMigrationNotice("Đã đồng bộ toàn bộ danh sách và lịch sử xem vào tài khoản của bạn!");
-      setTimeout(() => setMigrationNotice(""), 3500);
-    }, 800);
+    setMigrationNotice("Đang đồng bộ dữ liệu vào tài khoản máy chủ...");
+    try {
+      const historyItems = watchHistoryService.getHistory();
+      const favoriteItems = myListService.getList();
+
+      await Promise.all([
+        fetch("/api/user/history", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: historyItems }),
+        }),
+        fetch("/api/user/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: favoriteItems }),
+        }),
+      ]);
+
+      setMigrationNotice("Đã đồng bộ toàn bộ danh sách và lịch sử xem lên đám mây thành công!");
+    } catch {
+      setMigrationNotice("Đồng bộ gặp sự cố kết nối. Vui lòng thử lại!");
+    } finally {
+      setTimeout(() => setMigrationNotice(""), 4000);
+    }
   };
 
   return (

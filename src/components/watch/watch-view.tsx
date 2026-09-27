@@ -60,7 +60,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   const seasonQuery = searchParams.get("season");
   const serverQuery = searchParams.get("server");
 
-  const { updateProgress, getMovieProgress, getEpisodeProgress } = useWatchHistory();
+  const { history, updateProgress, getMovieProgress, getEpisodeProgress } = useWatchHistory();
   const { isInList, toggleMovie } = useMyList();
 
   const [copied, setCopied] = React.useState(false);
@@ -103,27 +103,64 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     type: "mp4",
   };
 
-  // Saved playback progress - compute only once when episode mounts/changes
+  // Saved playback progress - compute reactively when history loads or episode changes
   const [initialTime, setInitialTime] = React.useState(0);
+  const currentPlaybackRef = React.useRef<{ currentTime: number; duration: number } | null>(null);
 
   React.useEffect(() => {
-    if (!currentEpisode) return;
-    const savedEpisodeProgress = getEpisodeProgress(movie.id, currentEpisode.episodeNumber);
+    const epNum = currentEpisode?.episodeNumber ?? 1;
+    const savedProgress = currentEpisode
+      ? getEpisodeProgress(movie.id, epNum)
+      : getMovieProgress(movie.id);
+
     if (
-      savedEpisodeProgress &&
-      savedEpisodeProgress.progressSeconds > 15 &&
-      !savedEpisodeProgress.completed
+      savedProgress &&
+      savedProgress.progressSeconds > 5 &&
+      !savedProgress.completed
     ) {
-      setInitialTime(savedEpisodeProgress.progressSeconds);
+      setInitialTime(savedProgress.progressSeconds);
       setResumePromptVisible(true);
-      const timer = setTimeout(() => setResumePromptVisible(false), 8000);
+      const timer = setTimeout(() => setResumePromptVisible(false), 9000);
       return () => clearTimeout(timer);
     } else {
       setInitialTime(0);
       setResumePromptVisible(false);
     }
-  }, [currentEpisode?.id, movie.id, getEpisodeProgress]);
+  }, [currentEpisode?.id, currentEpisode?.episodeNumber, movie.id, getEpisodeProgress, getMovieProgress, history]);
 
+  // Synchronize playback progress immediately when page is hidden or unloaded (e.g. mobile tab switch/close)
+  React.useEffect(() => {
+    const flushCurrentProgress = () => {
+      if (currentPlaybackRef.current && currentPlaybackRef.current.duration > 0) {
+        updateProgress(
+          movie,
+          currentPlaybackRef.current.currentTime,
+          currentPlaybackRef.current.duration,
+          currentEpisode
+            ? {
+                id: currentEpisode.id,
+                episodeNumber: currentEpisode.episodeNumber,
+                name: currentEpisode.name,
+              }
+            : undefined,
+          true
+        );
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        flushCurrentProgress();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("pagehide", flushCurrentProgress);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("pagehide", flushCurrentProgress);
+    };
+  }, [movie, currentEpisode, updateProgress]);
   // Handle episode change
   const handleSelectEpisode = (ep: Episode) => {
     setResumePromptVisible(false);
@@ -155,8 +192,10 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   };
 
   // Save progress throttle
+  // Save progress throttle & tracking
   const lastSaveTimeRef = React.useRef(0);
   const handleTimeUpdate = (currentTime: number, duration: number) => {
+    currentPlaybackRef.current = { currentTime, duration };
     const now = Date.now();
     if (now - lastSaveTimeRef.current > 4000) {
       lastSaveTimeRef.current = now;
@@ -171,6 +210,24 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
               name: currentEpisode.name,
             }
           : undefined
+      );
+    }
+  };
+
+  const handleVideoPause = () => {
+    if (currentPlaybackRef.current && currentPlaybackRef.current.duration > 0) {
+      updateProgress(
+        movie,
+        currentPlaybackRef.current.currentTime,
+        currentPlaybackRef.current.duration,
+        currentEpisode
+          ? {
+              id: currentEpisode.id,
+              episodeNumber: currentEpisode.episodeNumber,
+              name: currentEpisode.name,
+            }
+          : undefined,
+        true
       );
     }
   };
@@ -298,6 +355,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
             }
             posterUrl={movie.backdropUrl || movie.posterUrl}
             onTimeUpdate={handleTimeUpdate}
+            onPause={handleVideoPause}
             initialTime={initialTime}
             onEnded={hasNextEpisode ? handleNextEpisode : undefined}
             hasNextEpisode={hasNextEpisode}
@@ -319,17 +377,27 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                   Đang phát tiếp từ <strong>{formatSeconds(initialTime)}</strong>
                 </span>
               </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setInitialTime(0);
-                  setResumePromptVisible(false);
-                }}
-                className="text-[11px] text-cinema-300 hover:text-white flex items-center gap-1 px-2 py-1 rounded bg-cinema-800 hover:bg-cinema-700"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>Xem từ đầu</span>
-              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setInitialTime(0);
+                    setResumePromptVisible(false);
+                  }}
+                  className="text-[11px] text-cinema-300 hover:text-white flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cinema-800 hover:bg-cinema-700 transition-colors cursor-pointer"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>Xem từ đầu</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setResumePromptVisible(false)}
+                  className="p-1.5 text-cinema-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+                  aria-label="Đóng thông báo"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
         </div>

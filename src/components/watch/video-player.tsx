@@ -46,6 +46,7 @@ interface VideoPlayerProps {
   posterUrl?: string;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   initialTime?: number;
+  onPause?: () => void;
   onEnded?: () => void;
   hasNextEpisode?: boolean;
   onNextEpisode?: () => void;
@@ -81,8 +82,8 @@ export function VideoPlayer({
   posterUrl,
   onTimeUpdate,
   initialTime = 0,
+  onPause,
   onEnded,
-  hasNextEpisode = false,
   onNextEpisode,
   hasPrevEpisode = false,
   onPrevEpisode,
@@ -183,9 +184,41 @@ export function VideoPlayer({
   const hasAppliedInitialTimeRef = React.useRef(false);
   const hasStartedRef = React.useRef(hasStarted);
 
+  const attemptSeekToInitialTime = React.useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return false;
+    const target = initialTimeRef.current;
+    if (target <= 0) return true;
+
+    if (video.readyState >= 1 || (video.duration && !isNaN(video.duration) && video.duration > 0)) {
+      try {
+        const safeTarget = Math.max(0, Math.min(target, (video.duration || target + 10) - 1));
+        video.currentTime = safeTarget;
+        setCurrentTime(safeTarget);
+        hasAppliedInitialTimeRef.current = true;
+        return true;
+      } catch (err) {
+        console.warn("[VideoPlayer] seek to initial time failed:", err);
+      }
+    }
+    return false;
+  }, []);
+
   React.useEffect(() => {
     initialTimeRef.current = initialTime;
-  }, [initialTime]);
+    if (initialTime === 0) {
+      if (videoRef.current) {
+        try {
+          videoRef.current.currentTime = 0;
+          setCurrentTime(0);
+        } catch {}
+      }
+      hasAppliedInitialTimeRef.current = true;
+    } else if (!hasStartedRef.current) {
+      hasAppliedInitialTimeRef.current = false;
+      attemptSeekToInitialTime();
+    }
+  }, [initialTime, attemptSeekToInitialTime]);
 
   React.useEffect(() => {
     hasStartedRef.current = hasStarted;
@@ -276,8 +309,7 @@ export function VideoPlayer({
           }
 
           if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
-            video.currentTime = initialTimeRef.current;
-            hasAppliedInitialTimeRef.current = true;
+            attemptSeekToInitialTime();
           }
           if (hasStartedRef.current) {
             video.play().catch(() => {});
@@ -308,8 +340,7 @@ export function VideoPlayer({
         // Native Safari HLS
         video.src = rawStreamUrl;
         if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
-          video.currentTime = initialTimeRef.current;
-          hasAppliedInitialTimeRef.current = true;
+          attemptSeekToInitialTime();
         }
       } else {
         setHasError(true);
@@ -320,8 +351,7 @@ export function VideoPlayer({
       // Direct MP4 or video source
       video.src = rawStreamUrl;
       if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
-        video.currentTime = initialTimeRef.current;
-        hasAppliedInitialTimeRef.current = true;
+        attemptSeekToInitialTime();
       }
     }
   }, [source.url, source.type]);
@@ -394,17 +424,28 @@ export function VideoPlayer({
   });
 
   const togglePlay = () => {
-    if (!videoRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
     setHasStarted(true);
 
-    if (videoRef.current.paused) {
-      videoRef.current.play().then(() => {
-        setIsPlaying(true);
-      }).catch(() => {
-        setIsPlaying(false);
-      });
+    if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
+      attemptSeekToInitialTime();
+    }
+
+    if (video.paused) {
+      video
+        .play()
+        .then(() => {
+          setIsPlaying(true);
+          if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
+            attemptSeekToInitialTime();
+          }
+        })
+        .catch(() => {
+          setIsPlaying(false);
+        });
     } else {
-      videoRef.current.pause();
+      video.pause();
       setIsPlaying(false);
     }
   };
@@ -871,6 +912,15 @@ export function VideoPlayer({
             setDuration(videoRef.current.duration);
             setIsLoading(false);
             checkTextTracks();
+            if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
+              attemptSeekToInitialTime();
+            }
+          }
+        }}
+        onCanPlay={() => {
+          setIsLoading(false);
+          if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
+            attemptSeekToInitialTime();
           }
         }}
         onWaiting={() => setIsLoading(true)}
@@ -879,7 +929,10 @@ export function VideoPlayer({
           setIsPlaying(true);
           setHasStarted(true);
         }}
-        onPause={() => setIsPlaying(false)}
+        onPause={() => {
+          setIsPlaying(false);
+          if (onPause) onPause();
+        }}
         onEnded={handleEnded}
         onError={() => {
           setHasError(true);

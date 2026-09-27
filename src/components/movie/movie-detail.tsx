@@ -123,14 +123,17 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
   };
 
   // Determine watch button target URL & label
+  const hasSavedProgress =
+    savedProgress && savedProgress.progressSeconds > 5 && !savedProgress.completed;
   const watchUrl = savedProgress?.episodeNumber
     ? `/watch/${movie.slug}?episode=${savedProgress.episodeNumber}`
     : `/watch/${movie.slug}`;
 
-  const watchButtonText = savedProgress?.episodeNumber
-    ? `Tiếp Tục Xem (Tập ${savedProgress.episodeNumber})`
+  const watchButtonText = hasSavedProgress
+    ? savedProgress.episodeNumber
+      ? `Tiếp Tục Xem (Tập ${savedProgress.episodeNumber})`
+      : "Tiếp Tục Xem"
     : "Xem Phim Ngay";
-
   return (
     <div className="min-h-screen bg-cinema-900 pb-20 relative">
       {/* Backdrop Header with deep gradient vignettes as absolute background layer */}

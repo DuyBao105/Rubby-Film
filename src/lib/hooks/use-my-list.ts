@@ -57,9 +57,13 @@ export function useMyList() {
     return added;
   }, [user, toast]);
 
-  const isInList = useCallback((id: string): boolean => {
-    return myListService.has(id);
-  }, []);
+  const isInList = useCallback(
+    (id: string): boolean => {
+      return myListService.has(id);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [list]
+  );
 
   const clearList = useCallback(() => {
     myListService.clear();

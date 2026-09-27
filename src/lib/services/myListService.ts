@@ -22,23 +22,19 @@ class MyListService implements IMyListService {
   constructor() {
     if (typeof window !== "undefined") {
       try {
-        // Clean up legacy non-user keys
         localStorage.removeItem(PRIMARY_KEY);
         localStorage.removeItem(LEGACY_KEY);
 
         const cached = localStorage.getItem("rubbyfilm_cached_user");
         if (cached) {
-          const parsed = JSON.parse(cached);
+          const parsed = JSON.parse(cached) as { id?: string } | null;
           if (parsed?.id) {
             this.currentUserId = String(parsed.id).trim();
+            this.syncWithServer();
           }
         }
       } catch {}
     }
-  }
-
-  private isClient(): boolean {
-    return typeof window !== "undefined";
   }
 
   public setUser(userId: string | null): void {
@@ -47,6 +43,10 @@ class MyListService implements IMyListService {
     this.currentUserId = normalized;
     this.cache = null;
     this.notify();
+
+    if (normalized) {
+      this.syncWithServer();
+    }
   }
 
   private getStorageKey(): string | null {
@@ -55,7 +55,7 @@ class MyListService implements IMyListService {
   }
 
   private load(): Movie[] {
-    if (!this.isClient()) return [];
+    if (typeof window === "undefined") return [];
     if (!this.currentUserId) {
       this.cache = [];
       return [];
@@ -87,7 +87,7 @@ class MyListService implements IMyListService {
 
   private save(items: Movie[]): void {
     this.cache = items;
-    if (this.isClient() && this.currentUserId) {
+    if (typeof window !== "undefined" && this.currentUserId) {
       try {
         const key = this.getStorageKey();
         if (key) {
@@ -111,31 +111,120 @@ class MyListService implements IMyListService {
     });
   }
 
+  // --- Cloud Sync ---
+
+  private async syncWithServer(): Promise<void> {
+    if (typeof window === "undefined" || !this.currentUserId) return;
+
+    try {
+      const res = await fetch("/api/user/favorites", {
+        method: "GET",
+        headers: { "Cache-Control": "no-cache" },
+      });
+
+      if (!res.ok) return;
+
+      const body = (await res.json()) as {
+        success?: boolean;
+        data?: { favorites?: Movie[] };
+      };
+
+      if (!body.success || !Array.isArray(body.data?.favorites)) return;
+
+      const serverItems = body.data.favorites;
+      const localItems = this.load();
+
+      // Merge server and local
+      const map = new Map<string, Movie>();
+      for (const m of serverItems) {
+        const id = String(m.id || m.slug || "").trim();
+        if (id) map.set(id, m);
+      }
+
+      let localHasNew = false;
+      for (const m of localItems) {
+        const id = String(m.id || m.slug || "").trim();
+        if (id && !map.has(id)) {
+          map.set(id, m);
+          localHasNew = true;
+        }
+      }
+
+      const merged = Array.from(map.values()).slice(0, 100);
+      this.cache = merged;
+
+      if (this.currentUserId) {
+        const key = this.getStorageKey();
+        if (key) {
+          localStorage.setItem(key, JSON.stringify(merged));
+        }
+      }
+      this.notify();
+
+      if (localHasNew || (serverItems.length === 0 && merged.length > 0)) {
+        fetch("/api/user/favorites", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ items: merged }),
+        }).catch(() => {});
+      }
+    } catch (e) {
+      console.warn("[MyListService] syncWithServer error:", e);
+    }
+  }
+
+  // --- Public Methods ---
+
   public getList(): Movie[] {
     return [...this.load()];
   }
 
   public has(movieId: string): boolean {
-    return this.load().some((m) => m.id === movieId);
+    const target = String(movieId).trim().toLowerCase();
+    return this.load().some((m) => {
+      const id = String(m.id || "").trim().toLowerCase();
+      const slug = String(m.slug || "").trim().toLowerCase();
+      return id === target || slug === target;
+    });
   }
 
   public add(movie: Movie): void {
-    if (!this.currentUserId) return;
+    if (!this.currentUserId || !movie) return;
     const current = this.load();
-    if (current.some((m) => m.id === movie.id)) return;
+    if (current.some((m) => m.id === movie.id || m.slug === movie.slug)) return;
     const updated = [movie, ...current];
     this.save(updated);
+
+    if (this.currentUserId && typeof window !== "undefined") {
+      fetch("/api/user/favorites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ movie }),
+      }).catch(() => {});
+    }
   }
 
   public remove(movieId: string): void {
-    if (!this.currentUserId) return;
+    if (!this.currentUserId || !movieId) return;
+    const target = String(movieId).trim().toLowerCase();
     const current = this.load();
-    const updated = current.filter((m) => m.id !== movieId);
+    const updated = current.filter((m) => {
+      const id = String(m.id || "").trim().toLowerCase();
+      const slug = String(m.slug || "").trim().toLowerCase();
+      return id !== target && slug !== target;
+    });
+
     this.save(updated);
+
+    if (this.currentUserId && typeof window !== "undefined") {
+      fetch(`/api/user/favorites?id=${encodeURIComponent(target)}`, {
+        method: "DELETE",
+      }).catch(() => {});
+    }
   }
 
   public toggle(movie: Movie): boolean {
-    if (!this.currentUserId) return false;
+    if (!this.currentUserId || !movie) return false;
     if (this.has(movie.id)) {
       this.remove(movie.id);
       return false;
@@ -147,11 +236,15 @@ class MyListService implements IMyListService {
 
   public clear(): void {
     this.save([]);
-    if (this.isClient() && this.currentUserId) {
+    if (typeof window !== "undefined" && this.currentUserId) {
       try {
         const key = this.getStorageKey();
         if (key) localStorage.removeItem(key);
       } catch {}
+
+      fetch("/api/user/favorites", {
+        method: "DELETE",
+      }).catch(() => {});
     }
   }
 

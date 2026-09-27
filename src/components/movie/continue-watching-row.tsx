@@ -12,8 +12,18 @@ export function ContinueWatchingRow() {
   const { user, isAuthenticated } = useAuth();
   const { history, isLoaded, removeFromHistory } = useWatchHistory();
 
-  // Strictly hidden for unauthenticated users or when history is empty
-  if (!isAuthenticated || !user || !isLoaded || history.length === 0) {
+  const continueItems = React.useMemo(() => {
+    return Array.from(
+      new Map(
+        history.map((item) => [`${item.movieId || item.movie?.id}-${item.episodeNumber || 1}`, item])
+      ).values()
+    )
+      .filter((item) => item.progressSeconds > 5 && !item.completed)
+      .slice(0, 10);
+  }, [history]);
+
+  // Strictly hidden for unauthenticated users or when in-progress items are empty
+  if (!isAuthenticated || !user || !isLoaded || continueItems.length === 0) {
     return null;
   }
 
@@ -25,7 +35,6 @@ export function ContinueWatchingRow() {
     }
     return `${mins} phút`;
   };
-
   return (
     <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 mb-4">
       <div className="flex items-center justify-between mb-4">
@@ -35,7 +44,7 @@ export function ContinueWatchingRow() {
             Tiếp Tục Xem
           </h2>
           <span className="text-xs text-cinema-400 bg-cinema-800 px-2 py-0.5 rounded-full border border-cinema-700">
-            {history.length}
+            {continueItems.length}
           </span>
         </div>
 
@@ -49,13 +58,7 @@ export function ContinueWatchingRow() {
       </div>
 
       <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 scrollbar-none scroll-smooth">
-        {Array.from(
-          new Map(
-            history.map((item) => [`${item.movieId || item.movie?.id}-${item.episodeNumber || 1}`, item])
-          ).values()
-        )
-          .slice(0, 10)
-          .map((item, idx) => {
+        {continueItems.map((item, idx) => {
             const movie = item.movie;
             const targetUrl =
               movie.type === "series" && item.episodeNumber
