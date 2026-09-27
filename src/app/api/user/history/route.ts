@@ -53,7 +53,13 @@ export async function POST(request: NextRequest) {
       return apiError("UNAUTHORIZED", "Vui lòng đăng nhập để lưu lịch sử xem phim.", 401, NO_CACHE_HEADERS);
     }
 
-    const body = await parseRequestBody(request);
+    const body = (await parseRequestBody(request)) as {
+      items?: WatchHistoryItem[];
+      movie?: Movie;
+      progressSeconds?: number;
+      durationSeconds?: number;
+      episode?: { id: string; episodeNumber: number; name: string };
+    };
 
     // Case 1: Batch sync of items
     if (Array.isArray(body.items)) {
@@ -113,7 +119,7 @@ export async function DELETE(request: NextRequest) {
       return apiSuccess({ history: updated }, undefined, NO_CACHE_HEADERS);
     }
 
-    const body = await parseRequestBody(request);
+    const body = (await parseRequestBody(request)) as { movieId?: string } | null;
     if (body?.movieId) {
       const updated = userDataRepository.removeWatchHistory(userId, body.movieId);
       return apiSuccess({ history: updated }, undefined, NO_CACHE_HEADERS);
