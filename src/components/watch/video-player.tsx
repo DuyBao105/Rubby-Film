@@ -84,6 +84,7 @@ export function VideoPlayer({
   initialTime = 0,
   onPause,
   onEnded,
+  hasNextEpisode = false,
   onNextEpisode,
   hasPrevEpisode = false,
   onPrevEpisode,
