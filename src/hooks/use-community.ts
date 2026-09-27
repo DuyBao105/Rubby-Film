@@ -292,6 +292,7 @@ export function useLike(commentId: string, initialLiked: boolean, initialCount: 
   const [count, setCount] = React.useState(initialCount);
   const [busy, setBusy] = React.useState(false);
   const toggleRef = React.useRef<NodeJS.Timeout | null>(null);
+  const pendingToggles = React.useRef(0);
 
   React.useEffect(() => {
     setLiked(initialLiked);
@@ -300,13 +301,14 @@ export function useLike(commentId: string, initialLiked: boolean, initialCount: 
 
   const toggle = React.useCallback(async () => {
     if (busy) return;
-    // Optimistic 250ms debounce: collapse accidental double-taps.
+    pendingToggles.current += 1;
     if (toggleRef.current) clearTimeout(toggleRef.current);
-    const wasLiked = liked;
-    const wasCount = count;
-    setLiked(!wasLiked);
-    setCount(wasCount + (wasLiked ? -1 : 1));
+    setLiked((v) => !v);
+    setCount((c) => c + (liked ? -1 : 1));
     toggleRef.current = setTimeout(async () => {
+      const flips = pendingToggles.current;
+      pendingToggles.current = 0;
+      if (flips % 2 === 0) return; // double-tap = no net change, skip POST
       setBusy(true);
       try {
         const res = await fetch(`/api/community/comments/${commentId}/like`, {
@@ -316,20 +318,19 @@ export function useLike(commentId: string, initialLiked: boolean, initialCount: 
         const j = await res.json();
         if (j?.success && typeof j.data?.liked === "boolean") {
           setLiked(j.data.liked);
-          setCount(typeof j.data.count === "number" ? j.data.count : wasCount);
+          setCount(typeof j.data.count === "number" ? j.data.count : count);
         } else {
-          // Roll back on auth failure or unexpected response.
-          setLiked(wasLiked);
-          setCount(wasCount);
+          setLiked(initialLiked);
+          setCount(initialCount);
         }
       } catch {
-        setLiked(wasLiked);
-        setCount(wasCount);
+        setLiked(initialLiked);
+        setCount(initialCount);
       } finally {
         setBusy(false);
       }
     }, 250);
-  }, [busy, liked, count, commentId]);
+  }, [busy, liked, count, commentId, initialLiked, initialCount]);
 
   React.useEffect(
     () => () => {
@@ -340,7 +341,6 @@ export function useLike(commentId: string, initialLiked: boolean, initialCount: 
 
   return { liked, count, toggle, busy };
 }
-
 export function useReport() {
   const submit = React.useCallback(
     async (commentId: string, reason: string, description?: string) => {
