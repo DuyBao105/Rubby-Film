@@ -22,7 +22,8 @@ import { useUserProfile } from "@/lib/hooks/use-user-profile";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useMyList } from "@/lib/hooks/use-my-list";
 import { useWatchHistory } from "@/lib/hooks/use-watch-history";
-
+import { watchHistoryService } from "@/lib/services/watchHistoryService";
+import { myListService } from "@/lib/services/myListService";
 export default function SettingsPage() {
   const { preferences, updatePreferences } = useUserProfile();
   const { user: authUser, isAuthenticated, logout, unlinkProvider } = useAuth();
