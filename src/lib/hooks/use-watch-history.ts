@@ -27,9 +27,10 @@ export function useWatchHistory() {
       movie: Movie,
       progressSeconds: number,
       durationSeconds: number,
-      episode?: { id: string; episodeNumber: number; name: string }
+      episode?: { id: string; episodeNumber: number; name: string },
+      immediate?: boolean
     ) => {
-      watchHistoryService.updateProgress(movie, progressSeconds, durationSeconds, episode);
+      watchHistoryService.updateProgress(movie, progressSeconds, durationSeconds, episode, immediate);
     },
     []
   );
