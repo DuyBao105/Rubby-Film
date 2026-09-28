@@ -1,10 +1,12 @@
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, sql, desc, asc } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db } from "@db/client";
 import { commentReports, comments, users } from "@db/schema";
 import { genId } from "./ids";
 import { validateReportReason, validateDescription, type ReportReason } from "./validators";
 
 export type ReportStatus = "open" | "reviewed" | "dismissed" | "actioned";
+export type ReportSort = "newest" | "oldest";
 
 export interface ReportView {
   id: string;
@@ -14,7 +16,15 @@ export interface ReportView {
   status: ReportStatus;
   createdAt: number;
   reporter: { id: string; name: string };
-  comment: { id: string; content: string; movieId: string; isSpoiler: boolean; authorId: string };
+  comment: {
+    id: string;
+    content: string;
+    movieId: string;
+    isSpoiler: boolean;
+    authorId: string;
+    authorName: string;
+    authorAvatarUrl: string | null;
+  };
 }
 
 export interface ReportListPage {
@@ -24,6 +34,16 @@ export interface ReportListPage {
   limit: number;
   totalPages: number;
 }
+
+export interface ReportStatusCounts {
+  open: number;
+  reviewed: number;
+  dismissed: number;
+  actioned: number;
+  total: number;
+}
+
+const authorUser = alias(users, "author_user");
 
 async function assertAdmin(adminId: string): Promise<void> {
   const [u] = await db.select({ role: users.role }).from(users).where(eq(users.id, adminId)).limit(1);
@@ -65,28 +85,38 @@ export const reportService = {
   async list(opts: {
     adminId: string;
     status?: ReportStatus;
+    reason?: ReportReason;
+    sort?: ReportSort;
     page?: number;
     limit?: number;
   }): Promise<ReportListPage> {
     await assertAdmin(opts.adminId);
-    const { status, page = 1, limit = 20 } = opts;
+    const { status, reason, sort = "newest", page = 1, limit = 20 } = opts;
     const offset = (page - 1) * limit;
+
+    const conditions = [];
+    if (status) conditions.push(eq(commentReports.status, status));
+    if (reason) conditions.push(eq(commentReports.reason, reason));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const orderClause = sort === "oldest" ? asc(commentReports.createdAt) : desc(commentReports.createdAt);
 
     const baseRows = await db.select({
       r: commentReports,
       reporter: users,
       c: comments,
+      author: authorUser,
     })
       .from(commentReports)
       .leftJoin(users, eq(commentReports.reporterUserId, users.id))
       .leftJoin(comments, eq(commentReports.commentId, comments.id))
-      .where(status ? eq(commentReports.status, status) : undefined)
-      .orderBy(desc(commentReports.createdAt))
+      .leftJoin(authorUser, eq(comments.userId, authorUser.id))
+      .where(where)
+      .orderBy(orderClause)
       .limit(limit)
       .offset(offset);
 
-    const totalRows = await db.select({ c: sql<number>`count(*)::int` }).from(commentReports)
-      .where(status ? eq(commentReports.status, status) : undefined);
+    const totalRows = await db.select({ c: sql<number>`count(*)::int` }).from(commentReports).where(where);
     const total = totalRows[0]?.c ?? 0;
 
     const items: ReportView[] = baseRows.map((row) => ({
@@ -103,10 +133,30 @@ export const reportService = {
         movieId: row.c?.movieId ?? "",
         isSpoiler: row.c?.isSpoiler ?? false,
         authorId: row.c?.userId ?? "",
+        authorName: row.author?.name ?? "[removed]",
+        authorAvatarUrl: row.author?.avatarUrl ?? null,
       },
     }));
 
     return { items, total, page, limit, totalPages: Math.max(1, Math.ceil(total / limit)) };
+  },
+
+  async counts(opts: { adminId: string }): Promise<ReportStatusCounts> {
+    await assertAdmin(opts.adminId);
+    const rows = await db
+      .select({ status: commentReports.status, c: sql<number>`count(*)::int` })
+      .from(commentReports)
+      .groupBy(commentReports.status);
+    const out: ReportStatusCounts = { open: 0, reviewed: 0, dismissed: 0, actioned: 0, total: 0 };
+    for (const r of rows) {
+      if (r.status === "open" || r.status === "reviewed" || r.status === "dismissed" || r.status === "actioned") {
+        out[r.status] = r.c;
+        out.total += r.c;
+      } else {
+        out.total += r.c;
+      }
+    }
+    return out;
   },
 
   async updateStatus(input: {

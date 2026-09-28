@@ -1,9 +1,12 @@
 import { NextRequest } from "next/server";
 import { apiSuccess } from "@/lib/server/apiResponse";
 import { requireAdmin } from "@/lib/community/getCurrentUser";
-import { reportService, type ReportStatus } from "@/lib/community/reportService";
+import { reportService, type ReportStatus, type ReportSort } from "@/lib/community/reportService";
+import type { ReportReason } from "@/lib/community/validators";
 
-const ALLOWED: ReadonlyArray<ReportStatus> = ["open", "reviewed", "dismissed", "actioned"];
+const ALLOWED_STATUS: ReadonlyArray<ReportStatus> = ["open", "reviewed", "dismissed", "actioned"];
+const ALLOWED_REASON: ReadonlyArray<ReportReason> = ["spam", "abuse", "harassment", "inappropriate", "spoiler", "other"];
+const ALLOWED_SORT: ReadonlyArray<ReportSort> = ["newest", "oldest"];
 
 export async function GET(req: NextRequest) {
   try {
@@ -11,12 +14,20 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const statusParam = url.searchParams.get("status");
     const status: ReportStatus | undefined =
-      statusParam && (ALLOWED as readonly string[]).includes(statusParam)
+      statusParam && (ALLOWED_STATUS as readonly string[]).includes(statusParam)
         ? (statusParam as ReportStatus)
         : undefined;
+    const reasonParam = url.searchParams.get("reason");
+    const reason: ReportReason | undefined =
+      reasonParam && (ALLOWED_REASON as readonly string[]).includes(reasonParam)
+        ? (reasonParam as ReportReason)
+        : undefined;
+    const sortParam = url.searchParams.get("sort");
+    const sort: ReportSort =
+      sortParam && (ALLOWED_SORT as readonly string[]).includes(sortParam) ? (sortParam as ReportSort) : "newest";
     const page = Math.max(1, Number(url.searchParams.get("page") ?? 1) || 1);
     const limit = Math.min(50, Math.max(1, Number(url.searchParams.get("limit") ?? 20) || 20));
-    const result = await reportService.list({ adminId: admin.id, status, page, limit });
+    const result = await reportService.list({ adminId: admin.id, status, reason, sort, page, limit });
     return apiSuccess(result);
   } catch (e) {
     if (e instanceof Error && "code" in e) {
