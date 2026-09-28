@@ -289,6 +289,41 @@ export default function ModerationPage() {
 
   useEffect(() => { void load(); }, [load]);
 
+  // Lightweight realtime: poll counts every 30s + refetch list every 60s when tab visible.
+  useEffect(() => {
+    let cancelled = false;
+    const refetchCounts = async () => {
+      if (cancelled || document.hidden) return;
+      try {
+        const r = await fetch("/api/admin/moderation/reports/counts", { cache: "no-store" });
+        const j = await r.json().catch(() => null);
+        if (!cancelled && r.ok && j?.success) setCounts(j.data);
+      } catch { /* ignore */ }
+    };
+    const refetchList = async () => {
+      if (cancelled || document.hidden) return;
+      try {
+        const params = new URLSearchParams({ page: String(page), limit: "20" });
+        if (statusFilter) params.set("status", statusFilter);
+        if (reasonFilter) params.set("reason", reasonFilter);
+        params.set("sort", sortDir);
+        const r = await fetch(`/api/admin/moderation/reports?${params}`, { cache: "no-store" });
+        const j = await r.json().catch(() => null);
+        if (!cancelled && r.ok && j?.success) setData(j.data);
+      } catch { /* ignore */ }
+    };
+    const countsTimer = setInterval(refetchCounts, 30_000);
+    const listTimer = setInterval(refetchList, 60_000);
+    const onVis = () => { if (!document.hidden) { void refetchCounts(); void refetchList(); } };
+    document.addEventListener("visibilitychange", onVis);
+    return () => {
+      cancelled = true;
+      clearInterval(countsTimer);
+      clearInterval(listTimer);
+      document.removeEventListener("visibilitychange", onVis);
+    };
+  }, [page, statusFilter, reasonFilter, sortDir]);
+
   const runAction = useCallback(async (
     reportId: string, status: ReportStatus, action: "hide" | "delete" | null,
   ) => {
@@ -330,7 +365,7 @@ export default function ModerationPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] text-[#F9FAFB] px-4 py-8">
+    <main className="min-h-screen bg-[#0A0A0A] text-[#F9FAFB] px-4 pt-20 sm:pt-24 pb-20">
       <div className="max-w-5xl mx-auto">
         <header className="mb-6">
           <Link href="/" className="inline-flex items-center gap-1 text-xs text-[#D1D5DB] hover:text-[#F9FAFB]">
