@@ -4,6 +4,7 @@ import { db } from "@db/client";
 import { commentReports, comments, users } from "@db/schema";
 import { genId } from "./ids";
 import { validateReportReason, validateDescription, type ReportReason } from "./validators";
+import { communityRepository } from "./communityRepository";
 
 export type ReportStatus = "open" | "reviewed" | "dismissed" | "actioned";
 export type ReportSort = "newest" | "oldest";
@@ -79,6 +80,7 @@ export const reportService = {
       reason,
       description: desc,
     });
+    await communityRepository.notifyModeration("report.created", { id, reason });
     return { id };
   },
 
@@ -173,5 +175,6 @@ export const reportService = {
       .where(eq(commentReports.id, input.reportId)).limit(1);
     if (!r) throw Object.assign(new Error("NOT_FOUND"), { code: "NOT_FOUND" });
     await db.update(commentReports).set({ status: input.status }).where(eq(commentReports.id, input.reportId));
+    await communityRepository.notifyModeration("report.updated", { id: input.reportId, status: input.status });
   },
 };

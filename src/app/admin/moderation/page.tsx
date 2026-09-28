@@ -289,40 +289,39 @@ export default function ModerationPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  // Lightweight realtime: poll counts every 30s + refetch list every 60s when tab visible.
+  // Realtime: SSE via EventSource, reconnect on error.
   useEffect(() => {
+    let es: EventSource | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
     let cancelled = false;
-    const refetchCounts = async () => {
-      if (cancelled || document.hidden) return;
-      try {
-        const r = await fetch("/api/admin/moderation/reports/counts", { cache: "no-store" });
-        const j = await r.json().catch(() => null);
-        if (!cancelled && r.ok && j?.success) setCounts(j.data);
-      } catch { /* ignore */ }
+
+    const refetchAll = () => {
+      if (cancelled) return;
+      void load();
     };
-    const refetchList = async () => {
-      if (cancelled || document.hidden) return;
-      try {
-        const params = new URLSearchParams({ page: String(page), limit: "20" });
-        if (statusFilter) params.set("status", statusFilter);
-        if (reasonFilter) params.set("reason", reasonFilter);
-        params.set("sort", sortDir);
-        const r = await fetch(`/api/admin/moderation/reports?${params}`, { cache: "no-store" });
-        const j = await r.json().catch(() => null);
-        if (!cancelled && r.ok && j?.success) setData(j.data);
-      } catch { /* ignore */ }
+
+    const connect = () => {
+      if (cancelled) return;
+      es = new EventSource("/api/admin/moderation/stream", { withCredentials: true });
+      es.addEventListener("report.created", refetchAll);
+      es.addEventListener("report.updated", refetchAll);
+      es.addEventListener("end", () => {
+        es?.close();
+        if (!cancelled) reconnectTimer = setTimeout(connect, 1000);
+      });
+      es.onerror = () => {
+        es?.close();
+        if (!cancelled) reconnectTimer = setTimeout(connect, 3000);
+      };
     };
-    const countsTimer = setInterval(refetchCounts, 30_000);
-    const listTimer = setInterval(refetchList, 60_000);
-    const onVis = () => { if (!document.hidden) { void refetchCounts(); void refetchList(); } };
-    document.addEventListener("visibilitychange", onVis);
+    connect();
+
     return () => {
       cancelled = true;
-      clearInterval(countsTimer);
-      clearInterval(listTimer);
-      document.removeEventListener("visibilitychange", onVis);
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      es?.close();
     };
-  }, [page, statusFilter, reasonFilter, sortDir]);
+  }, [load]);
 
   const runAction = useCallback(async (
     reportId: string, status: ReportStatus, action: "hide" | "delete" | null,
@@ -365,7 +364,7 @@ export default function ModerationPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#0A0A0A] text-[#F9FAFB] px-4 pt-20 sm:pt-24 pb-20">
+    <main className="min-h-screen bg-[#0A0A0A] text-[#F9FAFB] px-4 pt-28 sm:pt-32 pb-20">
       <div className="max-w-5xl mx-auto">
         <header className="mb-6">
           <Link href="/" className="inline-flex items-center gap-1 text-xs text-[#D1D5DB] hover:text-[#F9FAFB]">
