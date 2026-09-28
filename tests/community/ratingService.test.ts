@@ -13,26 +13,27 @@ const hasDb = !!process.env.DATABASE_URL;
     const id = genId("usr");
     await db.insert(users).values({ id, name: "R", email, role: "user" }).onConflictDoNothing();
 
-    const r1 = await ratingService.upsert({ userId: id, movieId: "mX", movieSlug: "x", rating: 4 });
+    const movieId = `mX_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const r1 = await ratingService.upsert({ userId: id, movieId, movieSlug: "x", rating: 4 });
     expect(r1.viewerRating).toBe(4);
     expect(r1.count).toBe(1);
     expect(r1.average).toBe(4);
     expect(r1.distribution[4]).toBe(1);
 
     const before = await db.query.movieRatings.findFirst({
-      where: (t, { and, eq }) => and(eq(t.userId, id), eq(t.movieId, "mX")),
+      where: (t, { and, eq }) => and(eq(t.userId, id), eq(t.movieId, movieId)),
     });
     expect(before?.rating).toBe(4);
 
     await new Promise((r) => setTimeout(r, 20));
-    const r2 = await ratingService.upsert({ userId: id, movieId: "mX", movieSlug: "x", rating: 3 });
+    const r2 = await ratingService.upsert({ userId: id, movieId, movieSlug: "x", rating: 3 });
     expect(r2.viewerRating).toBe(3);
     expect(r2.count).toBe(1); // still one row
     expect(r2.distribution[3]).toBe(1);
     expect(r2.distribution[4]).toBe(0);
 
     const after = await db.query.movieRatings.findFirst({
-      where: (t, { and, eq }) => and(eq(t.userId, id), eq(t.movieId, "mX")),
+      where: (t, { and, eq }) => and(eq(t.userId, id), eq(t.movieId, movieId)),
     });
     expect(after?.rating).toBe(3);
     expect(after?.id).toBe(before?.id); // same row id — update in place
