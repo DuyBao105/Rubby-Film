@@ -103,12 +103,20 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     type: "mp4",
   };
 
-  // Saved playback progress - compute reactively when history loads or episode changes
+  // Saved playback progress - evaluate ONCE per episode/movie change.
+  // The `history` state updates every ~4s while watching; if we depended on it,
+  // this effect would re-fire `setResumePromptVisible(true)` indefinitely, keeping
+  // the "đang phát tiếp từ..." notification visible forever. Guard with a ref.
   const [initialTime, setInitialTime] = React.useState(0);
   const currentPlaybackRef = React.useRef<{ currentTime: number; duration: number } | null>(null);
+  const evaluatedResumeKeyRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const epNum = currentEpisode?.episodeNumber ?? 1;
+    const evalKey = `${movie.id}:${epNum}`;
+    if (evaluatedResumeKeyRef.current === evalKey) return;
+    evaluatedResumeKeyRef.current = evalKey;
+
     const savedProgress = currentEpisode
       ? getEpisodeProgress(movie.id, epNum)
       : getMovieProgress(movie.id);
@@ -126,7 +134,8 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       setInitialTime(0);
       setResumePromptVisible(false);
     }
-  }, [currentEpisode, movie.id, getEpisodeProgress, getMovieProgress, history]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentEpisode, movie.id]);
 
   // Synchronize playback progress immediately when page is hidden or unloaded (e.g. mobile tab switch/close)
   React.useEffect(() => {
