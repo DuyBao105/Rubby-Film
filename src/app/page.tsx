@@ -9,7 +9,7 @@ import { YearDiscovery } from "@/components/home/year-discovery";
 import { FaqSection } from "@/components/home/faq-section";
 import { StreamCta } from "@/components/home/stream-cta";
 import { AuthSyncBanner } from "@/components/home/auth-sync-banner";
-import { getTmdbBackdropUrl, getTmdbLogoUrl, TMDB_API_KEY } from "@/lib/server/tmdb";
+import { getTmdbMedia, TMDB_API_KEY } from "@/lib/server/tmdb";
 import { Movie } from "@/types/movie";
 import { Metadata } from "next";
 
@@ -124,23 +124,19 @@ async function getPreparedHomePageData(): Promise<HomePagePreparedData> {
     await Promise.all(
       topEnrichCandidates.map(async (m) => {
         const type = m.tmdbType || (m.type === "series" ? "tv" : "movie");
-        const [tmdbBackdrop, tmdbLogo] = await Promise.all([
-          getTmdbBackdropUrl(m.tmdbId, type, {
-            title: m.title,
-            originalTitle: m.originalTitle,
-            year: m.year,
-          }),
-          getTmdbLogoUrl(m.tmdbId, type, {
-            title: m.title,
-            originalTitle: m.originalTitle,
-            year: m.year,
-          }),
-        ]);
-        if (tmdbBackdrop) {
-          m.backdropUrl = tmdbBackdrop;
+        const media = await getTmdbMedia(m.tmdbId, type, {
+          title: m.title,
+          originalTitle: m.originalTitle,
+          year: m.year,
+        });
+        if (media.backdropUrl) {
+          m.backdropUrl = media.backdropUrl;
         }
-        if (tmdbLogo) {
-          m.logoUrl = tmdbLogo;
+        if (media.posterUrl) {
+          m.posterUrl = media.posterUrl;
+        }
+        if (media.logoUrl) {
+          m.logoUrl = media.logoUrl;
         }
       })
     );
@@ -224,20 +220,20 @@ async function getPreparedHomePageData(): Promise<HomePagePreparedData> {
     spotlightMovies.push(homeData.featured[0]);
   }
 
-  // Enrich spotlightMovies with TMDB 4K backdrops
+  // Enrich spotlightMovies with TMDB 4K backdrops and media
   if (hasTmdb) {
     await Promise.all(
       spotlightMovies.map(async (m) => {
         if (!m.backdropUrl.includes("image.tmdb.org")) {
           const type = m.tmdbType || (m.type === "series" ? "tv" : "movie");
-          const tmdbBackdrop = await getTmdbBackdropUrl(m.tmdbId, type, {
+          const media = await getTmdbMedia(m.tmdbId, type, {
             title: m.title,
             originalTitle: m.originalTitle,
             year: m.year,
           });
-          if (tmdbBackdrop) {
-            m.backdropUrl = tmdbBackdrop;
-          }
+          if (media.backdropUrl) m.backdropUrl = media.backdropUrl;
+          if (media.posterUrl) m.posterUrl = media.posterUrl;
+          if (media.logoUrl) m.logoUrl = media.logoUrl;
         }
       })
     );

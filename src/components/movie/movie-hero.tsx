@@ -137,28 +137,15 @@ export function MovieHero({ movies }: MovieHeroProps) {
                   : "translate-x-[4%] scale-[1.04]"
               )}
             >
-              {/* Mobile View: Crisp Vertical Key Art */}
-              <div className="sm:hidden absolute inset-0">
+              {/* Cinematic Landscape Backdrop (Crystal Clear 4K / Full HD on Both Mobile & Desktop) */}
+              <div className="absolute inset-0">
                 <Image
-                  src={m.posterUrl || m.backdropUrl || FALLBACK_POSTER}
+                  src={m.backdropUrl || m.posterUrl || FALLBACK_BACKDROP}
                   alt={m.title || "Phim nổi bật"}
                   fill
                   priority={idx <= 2}
                   unoptimized={true}
-                  className="object-cover object-top filter contrast-[1.02] transform-gpu"
-                  sizes="(max-width: 640px) 100vw, 50vw"
-                />
-              </div>
-
-              {/* Desktop & Tablet: 16:9 Cinematic Landscape Backdrop (Crystal Clear 4K / Full HD) */}
-              <div className="hidden sm:block absolute inset-0">
-                <Image
-                  src={m.backdropUrl || FALLBACK_BACKDROP}
-                  alt={m.title || "Phim nổi bật"}
-                  fill
-                  priority={idx <= 2}
-                  unoptimized={true}
-                  className="object-cover object-[center_25%] filter contrast-[1.02] transform-gpu"
+                  className="object-cover object-center sm:object-[center_25%] filter contrast-[1.02] transform-gpu"
                   sizes="100vw"
                   onError={(e) => {
                     const target = e.target as HTMLImageElement;
