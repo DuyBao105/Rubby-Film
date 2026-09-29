@@ -32,6 +32,7 @@ async function ensureSubscribed(movieId: string): Promise<void> {
   const channel = channelFor(movieId);
   if (s.subscribed.has(channel)) return;
   const sql = getListenClient();
+  if (!sql) return;
   await sql.listen(channel, (payload) => {
     try {
       const ev = JSON.parse(payload as string) as CommunityEvent;
@@ -47,6 +48,7 @@ async function ensureModerationSubscribed(): Promise<void> {
   const s = ensureState();
   if (s.subscribed.has(MOD_CHANNEL)) return;
   const sql = getListenClient();
+  if (!sql) return;
   await sql.listen(MOD_CHANNEL, (payload) => {
     try {
       const ev = JSON.parse(payload as string) as ModerationEvent;
@@ -66,7 +68,7 @@ export const communityRepository = {
     if (process.env.DATABASE_URL) {
       try {
         const sql = getListenClient();
-        await sql.notify(channelFor(movieId), JSON.stringify(event));
+        if (sql) await sql.notify(channelFor(movieId), JSON.stringify(event));
       } catch {
         /* notify fire-and-forget; local emitter already delivered */
       }
@@ -99,7 +101,7 @@ export const communityRepository = {
     if (process.env.DATABASE_URL) {
       try {
         const sql = getListenClient();
-        await sql.notify(MOD_CHANNEL, JSON.stringify(event));
+        if (sql) await sql.notify(MOD_CHANNEL, JSON.stringify(event));
       } catch {
         /* notify fire-and-forget; local emitter already delivered */
       }

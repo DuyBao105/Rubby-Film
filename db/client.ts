@@ -6,8 +6,7 @@ import * as schema from "./schema";
 export type Db = NeonHttpDatabase<typeof schema>;
 
 function createDb(): Db {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not set");
+  const url = process.env.DATABASE_URL || "postgres://dummy:dummy@localhost:5432/dummy";
   return drizzle(neon(url), { schema });
 }
 
