@@ -4,6 +4,7 @@ import {
   mapKkphimEpisodes,
   mapKkphimPagination,
 } from "./kkphimAdapter";
+import { getTmdbMedia } from "./tmdb";
 import {
   Movie,
   Genre,
@@ -448,6 +449,18 @@ export class KkphimService {
 
       const cdnDomain = "https://phimimg.com";
       const movie = mapKkphimMovie(raw.movie, cdnDomain);
+
+      // Enrich with ultra-crisp 4K backdrop, high-res poster and logo from TMDB
+      try {
+        const tmdbMedia = await getTmdbMedia(movie.tmdbId, movie.type === "series" ? "tv" : "movie", {
+          title: movie.title,
+          originalTitle: movie.originalTitle,
+          year: movie.year,
+        });
+        if (tmdbMedia.backdropUrl) movie.backdropUrl = tmdbMedia.backdropUrl;
+        if (tmdbMedia.posterUrl) movie.posterUrl = tmdbMedia.posterUrl;
+        if (tmdbMedia.logoUrl) movie.logoUrl = tmdbMedia.logoUrl;
+      } catch {}
 
       // Map episodes and servers
       if (Array.isArray(raw.episodes)) {

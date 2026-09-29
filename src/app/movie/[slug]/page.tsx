@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { movieProvider } from "@/lib/providers";
 import { MovieDetail } from "@/components/movie/movie-detail";
+import { getTmdbMedia } from "@/lib/server/tmdb";
 import { Metadata } from "next";
 
 export const revalidate = 1800;
@@ -74,6 +75,20 @@ export default async function MovieDetailPage({ params }: MovieDetailPageProps) 
 
   if (!movie) {
     notFound();
+  }
+
+  // Ensure crystal-clear 4K backdrop and razor-sharp poster from TMDB
+  if (!movie.backdropUrl || !movie.backdropUrl.includes("image.tmdb.org")) {
+    try {
+      const tmdbMedia = await getTmdbMedia(movie.tmdbId, movie.type === "series" ? "tv" : "movie", {
+        title: movie.title,
+        originalTitle: movie.originalTitle,
+        year: movie.year,
+      });
+      if (tmdbMedia.backdropUrl) movie.backdropUrl = tmdbMedia.backdropUrl;
+      if (tmdbMedia.posterUrl) movie.posterUrl = tmdbMedia.posterUrl;
+      if (tmdbMedia.logoUrl) movie.logoUrl = tmdbMedia.logoUrl;
+    } catch {}
   }
 
   const related = await movieProvider.getRelatedMovies(slug);

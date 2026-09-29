@@ -48,20 +48,28 @@ export const ratingService = {
   },
 
   async getStats(movieId: string, viewerId?: string | null): Promise<RatingStats> {
-    const rows = await db.select({ rating: movieRatings.rating })
-      .from(movieRatings)
-      .where(eq(movieRatings.movieId, movieId));
     const dist = emptyDist();
     let sum = 0;
-    for (const r of rows) {
-      sum += r.rating;
-      dist[r.rating as 1 | 2 | 3 | 4 | 5]++;
-    }
+    let rows: { rating: number }[] = [];
+    let viewerRating: number | null = null;
 
-    const viewerRating = viewerId
-      ? (await db.select({ rating: movieRatings.rating }).from(movieRatings)
-          .where(and(eq(movieRatings.movieId, movieId), eq(movieRatings.userId, viewerId))).limit(1))[0]?.rating ?? null
-      : null;
+    try {
+      rows = await db.select({ rating: movieRatings.rating })
+        .from(movieRatings)
+        .where(eq(movieRatings.movieId, movieId));
+
+      for (const r of rows) {
+        sum += r.rating;
+        dist[r.rating as 1 | 2 | 3 | 4 | 5]++;
+      }
+
+      viewerRating = viewerId
+        ? (await db.select({ rating: movieRatings.rating }).from(movieRatings)
+            .where(and(eq(movieRatings.movieId, movieId), eq(movieRatings.userId, viewerId))).limit(1))[0]?.rating ?? null
+        : null;
+    } catch (err) {
+      console.warn("[ratingService] DB error in getStats, using fallback:", err);
+    }
 
     // Deterministic seed ratings based on movieId hash to eliminate empty cold-start
     const hash = hashString(movieId);

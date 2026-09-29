@@ -5,8 +5,11 @@ import * as schema from "./schema";
 
 export type Db = NeonHttpDatabase<typeof schema>;
 
+const DEFAULT_DATABASE_URL =
+  "postgresql://neondb_owner:npg_mROw7ziUQG5j@ep-aged-frost-az6ao807.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
 function createDb(): Db {
-  const url = process.env.DATABASE_URL || "postgres://dummy:dummy@localhost:5432/dummy";
+  const url = process.env.DATABASE_URL || DEFAULT_DATABASE_URL;
   return drizzle(neon(url), { schema });
 }
 

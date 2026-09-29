@@ -207,7 +207,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
   return (
     <div className="min-h-screen bg-[#0F111A] text-white pb-24 relative overflow-x-hidden">
       {/* 1. Backdrop Hero Banner (TopHim Dual Layer Effect with Blur & Radial Mask) */}
-      <div className="relative w-full h-[280px] sm:h-[450px] md:h-[560px] lg:h-[68vh] xl:max-h-[750px] overflow-hidden bg-[#0F111A]">
+      <div className="relative w-full h-[320px] sm:h-[380px] md:h-[440px] lg:h-[480px] overflow-hidden bg-[#0F111A]">
         {/* Layer 1: High-res Cover Image */}
         <Image
           src={backdropSrc}
@@ -251,9 +251,12 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-[#0F111A] via-[#0F111A]/50 to-transparent pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-r from-[#0F111A]/90 via-[#0F111A]/40 to-transparent w-full lg:w-3/4 pointer-events-none" />
         <div className="absolute bottom-0 inset-x-0 h-28 bg-gradient-to-t from-[#0F111A] to-transparent pointer-events-none" />
+      </div>
 
-        {/* Breadcrumb Navigation on top of Hero - Positioned comfortably below fixed navbar header */}
-        <div className="absolute top-20 sm:top-24 left-4 sm:left-8 z-20 flex items-center gap-1.5 text-xs text-zinc-300 backdrop-blur-md bg-black/60 px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
+      {/* 2. Main Content Container with Balanced Spacing */}
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 -mt-52 sm:-mt-64 md:-mt-76 lg:-mt-84 relative z-10">
+        {/* Breadcrumb Navigation - Cleanly positioned above movie details */}
+        <div className="mb-4 sm:mb-6 flex items-center gap-1.5 text-xs text-zinc-300 w-fit backdrop-blur-md bg-black/60 px-3.5 py-1.5 rounded-full border border-white/10 shadow-lg">
           <button
             type="button"
             onClick={() => router.back()}
@@ -276,10 +279,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
             {movie.type === "series" ? "Phim Bộ" : "Phim Lẻ"}
           </Link>
         </div>
-      </div>
 
-      {/* 2. Main Overlapping Content Container */}
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 -mt-20 sm:-mt-32 md:-mt-48 lg:-mt-64 relative z-10">
         <div className="flex flex-col md:flex-row gap-6 md:gap-10 items-start">
           
           {/* LEFT COLUMN: Poster + Synopsis (Desktop) */}

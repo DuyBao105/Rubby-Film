@@ -222,3 +222,102 @@ export async function getTmdbLogoUrl(
 
   return null;
 }
+
+export interface TmdbMediaResult {
+  backdropUrl?: string;
+  posterUrl?: string;
+  logoUrl?: string;
+}
+
+const tmdbMediaCache = new Map<string, TmdbMediaResult>();
+
+/**
+ * Fetches original 4K backdrop, ultra-crisp studio poster, and transparent logo in a single API call
+ */
+export async function getTmdbMedia(
+  tmdbId?: string | number | null,
+  type: "movie" | "tv" = "movie",
+  fallbackSearch?: TmdbFallbackSearch
+): Promise<TmdbMediaResult> {
+  const apiKey = TMDB_API_KEY;
+  if (!apiKey) return {};
+
+  const idStr = tmdbId ? String(tmdbId).trim() : "";
+  const cacheKey = idStr ? `${type}-${idStr}` : (fallbackSearch?.originalTitle || fallbackSearch?.title || "");
+
+  if (cacheKey && tmdbMediaCache.has(cacheKey)) {
+    return tmdbMediaCache.get(cacheKey) || {};
+  }
+
+  let resolvedId = idStr;
+  let resolvedType = type;
+
+  // If no ID or need discovery, try search first
+  if (!resolvedId && fallbackSearch) {
+    const queries = [fallbackSearch.originalTitle, fallbackSearch.title].filter(
+      (q): q is string => Boolean(q && q.trim().length >= 2)
+    );
+    for (const q of queries) {
+      try {
+        const sRes = await fetch(
+          `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(q)}&include_adult=false`,
+          { next: { revalidate: 86400 * 7 } }
+        );
+        if (sRes.ok) {
+          const sData = await sRes.json();
+          const match = sData.results?.[0];
+          if (match?.id) {
+            resolvedId = String(match.id);
+            resolvedType = match.media_type === "tv" ? "tv" : "movie";
+            break;
+          }
+        }
+      } catch {}
+    }
+  }
+
+  if (!resolvedId) return {};
+
+  const primaryType = resolvedType === "tv" ? "tv" : "movie";
+  const secondaryType = primaryType === "tv" ? "movie" : "tv";
+
+  for (const currentType of [primaryType, secondaryType]) {
+    try {
+      const endpoint = `${TMDB_BASE_URL}/${currentType}/${resolvedId}?api_key=${apiKey}&append_to_response=images&include_image_language=vi,en,null`;
+      const res = await fetch(endpoint, {
+        next: { revalidate: 86400 * 7 },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const result: TmdbMediaResult = {};
+
+        if (data.backdrop_path) {
+          result.backdropUrl = `${TMDB_IMAGE_ORIGINAL}${data.backdrop_path}`;
+        }
+        if (data.poster_path) {
+          result.posterUrl = `${TMDB_IMAGE_ORIGINAL}${data.poster_path}`;
+        }
+
+        const logos: Array<{ file_path: string; iso_639_1?: string }> = data.images?.logos || [];
+        if (logos.length > 0) {
+          const viLogo = logos.find((l) => l.iso_639_1 === "vi");
+          const enLogo = logos.find((l) => l.iso_639_1 === "en");
+          const best = viLogo || enLogo || logos[0];
+          if (best?.file_path) {
+            result.logoUrl = `${TMDB_IMAGE_ORIGINAL}${best.file_path}`;
+          }
+        }
+
+        if (result.backdropUrl || result.posterUrl || result.logoUrl) {
+          if (cacheKey) tmdbMediaCache.set(cacheKey, result);
+          return result;
+        }
+      }
+    } catch (err) {
+      console.error(`[TMDB] Error fetching media for ${resolvedId}:`, err);
+    }
+  }
+
+  return {};
+}

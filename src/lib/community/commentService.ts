@@ -96,36 +96,42 @@ export const commentService = {
         ? sql`(select count(*) from comment_likes where comment_id = ${comments.id}) desc, ${comments.createdAt} desc`
         : desc(comments.createdAt);
 
-    const baseRows = await db.select({ c: comments, u: users })
-      .from(comments)
-      .leftJoin(users, eq(comments.userId, users.id))
-      .where(and(
-        eq(comments.movieId, movieId),
-        isNull(comments.parentId),
-        isNull(comments.deletedAt),
-      ))
-      .orderBy(orderBy)
-      .limit(limit)
-      .offset(offset);
-
-    const totalRows = await db.select({ c: sql<number>`count(*)::int` }).from(comments)
-      .where(and(
-        eq(comments.movieId, movieId),
-        isNull(comments.deletedAt),
-      ));
-    const total = totalRows[0]?.c ?? 0;
-
     const items: CommentView[] = [];
-    for (const r of baseRows) {
-      const view = await rowToView(r.c, r.u, viewerId);
-      const replyRows = await db.select({ c: comments, u: users })
+    let total = 0;
+
+    try {
+      const baseRows = await db.select({ c: comments, u: users })
         .from(comments)
         .leftJoin(users, eq(comments.userId, users.id))
-        .where(and(eq(comments.parentId, r.c.id), isNull(comments.deletedAt)))
-        .orderBy(asc(comments.createdAt));
-      view.replies = [];
-      for (const rr of replyRows) view.replies.push(await rowToView(rr.c, rr.u, viewerId));
-      items.push(view);
+        .where(and(
+          eq(comments.movieId, movieId),
+          isNull(comments.parentId),
+          isNull(comments.deletedAt),
+        ))
+        .orderBy(orderBy)
+        .limit(limit)
+        .offset(offset);
+
+      const totalRows = await db.select({ c: sql<number>`count(*)::int` }).from(comments)
+        .where(and(
+          eq(comments.movieId, movieId),
+          isNull(comments.deletedAt),
+        ));
+      total = totalRows[0]?.c ?? 0;
+
+      for (const r of baseRows) {
+        const view = await rowToView(r.c, r.u, viewerId);
+        const replyRows = await db.select({ c: comments, u: users })
+          .from(comments)
+          .leftJoin(users, eq(comments.userId, users.id))
+          .where(and(eq(comments.parentId, r.c.id), isNull(comments.deletedAt)))
+          .orderBy(asc(comments.createdAt));
+        view.replies = [];
+        for (const rr of replyRows) view.replies.push(await rowToView(rr.c, rr.u, viewerId));
+        items.push(view);
+      }
+    } catch (err) {
+      console.warn("[commentService] DB query failed, falling back to seed comments:", err);
     }
 
     // Blend with authentic seed comments on page 1 to eliminate cold-start empty state
