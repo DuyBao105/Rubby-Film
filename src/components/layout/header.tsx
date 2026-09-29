@@ -25,6 +25,7 @@ import {
   Home,
   Globe,
   Sparkles,
+  Shield,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Genre, Country } from "@/types/movie";
@@ -464,6 +465,16 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                           <History className="w-4 h-4 text-[#FECF59]" />
                           <span>Lịch sử xem</span>
                         </Link>
+                        {user.role === "admin" && (
+                          <Link
+                            href="/admin/moderation"
+                            onClick={() => setUserMenuOpen(false)}
+                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#D1D5DB] hover:text-[#F9FAFB] hover:bg-[#222222] transition-colors"
+                          >
+                            <Shield className="w-4 h-4 text-[#E50000]" />
+                            <span>Kiểm duyệt</span>
+                          </Link>
+                        )}
                       </div>
 
                       <div className="my-1.5 border-t border-[#262626]" />

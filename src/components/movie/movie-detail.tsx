@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -30,6 +31,18 @@ import { getEpisodeSubtitle } from "@/lib/utils/episode";
 import { formatRating } from "@/lib/utils";
 import { FALLBACK_POSTER, FALLBACK_BACKDROP } from "@/lib/utils/image";
 import { MovieGrid } from "./movie-grid";
+import { RatingSkeleton } from "@/components/community/rating/rating-skeleton";
+import { CommentSkeleton } from "@/components/community/comments/comment-skeleton";
+
+// Community island sections — bypass SSR to keep Drizzle/Postgres out of RSC bundle.
+const RatingSection = dynamic(
+  () => import("@/components/community/rating/rating-section").then((m) => m.RatingSection),
+  { ssr: false, loading: () => <RatingSkeleton /> },
+);
+const CommentSection = dynamic(
+  () => import("@/components/community/comments/comment-section").then((m) => m.CommentSection),
+  { ssr: false, loading: () => <CommentSkeleton /> },
+);
 
 interface MovieDetailProps {
   movie: Movie;
@@ -357,6 +370,18 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
               )}
             </div>
 
+            {/* Community: 1..5 star rating (between metadata and synopsis) */}
+            <div className="mb-6">
+              <RatingSection
+                movieId={movie.id}
+                movieSlug={movie.slug}
+                onJumpToComments={() => {
+                  const el = document.getElementById("community-comments");
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }}
+              />
+            </div>
+
             {/* Synopsis */}
             <div className="mb-6">
               <h2 className="text-lg font-extrabold text-[#F9FAFB] tracking-[-0.02em] mb-2.5 flex items-center gap-2">
@@ -531,6 +556,11 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
             </div>
           </div>
         )}
+
+        {/* Community: threaded comments (below cast & crew, above related movies) */}
+        <div className="mt-14" id="community-comments">
+          <CommentSection movieId={movie.id} />
+        </div>
 
         {/* Related Movies Section */}
         {relatedMovies && relatedMovies.length > 0 && (
