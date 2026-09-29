@@ -139,36 +139,32 @@ export function MovieHero({ movies }: MovieHeroProps) {
             >
               {/* Mobile View: Crisp Vertical Key Art */}
               <div className="sm:hidden absolute inset-0">
-                {isNearby && (
-                  <Image
-                    src={m.posterUrl || m.backdropUrl || FALLBACK_POSTER}
-                    alt={m.title || "Phim nổi bật"}
-                    fill
-                    priority={idx === 0}
-                    unoptimized={true}
-                    className="object-cover object-top filter contrast-[1.02] transform-gpu"
-                    sizes="(max-width: 640px) 100vw, 50vw"
-                  />
-                )}
+                <Image
+                  src={m.posterUrl || m.backdropUrl || FALLBACK_POSTER}
+                  alt={m.title || "Phim nổi bật"}
+                  fill
+                  priority={idx <= 2}
+                  unoptimized={true}
+                  className="object-cover object-top filter contrast-[1.02] transform-gpu"
+                  sizes="(max-width: 640px) 100vw, 50vw"
+                />
               </div>
 
               {/* Desktop & Tablet: 16:9 Cinematic Landscape Backdrop (Crystal Clear 4K / Full HD) */}
               <div className="hidden sm:block absolute inset-0">
-                {isNearby && (
-                  <Image
-                    src={m.backdropUrl || FALLBACK_BACKDROP}
-                    alt={m.title || "Phim nổi bật"}
-                    fill
-                    priority={idx === 0}
-                    unoptimized={true}
-                    className="object-cover object-[center_25%] filter contrast-[1.02] transform-gpu"
-                    sizes="100vw"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = FALLBACK_BACKDROP;
-                    }}
-                  />
-                )}
+                <Image
+                  src={m.backdropUrl || FALLBACK_BACKDROP}
+                  alt={m.title || "Phim nổi bật"}
+                  fill
+                  priority={idx <= 2}
+                  unoptimized={true}
+                  className="object-cover object-[center_25%] filter contrast-[1.02] transform-gpu"
+                  sizes="100vw"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = FALLBACK_BACKDROP;
+                  }}
+                />
               </div>
             </div>
 
