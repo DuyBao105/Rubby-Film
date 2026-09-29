@@ -74,13 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const fetchSession = React.useCallback(async () => {
     try {
+      const headers: Record<string, string> = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        Pragma: "no-cache",
+      };
+      try {
+        const token = localStorage.getItem("rubbyfilm_token");
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+      } catch {}
+
       const res = await fetch(`/api/auth/me?_t=${Date.now()}`, {
         cache: "no-store",
         credentials: "include",
-        headers: {
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-          Pragma: "no-cache",
-        },
+        headers,
       });
       if (res.ok) {
         const json = await res.json();
@@ -88,6 +94,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(json.data.user);
           try {
             localStorage.setItem("rubbyfilm_cached_user", JSON.stringify(json.data.user));
+            if (json.data.token) {
+              localStorage.setItem("rubbyfilm_token", json.data.token);
+            }
           } catch {}
         } else {
           // Only clear user if no hint cookie is active
@@ -215,13 +224,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      setUser(json.data);
+      const userData = json.data?.user || json.data;
+      setUser(userData);
       try {
-        localStorage.setItem("rubbyfilm_cached_user", JSON.stringify(json.data));
+        localStorage.setItem("rubbyfilm_cached_user", JSON.stringify(userData));
+        if (json.data?.token) {
+          localStorage.setItem("rubbyfilm_token", json.data.token);
+        }
       } catch {}
       toast.success(
         "Đăng nhập thành công!",
-        `Chào mừng ${json.data?.name || "bạn"} đã quay trở lại RubbyFilm.`
+        `Chào mừng ${json.data?.name || "bạn"} đã quay trở lại RubyFilm.`
       );
       return { success: true };
     } catch (e: any) {
@@ -246,13 +259,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         };
       }
 
-      setUser(json.data);
+      const userData = json.data?.user || json.data;
+      setUser(userData);
       try {
-        localStorage.setItem("rubbyfilm_cached_user", JSON.stringify(json.data));
+        localStorage.setItem("rubbyfilm_cached_user", JSON.stringify(userData));
+        if (json.data?.token) {
+          localStorage.setItem("rubbyfilm_token", json.data.token);
+        }
       } catch {}
       toast.success(
         "Đăng ký thành công!",
-        `Chào mừng ${json.data?.name || "bạn"} gia nhập đại gia đình RubbyFilm.`
+        `Chào mừng ${json.data?.name || "bạn"} gia nhập đại gia đình RubyFilm.`
       );
       return { success: true };
     } catch (e: any) {
@@ -309,12 +326,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
     try {
       localStorage.removeItem("rubbyfilm_cached_user");
+      localStorage.removeItem("rubbyfilm_token");
       document.cookie = "rubbyfilm_user_hint=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     } catch {}
     watchHistoryService.setUser(null);
     myListService.setUser(null);
     searchHistoryService.setUser(null);
-    toast.success("Đăng xuất thành công", "Hẹn gặp lại bạn sớm tại RubbyFilm!");
+    toast.success("Đăng xuất thành công", "Hẹn gặp lại bạn sớm tại RubyFilm!");
     if (typeof window !== "undefined") {
       window.location.href = "/";
     }
@@ -325,8 +343,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser((prev) => {
         const base = prev || {
           id: "usr_active",
-          name: updates.name || "Thành Viên RubbyFilm",
-          email: "user@rubbyfilm.vn",
+          name: updates.name || "Thành Viên RubyFilm",
+          email: "user@rubyfilm.vn",
           role: "user" as const,
           providers: ["credentials" as const],
           createdAt: Date.now(),
@@ -398,10 +416,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function useAuth() {
+const DEFAULT_AUTH_CONTEXT: AuthContextValue = {
+  user: null,
+  isLoading: false,
+  isAuthenticated: false,
+  login: async () => ({ success: false, error: "Not initialized" }),
+  register: async () => ({ success: false, error: "Not initialized" }),
+  unlinkProvider: async () => ({ success: false, error: "Not initialized" }),
+  logout: async () => {},
+  refresh: async () => {},
+  updateProfile: async () => ({ success: false, error: "Not initialized" }),
+  isAuthModalOpen: false,
+  authModalMode: "login",
+  openAuthModal: () => {},
+  closeAuthModal: () => {},
+  setAuthModalMode: () => {},
+  isLogoutConfirmOpen: false,
+  openLogoutConfirm: () => {},
+  closeLogoutConfirm: () => {},
+  confirmLogout: async () => {},
+};
+
+export function useAuth(): AuthContextValue {
   const context = React.useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
-  return context;
+  return context || DEFAULT_AUTH_CONTEXT;
 }

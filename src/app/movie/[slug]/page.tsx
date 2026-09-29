@@ -3,6 +3,8 @@ import { movieProvider } from "@/lib/providers";
 import { MovieDetail } from "@/components/movie/movie-detail";
 import { Metadata } from "next";
 
+export const revalidate = 1800;
+
 interface MovieDetailPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -15,7 +17,7 @@ export async function generateMetadata({
 
   if (!movie) {
     return {
-      title: "Không Tìm Thấy Phim - RubbyFilm",
+      title: "Không Tìm Thấy Phim - RubyFilm",
       robots: { index: false, follow: false },
     };
   }
@@ -25,7 +27,7 @@ export async function generateMetadata({
   const pageDescription =
     movie.description && movie.description.length > 10
       ? movie.description.slice(0, 160)
-      : `Xem phim ${movie.title}${movieYear} (${movie.originalTitle}) thể loại ${movie.genres?.join(", ") || "Điện ảnh"} với chất lượng 4K UHD, âm thanh sống động tại RubbyFilm.`;
+      : `Xem phim ${movie.title}${movieYear} (${movie.originalTitle}) thể loại ${movie.genres?.join(", ") || "Điện ảnh"} với chất lượng 4K UHD, âm thanh sống động tại RubyFilm.`;
 
   const ogImages = [
     movie.backdropUrl && {
@@ -52,7 +54,7 @@ export async function generateMetadata({
       title: pageTitle,
       description: pageDescription,
       url: `/movie/${movie.slug}`,
-      siteName: "RubbyFilm",
+      siteName: "RubyFilm",
       type: movie.type === "series" ? "video.tv_show" : "video.movie",
       locale: "vi_VN",
       images: ogImages,

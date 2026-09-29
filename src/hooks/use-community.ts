@@ -224,6 +224,24 @@ export function useComments(movieId: string, initialSort: "newest" | "oldest" | 
   const applyCreated = React.useCallback(
     (c: CommentListPage["items"][number]) => {
       setItems((prev) => applyEventUpsert(prev as any, "comment_created", c as any) as any);
+      setTotal((prev) => prev + 1);
+    },
+    [],
+  );
+
+  const handleSetSort = React.useCallback(
+    (newSort: "newest" | "oldest" | "top") => {
+      setSort(newSort);
+      setItems((prev) => {
+        const copy = [...prev];
+        if (newSort === "oldest") {
+          return copy.sort((a, b) => a.createdAt - b.createdAt);
+        } else if (newSort === "top") {
+          return copy.sort((a, b) => (b.likeCount - a.likeCount) || (b.createdAt - a.createdAt));
+        } else {
+          return copy.sort((a, b) => b.createdAt - a.createdAt);
+        }
+      });
     },
     [],
   );
@@ -236,7 +254,7 @@ export function useComments(movieId: string, initialSort: "newest" | "oldest" | 
     limit,
     totalPages,
     sort,
-    setSort,
+    setSort: handleSetSort,
     isLoading,
     error,
     refresh,

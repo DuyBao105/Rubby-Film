@@ -124,7 +124,7 @@ p {
 }
 
 .animate-hero-progress {
-  animation: heroProgress 3.5s linear forwards;
+  animation: heroProgress 5s linear forwards;
 }
 
 .animate-ken-burns {

@@ -9,15 +9,34 @@ export interface IMyListService {
   clear(): void;
   subscribe(callback: (list: Movie[]) => void): () => void;
   setUser(userId: string | null): void;
+  syncWithServer(): Promise<void>;
 }
 
 const PRIMARY_KEY = "rubbyfilm_my_list";
 const LEGACY_KEY = "bfilm_my_list";
 
+function getAuthHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    "Cache-Control": "no-cache",
+  };
+  if (typeof window !== "undefined") {
+    try {
+      const token = localStorage.getItem("rubbyfilm_token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch {}
+  }
+  return headers;
+}
+
 class MyListService implements IMyListService {
   private cache: Movie[] | null = null;
   private listeners: Set<(list: Movie[]) => void> = new Set();
   private currentUserId: string | null = null;
+  private lastAutoSyncTime = 0;
+  private syncPromise: Promise<void> | null = null;
+  private lastSyncTime = 0;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -34,16 +53,33 @@ class MyListService implements IMyListService {
           }
         }
       } catch {}
+
+      // Cross-device sync: auto re-sync when switching back to tab/browser window
+      const triggerAutoSync = () => {
+        const now = Date.now();
+        if (now - this.lastAutoSyncTime > 5000 && this.currentUserId) {
+          this.lastAutoSyncTime = now;
+          this.syncWithServer(true);
+        }
+      };
+
+      window.addEventListener("focus", triggerAutoSync);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          triggerAutoSync();
+        }
+      });
     }
   }
 
   public setUser(userId: string | null): void {
     const normalized = userId ? String(userId).trim() : null;
-    if (this.currentUserId === normalized) return;
+    const changed = this.currentUserId !== normalized;
     this.currentUserId = normalized;
-    this.cache = null;
-    this.notify();
-
+    if (changed) {
+      this.cache = null;
+      this.notify();
+    }
     if (normalized) {
       this.syncWithServer();
     }
@@ -113,64 +149,76 @@ class MyListService implements IMyListService {
 
   // --- Cloud Sync ---
 
-  private async syncWithServer(): Promise<void> {
+  public async syncWithServer(force: boolean = false): Promise<void> {
     if (typeof window === "undefined" || !this.currentUserId) return;
 
-    try {
-      const res = await fetch("/api/user/favorites", {
-        method: "GET",
-        headers: { "Cache-Control": "no-cache" },
-      });
+    if (this.syncPromise) return this.syncPromise;
 
-      if (!res.ok) return;
-
-      const body = (await res.json()) as {
-        success?: boolean;
-        data?: { favorites?: Movie[] };
-      };
-
-      if (!body.success || !Array.isArray(body.data?.favorites)) return;
-
-      const serverItems = body.data.favorites;
-      const localItems = this.load();
-
-      // Merge server and local
-      const map = new Map<string, Movie>();
-      for (const m of serverItems) {
-        const id = String(m.id || m.slug || "").trim();
-        if (id) map.set(id, m);
-      }
-
-      let localHasNew = false;
-      for (const m of localItems) {
-        const id = String(m.id || m.slug || "").trim();
-        if (id && !map.has(id)) {
-          map.set(id, m);
-          localHasNew = true;
-        }
-      }
-
-      const merged = Array.from(map.values()).slice(0, 100);
-      this.cache = merged;
-
-      if (this.currentUserId) {
-        const key = this.getStorageKey();
-        if (key) {
-          localStorage.setItem(key, JSON.stringify(merged));
-        }
-      }
-      this.notify();
-
-      if (localHasNew || (serverItems.length === 0 && merged.length > 0)) {
-        fetch("/api/user/favorites", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: merged }),
-        }).catch(() => {});
-      }
-    } catch (e) {
-      console.warn("[MyListService] syncWithServer error:", e);
+    const now = Date.now();
+    if (!force && now - this.lastSyncTime < 4000) {
+      return;
     }
+    this.lastSyncTime = now;
+
+    this.syncPromise = (async () => {
+      try {
+        const res = await fetch("/api/user/favorites", {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
+
+        if (!res.ok) return;
+
+        const body = (await res.json()) as {
+          success?: boolean;
+          data?: { favorites?: Movie[] };
+        };
+
+        if (!body.success || !Array.isArray(body.data?.favorites)) return;
+
+        const serverItems = body.data.favorites;
+        const localItems = this.load();
+
+        let resolved: Movie[];
+        if (serverItems.length === 0 && localItems.length > 0) {
+          resolved = localItems;
+          fetch("/api/user/favorites", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            credentials: "include",
+            body: JSON.stringify({ items: localItems }),
+          }).catch(() => {});
+        } else {
+          resolved = serverItems;
+        }
+
+        const currentCached = this.cache || [];
+        const changed =
+          currentCached.length !== resolved.length ||
+          currentCached.some((m, idx) => m.id !== resolved[idx]?.id);
+
+        this.cache = resolved;
+        if (this.currentUserId) {
+          const key = this.getStorageKey();
+          if (key) {
+            localStorage.setItem(key, JSON.stringify(resolved));
+          }
+        }
+        if (changed) {
+          this.notify();
+        }
+      } catch (e) {
+        console.warn("[MyListService] syncWithServer error:", e);
+      } finally {
+        this.syncPromise = null;
+      }
+    })();
+
+    return this.syncPromise;
   }
 
   // --- Public Methods ---
@@ -198,7 +246,11 @@ class MyListService implements IMyListService {
     if (this.currentUserId && typeof window !== "undefined") {
       fetch("/api/user/favorites", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          ...getAuthHeaders(),
+        },
+        credentials: "include",
         body: JSON.stringify({ movie }),
       }).catch(() => {});
     }
@@ -219,6 +271,8 @@ class MyListService implements IMyListService {
     if (this.currentUserId && typeof window !== "undefined") {
       fetch(`/api/user/favorites?id=${encodeURIComponent(target)}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
       }).catch(() => {});
     }
   }
@@ -244,6 +298,8 @@ class MyListService implements IMyListService {
 
       fetch("/api/user/favorites", {
         method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
       }).catch(() => {});
     }
   }

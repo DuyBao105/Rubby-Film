@@ -45,6 +45,7 @@ export function QuickDiscoveryBar() {
             <Link
               key={pill.label}
               href={pill.href}
+              prefetch={true}
               className="flex-shrink-0 flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-xs font-semibold text-zinc-300 hover:text-white bg-white/[0.03] hover:bg-white/[0.08] border border-white/[0.06] hover:border-brand/40 transition-all duration-200 group whitespace-nowrap"
             >
               <Icon className="w-3.5 h-3.5 text-zinc-400 group-hover:text-brand transition-colors" />

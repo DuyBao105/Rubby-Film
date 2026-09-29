@@ -6,11 +6,13 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Phim Mới Cập Nhật - Xem Phim Mới Nhất",
-  description: "Cập nhật liên tục các tập phim và tác phẩm điện ảnh mới ra mắt với bản đẹp Full HD, 4K Vietsub tại RubbyFilm.",
+  description: "Cập nhật liên tục các tập phim và tác phẩm điện ảnh mới ra mắt với bản đẹp Full HD, 4K Vietsub tại RubyFilm.",
   alternates: {
     canonical: "/latest",
   },
 };
+
+export const revalidate = 180;
 
 interface LatestPageProps {
   searchParams: Promise<{

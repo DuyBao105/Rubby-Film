@@ -4,6 +4,7 @@ import { comments, users, commentLikes, commentReports } from "@db/schema";
 import { genId } from "./ids";
 import { validateCommentContent } from "./validators";
 import { communityRepository } from "./communityRepository";
+import { getSeedComments } from "./seedComments";
 
 export type AuthorRole = "user" | "vip" | "admin";
 
@@ -110,7 +111,6 @@ export const commentService = {
     const totalRows = await db.select({ c: sql<number>`count(*)::int` }).from(comments)
       .where(and(
         eq(comments.movieId, movieId),
-        isNull(comments.parentId),
         isNull(comments.deletedAt),
       ));
     const total = totalRows[0]?.c ?? 0;
@@ -127,12 +127,33 @@ export const commentService = {
       for (const rr of replyRows) view.replies.push(await rowToView(rr.c, rr.u, viewerId));
       items.push(view);
     }
+
+    // Blend with authentic seed comments on page 1 to eliminate cold-start empty state
+    const seedItems = page === 1 ? getSeedComments(movieId) : [];
+    const allItems = [...items, ...seedItems];
+
+    if (sort === "oldest") {
+      allItems.sort((a, b) => a.createdAt - b.createdAt);
+    } else if (sort === "top") {
+      allItems.sort((a, b) => (b.likeCount - a.likeCount) || (b.createdAt - a.createdAt));
+    } else {
+      // "newest"
+      allItems.sort((a, b) => b.createdAt - a.createdAt);
+    }
+
+    // Calculate total seed comments including their replies
+    let seedCount = 0;
+    for (const s of seedItems) {
+      seedCount += 1 + (s.replies?.length || 0);
+    }
+    const combinedTotal = total + seedCount;
+
     return {
-      items,
-      total,
+      items: allItems,
+      total: combinedTotal,
       page,
       limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
+      totalPages: Math.max(1, Math.ceil(combinedTotal / limit)),
     };
   },
 

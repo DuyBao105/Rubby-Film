@@ -23,13 +23,13 @@ export async function generateMetadata({
 
   if (!country) {
     return {
-      title: "Quốc Gia Phim - RubbyFilm",
+      title: "Quốc Gia Phim - RubyFilm",
       robots: { index: false, follow: false },
     };
   }
 
   const pageTitle = `Phim ${country.name} Hay Nhất Tuyển Chọn - Vietsub 4K`;
-  const pageDescription = `Danh sách phim ${country.name} chọn lọc được yêu thích nhất với chất lượng cao 4K Ultra HD trên RubbyFilm.`;
+  const pageDescription = `Danh sách phim ${country.name} chọn lọc được yêu thích nhất với chất lượng cao 4K Ultra HD trên RubyFilm.`;
 
   return {
     title: pageTitle,
@@ -41,7 +41,7 @@ export async function generateMetadata({
       title: pageTitle,
       description: pageDescription,
       url: `/country/${country.slug}`,
-      siteName: "RubbyFilm",
+      siteName: "RubyFilm",
       locale: "vi_VN",
       type: "website",
     },

@@ -6,11 +6,13 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Phim Thịnh Hành - Top Phim Xem Nhiều Nhất",
-  description: "Khám phá bảng xếp hạng các bộ phim đang được xem nhiều nhất và nhận được đánh giá cao nhất trên RubbyFilm.",
+  description: "Khám phá bảng xếp hạng các bộ phim đang được xem nhiều nhất và nhận được đánh giá cao nhất trên RubyFilm.",
   alternates: {
     canonical: "/trending",
   },
 };
+
+export const revalidate = 300;
 
 import { MovieFilterPanel } from "@/components/movie/movie-filter-panel";
 
@@ -82,6 +84,7 @@ export default async function TrendingPage({ searchParams }: TrendingPageProps) 
       {/* Interactive Movie Filter Panel matching user screenshot */}
       <MovieFilterPanel
         basePath="/trending"
+        defaultSort="views"
         currentType={currentType}
         currentGenre={currentGenre}
         currentCountry={currentCountry}

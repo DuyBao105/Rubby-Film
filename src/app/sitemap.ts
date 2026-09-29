@@ -2,7 +2,7 @@ import { MetadataRoute } from "next";
 import { movieProvider } from "@/lib/providers";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://rubbyfilm.vn";
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://rubyfilm.vn";
 
   const staticRoutes: MetadataRoute.Sitemap = [
     {

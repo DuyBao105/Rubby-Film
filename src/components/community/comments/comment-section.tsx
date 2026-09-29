@@ -63,7 +63,14 @@ export function CommentSection({ movieId, initialSort = "newest" }: CommentSecti
   );
 
   const submitComment = React.useCallback(
-    async (input: { movieId: string; parentId?: string | null; content: string; isSpoiler: boolean }) => {
+    async (input: {
+      movieId: string;
+      parentId?: string | null;
+      content: string;
+      isSpoiler: boolean;
+      authorName?: string;
+      isAnonymous?: boolean;
+    }) => {
       const res = await fetch("/api/community/comments", {
         method: "POST",
         credentials: "include",
@@ -100,6 +107,15 @@ export function CommentSection({ movieId, initialSort = "newest" }: CommentSecti
     setSort(s);
   };
 
+  // Count exact total visible comments (top-level + all replies) or API total
+  const displayTotal = React.useMemo(() => {
+    const countInItems = (items as any[]).reduce(
+      (acc, it) => acc + 1 + (it.replies?.length || 0),
+      0
+    );
+    return Math.max(total, countInItems);
+  }, [total, items]);
+
   return (
     <section
       aria-label="Bình luận"
@@ -109,29 +125,17 @@ export function CommentSection({ movieId, initialSort = "newest" }: CommentSecti
         <h2 className="text-lg font-semibold text-cinema-100 flex items-center gap-2">
           <MessageSquareText className="w-4 h-4 text-cinema-500" />
           <span>Bình luận</span>
-          <span className="text-xs text-cinema-400 font-normal">({total})</span>
+          <span className="text-xs text-cinema-400 font-normal">({displayTotal})</span>
         </h2>
         <CommentSortControl value={sort} onChange={onSortChange} />
       </header>
 
-      {user ? (
-        <div className="mb-4">
-          <CommentComposer submit={submitComment} movieId={movieId} />
-        </div>
-      ) : (
-        <div className="mb-4 rounded-lg border border-cinema-800 bg-cinema-950/40 p-4 text-sm text-cinema-300">
-          <button
-            type="button"
-            onClick={() => openAuthModal("login")}
-            className="text-brand font-semibold hover:underline"
-          >
-            Đăng nhập
-          </button>{" "}
-          để bình luận, thích và báo cáo.
-        </div>
-      )}
+      {/* Main Comment Composer (Open for both logged-in users and anonymous guests) */}
+      <div className="mb-4">
+        <CommentComposer submit={submitComment} movieId={movieId} />
+      </div>
 
-      {replyTo && user && (
+      {replyTo && (
         <div className="mb-3">
           <CommentComposer
             movieId={movieId}

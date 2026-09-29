@@ -41,11 +41,15 @@ interface QualityOption {
 
 interface VideoPlayerProps {
   source: VideoSource;
+  sources?: VideoSource[];
+  activeSourceIndex?: number;
+  onSelectSourceIndex?: (index: number) => void;
   title: string;
   subtitle?: string;
   posterUrl?: string;
   onTimeUpdate?: (currentTime: number, duration: number) => void;
   initialTime?: number;
+  isSeries?: boolean;
   onPause?: () => void;
   onEnded?: () => void;
   hasNextEpisode?: boolean;
@@ -77,11 +81,15 @@ interface ScreenOrientationWithLock extends ScreenOrientation {
 
 export function VideoPlayer({
   source,
+  sources,
+  activeSourceIndex = 0,
+  onSelectSourceIndex,
   title,
   subtitle,
   posterUrl,
   onTimeUpdate,
   initialTime = 0,
+  isSeries = false,
   onPause,
   onEnded,
   hasNextEpisode = false,
@@ -109,7 +117,7 @@ export function VideoPlayer({
   const [showControls, setShowControls] = React.useState(true);
   const [playbackRate, setPlaybackRate] = React.useState(1);
   const [showSettings, setShowSettings] = React.useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = React.useState<"main" | "speed" | "quality" | "subtitle" | "fit">("main");
+  const [activeSettingsTab, setActiveSettingsTab] = React.useState<"main" | "speed" | "quality" | "subtitle" | "audio">("main");
   const [videoFit, setVideoFit] = React.useState<"contain" | "cover" | "fill">("contain");
   const [isLoading, setIsLoading] = React.useState(false);
   const [hasError, setHasError] = React.useState(false);
@@ -278,7 +286,12 @@ export function VideoPlayer({
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
-          backBufferLength: 90,
+          backBufferLength: 60,
+          maxBufferLength: 30,
+          maxMaxBufferLength: 60,
+          maxBufferSize: 60 * 1000 * 1000,
+          startLevel: -1,
+          capLevelToPlayerSize: true,
         });
         hlsRef.current = hls;
 
@@ -833,6 +846,16 @@ export function VideoPlayer({
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
+  const activeSourceObj = (sources && activeSourceIndex !== undefined && sources[activeSourceIndex]) || source;
+  const getSourceAudioType = (sName: string) => {
+    const lower = (sName || "").toLowerCase();
+    if (lower.includes("thuyết minh")) return "Thuyết Minh";
+    if (lower.includes("lồng tiếng")) return "Lồng Tiếng";
+    if (lower.includes("vietsub")) return "Vietsub";
+    return "Vietsub";
+  };
+  const currentAudioLabel = getSourceAudioType(activeSourceObj?.serverName || "");
+
   // IFRAME EMBED PLAYER
   if (source.type === "embed") {
     return (
@@ -853,23 +876,26 @@ export function VideoPlayer({
           className="w-full h-full border-0"
         />
 
-        <div className="absolute top-3 left-3 flex items-center gap-2 pointer-events-none opacity-80 group-hover:opacity-100 transition-opacity">
-          <span className="text-[11px] font-semibold bg-cinema-950/80 text-brand border border-brand/30 px-2.5 py-1 rounded-md backdrop-blur-md">
-            {source.serverName || "VIP Embed"}
-          </span>
-        </div>
-
         <div className="absolute top-3 right-3 flex items-center gap-2 z-20">
-          {/* Mobile Landscape Rotate Button for Embed */}
-          <button
-            type="button"
-            onClick={toggleRotateLandscape}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-cinema-950/80 hover:bg-[#E50000] border border-cinema-700 text-xs font-semibold text-white shadow-lg backdrop-blur-md transition-all active:scale-95"
-            title="Xoay ngang màn hình"
-          >
-            <Smartphone className="w-3.5 h-3.5 rotate-90" />
-            <span className="hidden sm:inline">Xoay ngang</span>
-          </button>
+          {/* Cinema mode for embed */}
+          {onToggleCinemaMode && (
+            <button
+              type="button"
+              onClick={onToggleCinemaMode}
+              className={cn(
+                "hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-xs font-semibold shadow-lg backdrop-blur-md transition-all active:scale-95 cursor-pointer",
+                isCinemaMode
+                  ? "bg-brand text-white border-brand shadow-brand/20"
+                  : "bg-cinema-950/80 hover:bg-[#E50000] border-cinema-700 text-white"
+              )}
+              title={isCinemaMode ? "Thoát chế độ rạp phim (Phím C)" : "Chế độ rạp chiếu phim (Phím C)"}
+            >
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-current" aria-hidden="true">
+                <path d="M19 4H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 12H5V6h14v10zm-9.3-6.7L7.4 11l2.3 1.7-.8 1.1L5.5 11l3.4-2.8.8 1.1zm4.6 0l.8-1.1L18.5 11l-3.4 2.8-.8-1.1 2.3-1.7-2.3-1.7zM4 19h16v1.5H4V19z" />
+              </svg>
+              <span>{isCinemaMode ? "Thu nhỏ" : "Rạp phim"}</span>
+            </button>
+          )}
 
           {onSwitchServer && (
             <Button
@@ -1089,21 +1115,6 @@ export function VideoPlayer({
               <p className="text-xs text-cinema-300 line-clamp-1">{subtitle}</p>
             )}
           </div>
-          <div className="flex items-center gap-2">
-            {/* Quick Rotate to Landscape Button */}
-            <button
-              type="button"
-              onClick={toggleRotateLandscape}
-              className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-black/60 hover:bg-[#E50000] border border-white/20 hover:border-[#E50000] text-xs font-semibold text-white backdrop-blur-md shadow-lg transition-all active:scale-95"
-              title="Xoay ngang màn hình (Landscape)"
-            >
-              <Smartphone className="w-3.5 h-3.5 rotate-90" />
-              <span className="hidden sm:inline">Xoay ngang</span>
-            </button>
-            <span className="text-[11px] font-semibold bg-brand/20 text-brand border border-brand/30 px-2.5 py-0.5 rounded backdrop-blur-md">
-              {source.serverName || source.label}
-            </span>
-          </div>
         </div>
 
         {/* Quality Toast Notification */}
@@ -1203,8 +1214,22 @@ export function VideoPlayer({
                 <RotateCw className="w-4 h-4" />
               </button>
 
-              {/* Next Episode */}
-              {onNextEpisode && (
+              {/* Prev Episode (Series only) */}
+              {isSeries && onPrevEpisode && (
+                <button
+                  type="button"
+                  onClick={onPrevEpisode}
+                  disabled={!hasPrevEpisode}
+                  aria-label="Tập trước đó"
+                  className="text-cinema-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-2 rounded-lg hover:bg-white/10"
+                  title="Tập trước đó"
+                >
+                  <SkipBack className="w-4 h-4 fill-current" />
+                </button>
+              )}
+
+              {/* Next Episode (Series only) */}
+              {isSeries && onNextEpisode && (
                 <button
                   type="button"
                   onClick={onNextEpisode}
@@ -1245,10 +1270,10 @@ export function VideoPlayer({
               </div>
 
               {/* Realtime Time Display */}
-              <div className="text-xs text-cinema-300 font-mono ml-2 hidden xs:flex items-center">
-                <span>{formatTime(currentTime)}</span>
-                <span className="mx-1.5 text-cinema-500">/</span>
-                <span>{formatTime(duration)}</span>
+              <div className="text-xs text-cinema-200 font-mono ml-1.5 sm:ml-3 flex items-center select-none whitespace-nowrap">
+                <span className="font-semibold text-white">{formatTime(currentTime)}</span>
+                <span className="mx-1 text-cinema-500">/</span>
+                <span className="text-cinema-400">{formatTime(duration)}</span>
               </div>
             </div>
 
@@ -1279,7 +1304,7 @@ export function VideoPlayer({
                   className={`text-cinema-200 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 ${
                     showSettings ? "text-brand bg-white/10" : ""
                   }`}
-                  title="Cài đặt (Tốc độ, Chất lượng, Tỷ lệ)"
+                  title="Cài đặt (Tốc độ, Chất lượng)"
                 >
                   <Settings className="w-5 h-5" />
                 </button>
@@ -1306,21 +1331,6 @@ export function VideoPlayer({
                           <span className="text-cinema-400 font-semibold">{playbackRate}x ›</span>
                         </button>
 
-                        {/* Screen Fit Entry */}
-                        <button
-                          type="button"
-                          onClick={() => setActiveSettingsTab("fit")}
-                          className="w-full flex items-center justify-between p-2 rounded-xl text-cinema-200 hover:bg-cinema-800 hover:text-white transition-colors"
-                        >
-                          <span className="flex items-center gap-2">
-                            <Scan className="w-3.5 h-3.5 text-brand" />
-                            <span>Căn chỉnh màn hình</span>
-                          </span>
-                          <span className="text-cinema-400 font-semibold">
-                            {videoFit === "contain" ? "Khớp chuẩn" : videoFit === "cover" ? "Phóng to" : "Kéo giãn"} ›
-                          </span>
-                        </button>
-
                         {/* Quality Entry - Always available */}
                         <button
                           type="button"
@@ -1335,6 +1345,21 @@ export function VideoPlayer({
                             {currentQualityIndex === -1
                               ? "Tự động"
                               : qualities.find((q) => q.index === currentQualityIndex)?.label.split(" ")[0] || "1080p"} ›
+                          </span>
+                        </button>
+
+                        {/* Audio / Translation Entry */}
+                        <button
+                          type="button"
+                          onClick={() => setActiveSettingsTab("audio")}
+                          className="w-full flex items-center justify-between p-2 rounded-xl text-cinema-200 hover:bg-cinema-800 hover:text-white transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <Volume2 className="w-3.5 h-3.5 text-brand" />
+                            <span>Bản dịch / Âm thanh</span>
+                          </span>
+                          <span className="text-cinema-400 font-semibold text-xs truncate max-w-[110px]">
+                            {currentAudioLabel} ›
                           </span>
                         </button>
 
@@ -1413,6 +1438,72 @@ export function VideoPlayer({
                       </div>
                     )}
 
+                    {/* Audio / Translation Submenu */}
+                    {activeSettingsTab === "audio" && (
+                      <div className="space-y-1.5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveSettingsTab("main")}
+                          className="w-full text-left px-2 py-1 text-[11px] font-bold text-brand hover:underline flex items-center gap-1 mb-1 border-b border-cinema-800 pb-1.5"
+                        >
+                          ‹ Quay lại
+                        </button>
+
+                        <div className="px-2 py-0.5 text-[10px] font-bold text-cinema-400 uppercase tracking-wider">
+                          Nguồn phát / Bản dịch
+                        </div>
+
+                        {sources && sources.length > 1 ? (
+                          <div className="space-y-1">
+                            {sources.map((src, idx) => {
+                              const isCurrent = (activeSourceIndex !== undefined ? activeSourceIndex : 0) === idx;
+                              const aType = getSourceAudioType(src.serverName);
+                              return (
+                                <button
+                                  key={`${src.serverName}-${idx}`}
+                                  type="button"
+                                  onClick={() => {
+                                    if (onSelectSourceIndex) onSelectSourceIndex(idx);
+                                  }}
+                                  className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors text-xs ${
+                                    isCurrent
+                                      ? "bg-brand text-cinema-950 font-bold"
+                                      : "text-cinema-200 hover:bg-cinema-800"
+                                  }`}
+                                >
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <span className="truncate">{src.serverName}</span>
+                                    <span
+                                      className={`text-[9px] px-1 py-0.5 rounded font-bold uppercase ${
+                                        isCurrent ? "bg-black/20 text-cinema-950" : "bg-cinema-700 text-brand"
+                                      }`}
+                                    >
+                                      {aType}
+                                    </span>
+                                  </div>
+                                  {isCurrent && <Check className="w-3.5 h-3.5 stroke-[3] shrink-0" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="p-2.5 rounded-xl bg-cinema-800/80 border border-cinema-700/60 text-xs space-y-1">
+                            <div className="flex items-center gap-1.5 text-white font-semibold">
+                              <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                              <span>Bản Vietsub chuẩn Full HD</span>
+                            </div>
+                            <p className="text-[11px] text-cinema-400 leading-relaxed">
+                              Bản phim mặc định có phụ đề tiếng Việt chính thức.
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="p-2 rounded-lg bg-cinema-900/90 border border-cinema-800 text-[10.5px] text-cinema-400 leading-snug">
+                          <span className="text-zinc-300 font-semibold">Lưu ý:</span> Phụ đề Vietsub được tích hợp sẵn trực tiếp trong video (Hardsub) để đảm bảo độ nét và tốc độ cao, không thể tắt riêng hoặc đổi song ngữ.
+                        </div>
+                      </div>
+                    )}
+
                     {/* Subtitle Submenu */}
                     {activeSettingsTab === "subtitle" && (
                       <div className="space-y-1">
@@ -1452,51 +1543,42 @@ export function VideoPlayer({
                         ))}
                       </div>
                     )}
-
-                    {/* Video Fit Submenu */}
-                    {activeSettingsTab === "fit" && (
-                      <div className="space-y-1">
-                        <button
-                          type="button"
-                          onClick={() => setActiveSettingsTab("main")}
-                          className="w-full text-left px-2 py-1 text-[11px] font-bold text-brand hover:underline flex items-center gap-1 mb-1 border-b border-cinema-800 pb-1.5"
-                        >
-                          ‹ Quay lại
-                        </button>
-                        {[
-                          { id: "contain", label: "Khớp chuẩn 16:9 (Mặc định)" },
-                          { id: "cover", label: "Phóng to / Cắt viền đen (Lấp đầy)" },
-                          { id: "fill", label: "Kéo giãn toàn khung hình" },
-                        ].map((fitOption) => (
-                          <button
-                            key={fitOption.id}
-                            type="button"
-                            onClick={() => {
-                              setVideoFit(fitOption.id as any);
-                              setShowSettings(false);
-                            }}
-                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg transition-colors ${
-                              videoFit === fitOption.id
-                                ? "bg-brand text-cinema-950 font-bold"
-                                : "text-cinema-200 hover:bg-cinema-800"
-                            }`}
-                          >
-                            <span>{fitOption.label}</span>
-                            {videoFit === fitOption.id && <Check className="w-3.5 h-3.5 stroke-[3]" />}
-                          </button>
-                        ))}
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
 
-              {/* Fullscreen & Rotate Button - Placed right next to Settings Gear */}
+              {/* Theater Mode (Chế độ rạp chiếu phim) */}
+              {onToggleCinemaMode && (
+                <button
+                  type="button"
+                  onClick={onToggleCinemaMode}
+                  aria-label={isCinemaMode ? "Thoát chế độ rạp chiếu phim (Phím C)" : "Chế độ rạp chiếu phim (Phím C)"}
+                  className={cn(
+                    "transition-colors p-2 rounded-lg hover:bg-white/10 shrink-0 hidden sm:flex items-center justify-center cursor-pointer",
+                    isCinemaMode ? "text-brand" : "text-cinema-200 hover:text-white"
+                  )}
+                  title={isCinemaMode ? "Thoát chế độ rạp chiếu phim (Phím C)" : "Chế độ rạp chiếu phim (Phím C)"}
+                >
+                  {isCinemaMode ? (
+                    /* Default View / Exit Cinema Mode Icon */
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
+                      <path d="M19 6H5a2 2 0 00-2 2v8a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2zm0 10H5V8h14v8zM7 10h10v4H7v-4z" />
+                    </svg>
+                  ) : (
+                    /* YouTube Theater Mode Icon */
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-current" aria-hidden="true">
+                      <path d="M19 4H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V6a2 2 0 00-2-2zm0 12H5V6h14v10zm-9.3-6.7L7.4 11l2.3 1.7-.8 1.1L5.5 11l3.4-2.8.8 1.1zm4.6 0l.8-1.1L18.5 11l-3.4 2.8-.8-1.1 2.3-1.7-2.3-1.7zM4 19h16v1.5H4V19z" />
+                    </svg>
+                  )}
+                </button>
+              )}
+
+              {/* Fullscreen & Rotate Button - Placed right next to Theater Mode */}
               <button
                 type="button"
                 onClick={toggleFullscreen}
                 aria-label={isFullscreen || isCssLandscape ? "Thoát toàn màn hình" : "Toàn màn hình & Tự động xoay ngang"}
-                className="text-cinema-200 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 shrink-0"
+                className="text-cinema-200 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
                 title="Toàn màn hình & Tự động xoay ngang (Phím F)"
               >
                 {isFullscreen || isCssLandscape ? (

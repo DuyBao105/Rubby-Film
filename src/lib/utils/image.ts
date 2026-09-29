@@ -16,27 +16,12 @@ export function getMovieImageUrl(
 
   const trimmed = pathOrUrl.trim();
 
-  // If already proxied
-  if (trimmed.startsWith("/api/images")) {
-    return trimmed;
-  }
-
-  // If it's a full URL containing phimimg.com or phimapi.com
-  if (trimmed.includes("phimimg.com") || trimmed.includes("phimapi.com")) {
-    try {
-      const parsed = new URL(trimmed);
-      return `/api/images?p=${encodeURIComponent(parsed.pathname)}`;
-    } catch {
-      return `/api/images?p=${encodeURIComponent(trimmed)}`;
-    }
-  }
-
-  // Already a full URL from other hosts (e.g. tmdb.org, unsplash)
+  // Already a full URL
   if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) {
     return trimmed;
   }
 
+  const baseCdn = (customCdn || DEFAULT_CDN_DOMAIN).replace(/\/+$/, "");
   const cleanPath = trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
-  // Route through internal proxy using clean path (no domain exposed!)
-  return `/api/images?p=${encodeURIComponent(cleanPath)}`;
+  return `${baseCdn}${cleanPath}`;
 }

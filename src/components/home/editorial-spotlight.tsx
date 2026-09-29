@@ -111,6 +111,7 @@ export function EditorialSpotlight({ movie, movies }: EditorialSpotlightProps) {
               src={currentMovie.backdropUrl || currentMovie.posterUrl || FALLBACK_BACKDROP}
               alt={primaryTitle}
               fill
+              unoptimized={true}
               className="object-cover object-right filter contrast-[1.08] saturate-[1.06] brightness-[1.02] transform-gpu"
               sizes="1280px"
               style={{
@@ -137,6 +138,7 @@ export function EditorialSpotlight({ movie, movies }: EditorialSpotlightProps) {
                 src={currentMovie.backdropUrl || currentMovie.posterUrl || FALLBACK_BACKDROP}
                 alt={primaryTitle}
                 fill
+                unoptimized={true}
                 className="object-cover object-center group-hover/mob:scale-105 transition-transform duration-500 filter contrast-[1.08] saturate-[1.06] brightness-[1.02] transform-gpu"
                 sizes="(max-width: 1024px) 100vw, 800px"
                 style={{

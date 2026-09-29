@@ -14,7 +14,7 @@ const PREFS_KEY = "rubbyfilm_user_preferences";
 const DEFAULT_USER: User = {
   id: "usr_guest_vip",
   name: "Thành Viên VIP Cinema",
-  email: "cinema_vip_user@rubbyfilm.io",
+  email: "cinema_vip_user@rubyfilm.io",
   avatarUrl: "",
   isVip: true,
   vipExpiresAt: null,

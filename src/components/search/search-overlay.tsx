@@ -4,27 +4,104 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, X, Clock, ArrowRight, Star, Film, Loader2 } from "lucide-react";
+import {
+  Search,
+  X,
+  Clock,
+  ArrowRight,
+  Star,
+  Film,
+  Loader2,
+  CornerDownLeft,
+  Play,
+  Sparkles,
+} from "lucide-react";
 import { Movie } from "@/types/movie";
 import { useDebounce } from "@/lib/hooks/use-debounce";
 import { useSearchHistory } from "@/lib/hooks/use-search-history";
 import { Badge } from "@/components/ui/badge";
-import { formatRating } from "@/lib/utils";
+import { cn, formatRating } from "@/lib/utils";
+import { FALLBACK_POSTER } from "@/lib/utils/image";
 
 interface SearchOverlayProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
+// Client-side in-memory cache for 0ms instant feedback
+const searchClientCache = new Map<
+  string,
+  {
+    results: Movie[];
+    person: { name: string; roleTitle: string; role: string } | null;
+  }
+>();
+
+// Global client pool of indexed movies for instant as-you-type suggestion
+const instantMoviePool = new Map<string, Movie>();
+
 export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   const router = useRouter();
   const [query, setQuery] = React.useState("");
   const [results, setResults] = React.useState<Movie[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [selectedIndex, setSelectedIndex] = React.useState<number>(-1);
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const listRef = React.useRef<HTMLDivElement>(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   const { recentSearches, addRecentSearch, removeRecentSearch, clearRecentSearches } =
     useSearchHistory();
 
-  const debouncedQuery = useDebounce(query, 250);
+  // Prefetch popular movies on idle to seed the instant suggestion pool
+  React.useEffect(() => {
+    if (instantMoviePool.size === 0) {
+      fetch("/api/movies/latest?limit=24")
+        .then((res) => res.json())
+        .then((data) => {
+          const items: Movie[] = Array.isArray(data.data) ? data.data : [];
+          items.forEach((m) => {
+            if (m.id || m.slug) instantMoviePool.set(m.id || m.slug, m);
+          });
+        })
+        .catch(() => {});
+    }
+  }, []);
+
+  // Ultra-responsive 60ms debounce for real-time instant suggestion
+  const debouncedQuery = useDebounce(query, 60);
+
+  const handleQueryChange = (val: string) => {
+    setQuery(val);
+    const clean = val.trim().toLowerCase();
+    if (!clean) {
+      setResults([]);
+      setDetectedPerson(null);
+      setIsLoading(false);
+      setSelectedIndex(-1);
+    } else if (searchClientCache.has(clean)) {
+      // Instant 0ms hit from client cache
+      const cached = searchClientCache.get(clean)!;
+      setResults(cached.results);
+      setDetectedPerson(cached.person);
+      setIsLoading(false);
+    } else {
+      // Instant match from local movie pool while awaiting network
+      const poolMatches = Array.from(instantMoviePool.values())
+        .filter((m) => {
+          const t = (m.title || "").toLowerCase();
+          const orig = (m.originalTitle || "").toLowerCase();
+          const slug = (m.slug || "").toLowerCase();
+          return t.includes(clean) || orig.includes(clean) || slug.includes(clean);
+        })
+        .slice(0, 12);
+
+      if (poolMatches.length > 0) {
+        setResults(poolMatches);
+        setIsLoading(true);
+      }
+    }
+  };
 
   // Fetch suggestions
   const [detectedPerson, setDetectedPerson] = React.useState<{
@@ -34,53 +111,94 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
   } | null>(null);
 
   React.useEffect(() => {
-    if (!debouncedQuery.trim()) {
+    const cleanQuery = debouncedQuery.trim();
+    if (!cleanQuery) {
       setResults([]);
       setDetectedPerson(null);
       setIsLoading(false);
+      setSelectedIndex(-1);
       return;
     }
 
-    let active = true;
+    // 1. Instant Cache Hit: Return in 0ms!
+    const cacheKey = cleanQuery.toLowerCase();
+    if (searchClientCache.has(cacheKey)) {
+      const cached = searchClientCache.get(cacheKey)!;
+      setResults(cached.results);
+      setDetectedPerson(cached.person);
+      setIsLoading(false);
+      setSelectedIndex(-1);
+      return;
+    }
+
+    // 2. Network Fetch with AbortController for stale cancellation
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsLoading(true);
 
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&limit=6`)
+    fetch(`/api/search?q=${encodeURIComponent(cleanQuery)}&limit=12`, {
+      signal: controller.signal,
+    })
       .then((res) => res.json())
       .then((data) => {
-        if (active) {
-          setResults(Array.isArray(data.data) ? data.data : data.results || []);
+        if (!controller.signal.aborted) {
+          const items: Movie[] = Array.isArray(data.data) ? data.data : data.results || [];
+          let personObj: { name: string; roleTitle: string; role: string } | null = null;
           if (data.person) {
-            setDetectedPerson(data.person);
+            personObj = data.person;
           } else if (data.director) {
-            setDetectedPerson({
+            personObj = {
               name: data.director.name,
               role: "director",
               roleTitle: "Đạo Diễn",
-            });
-          } else {
-            setDetectedPerson(null);
+            };
           }
+
+          setResults(items);
+          setDetectedPerson(personObj);
           setIsLoading(false);
+          setSelectedIndex(-1);
+
+          // Seed items into instant movie pool for future keystrokes
+          items.forEach((m) => {
+            if (m.id || m.slug) instantMoviePool.set(m.id || m.slug, m);
+          });
+
+          // Save to client cache
+          searchClientCache.set(cacheKey, {
+            results: items,
+            person: personObj,
+          });
         }
       })
       .catch((err) => {
-        console.error("Search suggestions error:", err);
-        if (active) setIsLoading(false);
+        if (err.name !== "AbortError") {
+          console.error("Search suggestions error:", err);
+          setIsLoading(false);
+        }
       });
 
     return () => {
-      active = false;
+      controller.abort();
     };
   }, [debouncedQuery]);
 
-  // Keyboard escape listener
+  // Keyboard navigation & escape listener
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape") {
+        onClose();
+      }
     };
     if (isOpen) {
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
+      // Focus input on open
+      setTimeout(() => inputRef.current?.focus(), 50);
     }
     return () => {
       document.body.style.overflow = "unset";
@@ -88,8 +206,44 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
     };
   }, [isOpen, onClose]);
 
+  // Scroll active item into view
+  React.useEffect(() => {
+    if (selectedIndex >= 0 && listRef.current) {
+      const activeEl = listRef.current.children[selectedIndex] as HTMLElement;
+      if (activeEl) {
+        activeEl.scrollIntoView({ block: "nearest", behavior: "smooth" });
+      }
+    }
+  }, [selectedIndex]);
+
+  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (results.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+      } else if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+      } else if (e.key === "Enter" && selectedIndex >= 0 && results[selectedIndex]) {
+        e.preventDefault();
+        const targetMovie = results[selectedIndex];
+        addRecentSearch(query.trim());
+        onClose();
+        router.push(`/movie/${targetMovie.slug}`);
+      }
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (selectedIndex >= 0 && results[selectedIndex]) {
+      const targetMovie = results[selectedIndex];
+      addRecentSearch(query.trim());
+      onClose();
+      router.push(`/movie/${targetMovie.slug}`);
+      return;
+    }
+
     if (query.trim()) {
       addRecentSearch(query.trim());
       onClose();
@@ -122,9 +276,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
         >
           <Search className="w-5 h-5 text-cinema-400 mr-3 flex-shrink-0" />
           <input
+            ref={inputRef}
             type="text"
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => handleQueryChange(e.target.value)}
+            onKeyDown={handleInputKeyDown}
             placeholder="Tìm kiếm phim, diễn viên, thể loại..."
             autoFocus
             className="w-full bg-transparent text-white placeholder-cinema-400 text-base outline-none"
@@ -134,7 +290,11 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
           ) : query ? (
             <button
               type="button"
-              onClick={() => setQuery("")}
+              onClick={() => {
+                setQuery("");
+                setSelectedIndex(-1);
+                inputRef.current?.focus();
+              }}
               className="text-cinema-400 hover:text-white mr-2"
               aria-label="Xóa"
             >
@@ -174,44 +334,91 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
               </div>
 
               {results.length > 0 ? (
-                <div className="space-y-1.5">
-                  {results.map((movie) => (
-                    <Link
-                      key={movie.id}
-                      href={`/movie/${movie.slug}`}
-                      onClick={() => {
-                        addRecentSearch(query);
-                        onClose();
-                      }}
-                      className="flex items-center gap-3 p-2 rounded-xl hover:bg-cinema-800 transition-colors group"
+                <div ref={listRef} className="space-y-1.5">
+                  {results.map((movie, idx) => {
+                    const isSelected = selectedIndex === idx;
+                    return (
+                      <Link
+                        key={movie.id}
+                        href={`/movie/${movie.slug}`}
+                        prefetch={true}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                        onClick={() => {
+                          addRecentSearch(query);
+                          onClose();
+                        }}
+                        className={cn(
+                          "flex items-center justify-between gap-3 p-2.5 rounded-xl border transition-all duration-150 group cursor-pointer",
+                          isSelected
+                            ? "bg-cinema-800 border-brand/60 ring-1 ring-brand/40 shadow-[0_0_15px_rgba(229,0,0,0.2)]"
+                            : "border-transparent hover:bg-cinema-800/60"
+                        )}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 flex-grow">
+                          <div className="relative w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-cinema-800 border border-cinema-700/50">
+                            <Image
+                              src={movie.posterUrl || FALLBACK_POSTER}
+                              alt={movie.title}
+                              fill
+                              unoptimized={true}
+                              className="object-cover group-hover:scale-105 transition-transform"
+                              sizes="40px"
+                            />
+                          </div>
+                          <div className="flex-grow min-w-0">
+                            <div className="flex items-center gap-2">
+                              <h4
+                                className={cn(
+                                  "text-sm font-semibold truncate transition-colors",
+                                  isSelected
+                                    ? "text-brand"
+                                    : "text-white group-hover:text-brand"
+                                )}
+                              >
+                                {movie.title}
+                              </h4>
+                              {movie.quality && (
+                                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-cinema-800 text-cinema-300 border border-cinema-700 shrink-0">
+                                  {movie.quality.includes("4K") ? "4K" : "HD"}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs text-cinema-400 truncate mt-0.5">
+                              {movie.originalTitle ? `${movie.originalTitle} • ` : ""}
+                              {movie.year || "Full"}
+                              {movie.genres?.length
+                                ? ` • ${movie.genres.slice(0, 2).join(", ")}`
+                                : ""}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          {isSelected ? (
+                            <span className="hidden sm:inline-flex items-center gap-1 text-[11px] font-semibold text-brand bg-brand/10 border border-brand/30 px-2 py-0.5 rounded-md animate-in fade-in duration-150">
+                              <span>Xem ngay</span>
+                              <CornerDownLeft className="w-3 h-3" />
+                            </span>
+                          ) : null}
+                          <Badge variant="rating" className="text-[11px] px-1.5 py-0.5">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span>{formatRating(movie.rating)}</span>
+                          </Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+
+                  {results.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleSubmit}
+                      className="w-full mt-2.5 py-2.5 rounded-xl border border-cinema-700/60 bg-cinema-850 hover:bg-cinema-800 text-xs font-semibold text-cinema-300 hover:text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
                     >
-                      <div className="relative w-10 h-14 rounded-lg overflow-hidden flex-shrink-0 bg-cinema-800">
-                        <Image
-                          src={movie.posterUrl}
-                          alt={movie.title}
-                          fill
-                          className="object-cover"
-                          sizes="40px"
-                          onError={(e) => {
-                            const target = e.target as HTMLImageElement;
-                            target.srcset = "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80";
-                          }}
-                        />
-                      </div>
-                      <div className="flex-grow min-w-0">
-                        <h4 className="text-sm font-semibold text-white group-hover:text-brand transition-colors truncate">
-                          {movie.title}
-                        </h4>
-                        <p className="text-xs text-cinema-400 truncate">
-                          {movie.originalTitle} • {movie.year}
-                        </p>
-                      </div>
-                      <Badge variant="rating" className="text-[11px] px-1.5 py-0.5">
-                        <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
-                        <span>{formatRating(movie.rating)}</span>
-                      </Badge>
-                    </Link>
-                  ))}
+                      <span>Xem tất cả kết quả cho &quot;{query}&quot;</span>
+                      <ArrowRight className="w-3.5 h-3.5 text-brand" />
+                    </button>
+                  )}
                 </div>
               ) : !isLoading ? (
                 <div className="py-8 text-center text-sm text-cinema-400">
@@ -245,7 +452,7 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                     key={term}
                     type="button"
                     onClick={() => handleSelectRecent(term)}
-                    className="flex items-center gap-1.5 text-xs text-cinema-300 bg-cinema-800 hover:bg-cinema-750 hover:text-white border border-cinema-700/80 rounded-lg px-3 py-1.5 transition-colors group"
+                    className="flex items-center gap-1.5 text-xs text-cinema-300 bg-cinema-800 hover:bg-cinema-750 hover:text-white border border-cinema-700/80 rounded-lg px-3 py-1.5 transition-colors group cursor-pointer"
                   >
                     <span>{term}</span>
                     <span
@@ -267,12 +474,21 @@ export function SearchOverlay({ isOpen, onClose }: SearchOverlayProps) {
                 TỪ KHÓA PHỔ BIẾN
               </span>
               <div className="flex flex-wrap gap-2">
-                {["Dune", "Oppenheimer", "Shogun", "Arcane", "Christopher Nolan", "Hành động"].map((keyword) => (
+                {[
+                  "Dune",
+                  "Oppenheimer",
+                  "Shogun",
+                  "Arcane",
+                  "Christopher Nolan",
+                  "Hành động",
+                  "Trấn Thành",
+                  "Lý Hải",
+                ].map((keyword) => (
                   <button
                     key={keyword}
                     type="button"
                     onClick={() => handleSelectRecent(keyword)}
-                    className="text-xs text-cinema-300 bg-cinema-850 hover:bg-cinema-800 hover:text-brand border border-cinema-800 rounded-lg px-2.5 py-1 transition-colors"
+                    className="text-xs text-cinema-300 bg-cinema-850 hover:bg-cinema-800 hover:text-brand border border-cinema-800 rounded-lg px-2.5 py-1 transition-colors cursor-pointer"
                   >
                     {keyword}
                   </button>

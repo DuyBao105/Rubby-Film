@@ -1,4 +1,4 @@
-# BFilm (RubbyFilm)
+# RubyFilm
 
 Ứng dụng xem phim Next.js App Router: duyệt phim theo thể loại / quốc gia / năm, tìm kiếm, phát qua HLS, danh sách cá nhân, lịch sử xem — cùng hệ thống cộng đồng (đánh giá 1–5★, bình luận threaded, like, report, spoiler tag, realtime SSE) và admin moderation. Auth (credentials + Google/Facebook OAuth) lưu trên Neon Postgres qua Drizzle ORM.
 
@@ -25,8 +25,8 @@ Tài khoản seed:
 
 | Vai trò | Email | Mật khẩu |
 |---|---|---|
-| VIP demo | `demo@rubbyfilm.vn` | `Demo@123456` |
-| Admin | `admin@rubbyfilm.vn` | `Admin@123456` |
+| VIP demo | `demo@rubyfilm.vn` | `Demo@123456` |
+| Admin | `admin@rubyfilm.vn` | `Admin@123456` |
 
 ## Biến môi trường
 

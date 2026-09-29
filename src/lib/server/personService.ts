@@ -384,7 +384,11 @@ export class PersonService {
   /**
    * Search movies by actor or director
    */
-  async searchPerson(query: string, forcedRole?: "actor" | "director"): Promise<PersonSearchResult | null> {
+  async searchPerson(
+    query: string,
+    forcedRole?: "actor" | "director",
+    allowExternal: boolean = false
+  ): Promise<PersonSearchResult | null> {
     const raw = (query || "").trim();
     if (!raw) return null;
 
@@ -396,25 +400,20 @@ export class PersonService {
 
     if (!normKey) return null;
 
-    // 1. Check Curated Directory (instant 1ms response)
+    // 1. Check Curated Directory (fast single query)
     const curated = CURATED_PEOPLE[normKey];
     if (curated) {
       const cdnDomain = "https://phimimg.com";
-      const movieFetches = curated.slugs.map(async (slug) => {
-        try {
-          const res = await movieApiClient.get<any>(`/phim/${encodeURIComponent(slug)}`, {
-            revalidate: 3600,
-          });
-          if (res?.movie?._id) {
-            return mapKkphimMovie(res.movie, cdnDomain);
-          }
-        } catch {
-          // Ignore
-        }
-        return null;
-      });
+      const searchRes = await movieApiClient
+        .get<any>(
+          `/v1/api/tim-kiem?keyword=${encodeURIComponent(curated.name)}&limit=12`,
+          { revalidate: 3600 }
+        )
+        .catch(() => null);
 
-      const movies = (await Promise.all(movieFetches)).filter((m): m is Movie => m !== null);
+      const items = Array.isArray(searchRes?.data?.items) ? searchRes.data.items : [];
+      const movies = items.map((item: any) => mapKkphimMovie(item, cdnDomain));
+
       if (movies.length > 0) {
         return {
           person: {
@@ -429,8 +428,8 @@ export class PersonService {
       }
     }
 
-    // 2. Query TMDB Person API globally if API key is configured
-    if (!TMDB_API_KEY) return null;
+    // Fast-path: If external search is disabled or no TMDB key, bail out immediately!
+    if (!allowExternal || !TMDB_API_KEY) return null;
 
     try {
       const tmdbSearchQuery = curated?.tmdbQuery || normKey;

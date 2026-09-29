@@ -61,7 +61,7 @@ export function LogoutConfirmModal() {
           Xác Nhận Đăng Xuất
         </h3>
         <p className="text-xs text-[#9CA3AF] leading-relaxed mb-6">
-          Bạn có chắc chắn muốn đăng xuất khỏi tài khoản RubbyFilm không?
+          Bạn có chắc chắn muốn đăng xuất khỏi tài khoản RubyFilm không?
         </p>
 
         {/* Action Buttons */}

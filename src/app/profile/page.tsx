@@ -92,9 +92,14 @@ function ProfileContent() {
   const [isEditingName, setIsEditingName] = React.useState(false);
   const [isAvatarModalOpen, setIsAvatarModalOpen] = React.useState(false);
   const [toastMessage, setToastMessage] = React.useState<string | null>(null);
+  const [mounted, setMounted] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  const displayName = authUser?.name || user.name || "Khán Giả RubbyFilm";
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const displayName = authUser?.name || user.name || "Khán Giả RubyFilm";
   const displayEmail = authUser?.email || user.email || "Tài khoản khách (Lưu trên trình duyệt này)";
   const currentAvatar = authUser?.avatarUrl || user.avatarUrl || "";
 
@@ -191,12 +196,43 @@ function ProfileContent() {
     return `${mins} phút`;
   };
 
-  // Calculate total watch time in hours
+  // Calculate total watch time across all episodes and movies in real-time
   const totalWatchHours = React.useMemo(() => {
-    const totalSeconds = history.reduce((acc, h) => acc + (h.progressSeconds || 0), 0);
+    let totalSeconds = 0;
+    for (const h of history) {
+      if (h.watchedEpisodes && Object.keys(h.watchedEpisodes).length > 0) {
+        for (const ep of Object.values(h.watchedEpisodes)) {
+          totalSeconds += (ep.progressSeconds || 0);
+        }
+      } else {
+        totalSeconds += (h.progressSeconds || 0);
+      }
+    }
+    if (totalSeconds <= 0) return "0p";
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    if (totalMinutes < 60) return `${totalMinutes}p`;
     const hours = (totalSeconds / 3600).toFixed(1);
-    return hours === "0.0" ? "0h" : `${hours}h`;
+    return `${hours}h`;
   }, [history]);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen pt-20 sm:pt-24 pb-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full select-none">
+        <div className="relative overflow-hidden rounded-3xl bg-[#141414] border border-white/10 p-8 flex flex-col md:flex-row items-center gap-6 animate-pulse mb-8">
+          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-white/10 shrink-0" />
+          <div className="space-y-3 flex-1 w-full text-center md:text-left">
+            <div className="h-8 w-48 bg-white/10 rounded-xl mx-auto md:mx-0" />
+            <div className="h-4 w-64 bg-white/5 rounded-lg mx-auto md:mx-0" />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-36 bg-white/5 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-20 sm:pt-24 pb-24 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 w-full select-none">
@@ -225,8 +261,11 @@ function ProfileContent() {
               aria-label="Đổi ảnh đại diện"
             >
               <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full p-[2.5px] bg-gradient-to-tr from-[#E50000] via-red-500 to-[#E50000]/40 shadow-[0_0_20px_rgba(229,0,0,0.35)] transition-transform duration-300 group-hover:scale-105">
-                <div className="w-full h-full rounded-full bg-[#121212] flex items-center justify-center text-white overflow-hidden relative">
-                  {profileAvatar ? (
+                <div
+                  suppressHydrationWarning
+                  className="w-full h-full rounded-full bg-[#121212] flex items-center justify-center text-white overflow-hidden relative"
+                >
+                  {mounted && profileAvatar ? (
                     <img
                       src={profileAvatar}
                       alt={profileName}
@@ -285,7 +324,10 @@ function ProfileContent() {
                 </form>
               ) : (
                 <div className="flex items-center gap-2.5 justify-center md:justify-start">
-                  <h1 className="text-2xl sm:text-3xl font-extrabold text-[#F9FAFB] tracking-tight font-heading truncate">
+                  <h1
+                    suppressHydrationWarning
+                    className="text-2xl sm:text-3xl font-extrabold text-[#F9FAFB] tracking-tight font-heading truncate"
+                  >
                     {profileName}
                   </h1>
                   <button
@@ -303,13 +345,16 @@ function ProfileContent() {
                 </div>
               )}
 
-              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold self-center md:self-auto w-fit">
+              <span
+                suppressHydrationWarning
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold self-center md:self-auto w-fit"
+              >
                 <ShieldCheck className="w-3.5 h-3.5" />
                 <span>{authUser ? "Tài Khoản Đã Đồng Bộ" : "Chế Độ Khách"}</span>
               </span>
             </div>
 
-            <p className="text-xs sm:text-sm text-[#9CA3AF] mb-3 truncate">
+            <p suppressHydrationWarning className="text-xs sm:text-sm text-[#9CA3AF] mb-3 truncate">
               {displayEmail}
             </p>
 
@@ -421,7 +466,7 @@ function ProfileContent() {
               <Clock className="w-4 h-4 text-amber-400" />
               <span>Thời Lượng Đã Cày</span>
             </div>
-            <span className="text-xl sm:text-2xl font-black text-amber-400 font-heading">
+            <span suppressHydrationWarning className="text-xl sm:text-2xl font-black text-amber-400 font-heading">
               {totalWatchHours}
             </span>
           </div>
@@ -584,7 +629,7 @@ function ProfileContent() {
                 </div>
                 <p className="text-sm font-semibold text-white mb-1">Chưa có phim nào đang xem dở</p>
                 <p className="text-xs text-[#9CA3AF] max-w-sm mb-4">
-                  Khi bạn xem phim trên RubbyFilm, thanh tiến trình xem sẽ tự động lưu lại ở đây để bạn có thể xem tiếp bất cứ lúc nào.
+                  Khi bạn xem phim trên RubyFilm, thanh tiến trình xem sẽ tự động lưu lại ở đây để bạn có thể xem tiếp bất cứ lúc nào.
                 </p>
                 <Link
                   href="/movies"
@@ -865,7 +910,7 @@ function ProfileContent() {
             {/* Option 2: Curated Cinema Avatars */}
             <div className="mb-6">
               <label className="text-xs font-bold uppercase tracking-wider text-[#9CA3AF] block mb-3">
-                2. Hoặc chọn nhân vật điện ảnh RubbyFilm
+                2. Hoặc chọn nhân vật điện ảnh RubyFilm
               </label>
               <div className="grid grid-cols-4 gap-3 sm:gap-4">
                 {PRESET_AVATARS.map((preset) => {

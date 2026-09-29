@@ -3,6 +3,8 @@ import { movieProvider } from "@/lib/providers";
 import { WatchView } from "@/components/watch/watch-view";
 import { Metadata } from "next";
 
+export const revalidate = 1800;
+
 interface WatchPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ episode?: string; ep?: string; season?: string; server?: string }>;
@@ -18,14 +20,14 @@ export async function generateMetadata({
 
   if (!movie) {
     return {
-      title: "Xem Phim - RubbyFilm",
+      title: "Xem Phim - RubyFilm",
       robots: { index: false, follow: false },
     };
   }
 
   const epNum = query.episode || query.ep;
   const epTitle = epNum ? ` (Tập ${epNum})` : "";
-  const pageTitle = `Xem Phim ${movie.title}${epTitle} - 4K Vietsub | RubbyFilm`;
+  const pageTitle = `Xem Phim ${movie.title}${epTitle} - 4K Vietsub | RubyFilm`;
   const pageDescription = `Xem online phim ${movie.title}${epTitle} (${movie.originalTitle}) năm ${movie.year || ""}. Thể loại ${movie.genres?.join(", ") || "Phim hay"}, phụ đề / thuyết minh chuẩn, tốc độ cao không giật lag.`;
 
   return {
@@ -38,7 +40,7 @@ export async function generateMetadata({
       title: pageTitle,
       description: pageDescription,
       url: `/watch/${movie.slug}`,
-      siteName: "RubbyFilm",
+      siteName: "RubyFilm",
       type: "video.other",
       locale: "vi_VN",
       images: [

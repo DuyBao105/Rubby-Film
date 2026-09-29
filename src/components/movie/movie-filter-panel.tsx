@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface MovieFilterPanelProps {
   basePath?: string;
   currentType?: string;
+  defaultSort?: string;
   currentSort?: string;
   currentCountry?: string;
   currentGenre?: string;
@@ -84,7 +85,8 @@ const YEARS_LIST = [2026, 2025, 2024, 2023, 2022, 2021, 2020];
 export function MovieFilterPanel({
   basePath = "/movies",
   currentType,
-  currentSort = "latest",
+  defaultSort = "latest",
+  currentSort,
   currentCountry = "",
   currentGenre = "",
   currentLanguage = "",
@@ -93,19 +95,11 @@ export function MovieFilterPanel({
 }: MovieFilterPanelProps) {
   const router = useRouter();
 
-  // Has active filter?
-  const hasActiveFilters = Boolean(
-    (currentSort && currentSort !== "latest") ||
-    currentCountry ||
-    currentGenre ||
-    currentLanguage ||
-    currentYear
-  );
-
-  const [isOpen, setIsOpen] = React.useState(hasActiveFilters);
+  // Filter panel defaults to collapsed so it does not block the movie grid
+  const [isOpen, setIsOpen] = React.useState(false);
 
   // Draft local states
-  const [selectedSort, setSelectedSort] = React.useState(currentSort || "latest");
+  const [selectedSort, setSelectedSort] = React.useState(currentSort || defaultSort);
   const [selectedCountry, setSelectedCountry] = React.useState(currentCountry || "");
   const [selectedGenre, setSelectedGenre] = React.useState(currentGenre || "");
   const [selectedLanguage, setSelectedLanguage] = React.useState(currentLanguage || "");
@@ -115,27 +109,30 @@ export function MovieFilterPanel({
 
   // Sync when props change
   React.useEffect(() => {
-    setSelectedSort(currentSort || "latest");
+    setSelectedSort(currentSort || defaultSort);
     setSelectedCountry(currentCountry || "");
     setSelectedGenre(currentGenre || "");
     setSelectedLanguage(currentLanguage || "");
     setSelectedYear(currentYear || "");
-  }, [currentSort, currentCountry, currentGenre, currentLanguage, currentYear]);
+  }, [currentSort, defaultSort, currentCountry, currentGenre, currentLanguage, currentYear]);
 
-  // Count active selections
+  // Count active selections (sort only counts if it differs from defaultSort)
+  const isSortFiltered = Boolean(selectedSort && selectedSort !== defaultSort);
   const activeCount = [
-    selectedSort !== "latest" ? selectedSort : null,
+    isSortFiltered ? selectedSort : null,
     selectedCountry,
     selectedGenre,
     selectedLanguage,
     selectedYear,
   ].filter(Boolean).length;
 
+  const [isPending, startTransition] = React.useTransition();
+
   const handleApply = () => {
     const params: Record<string, string> = {};
 
     if (currentType) params.type = currentType;
-    if (selectedSort && selectedSort !== "latest") params.sort = selectedSort;
+    if (selectedSort && selectedSort !== defaultSort) params.sort = selectedSort;
     if (selectedCountry) params.country = selectedCountry;
     if (selectedGenre) params.genre = selectedGenre;
     if (selectedLanguage) params.language = selectedLanguage;
@@ -145,23 +142,26 @@ export function MovieFilterPanel({
       .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
       .join("&");
 
-    router.push(qs ? `${basePath}?${qs}` : basePath);
+    const targetUrl = qs ? `${basePath}?${qs}` : basePath;
+    startTransition(() => {
+      router.push(targetUrl, { scroll: false });
+    });
   };
 
   const handleReset = () => {
-    setSelectedSort("latest");
+    setSelectedSort(defaultSort);
     setSelectedCountry("");
     setSelectedGenre("");
     setSelectedLanguage("");
     setSelectedYear("");
     setCustomYearInput("");
     setShowCustomYearInput(false);
+    setIsOpen(false);
 
-    if (currentType) {
-      router.push(`${basePath}?type=${encodeURIComponent(currentType)}`);
-    } else {
-      router.push(basePath);
-    }
+    const targetUrl = currentType ? `${basePath}?type=${encodeURIComponent(currentType)}` : basePath;
+    startTransition(() => {
+      router.push(targetUrl, { scroll: false });
+    });
   };
 
   const handleCustomYearSubmit = (e: React.FormEvent) => {
@@ -458,10 +458,14 @@ export function MovieFilterPanel({
             <button
               type="button"
               onClick={handleApply}
-              className="bg-[#F5C247] hover:bg-[#FFD15C] text-black font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-full flex items-center gap-2 shadow-lg shadow-[#F5C247]/25 transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              disabled={isPending}
+              className={cn(
+                "bg-[#F5C247] hover:bg-[#FFD15C] text-black font-extrabold text-xs sm:text-sm px-6 py-2.5 rounded-full flex items-center gap-2 shadow-lg shadow-[#F5C247]/25 transition-all hover:scale-105 active:scale-95 cursor-pointer",
+                isPending && "opacity-75 cursor-wait"
+              )}
             >
-              <span>Lọc kết quả</span>
-              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+              <span>{isPending ? "Đang lọc..." : "Lọc kết quả"}</span>
+              <ArrowRight className={cn("w-4 h-4 stroke-[2.5]", isPending && "animate-spin")} />
             </button>
 
             <button

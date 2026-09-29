@@ -223,7 +223,7 @@ export function AuthModal() {
 
   // Handlers
   const handleFillDemo = () => {
-    setLoginEmail("demo@rubbyfilm.vn");
+    setLoginEmail("demo@rubyfilm.vn");
     setLoginPassword("Demo@123456");
     setLoginError("");
     setLoginFieldErrors({});
@@ -347,10 +347,10 @@ export function AuthModal() {
         {/* Brand Logo Centered */}
         <div className="text-center mb-5 select-none pt-1">
           <div className="inline-flex items-baseline">
-            <span className="font-black text-2xl tracking-[-0.03em] text-[#F9FAFB]">
-              RUBBY
+            <span suppressHydrationWarning className="font-black text-2xl tracking-[-0.03em] text-[#F9FAFB]">
+              RUBY
             </span>
-            <span className="font-extrabold text-xs tracking-widest text-[#E50000] ml-1.5 uppercase">
+            <span suppressHydrationWarning className="font-extrabold text-xs tracking-widest text-[#E50000] ml-1.5 uppercase">
               FILM
             </span>
           </div>

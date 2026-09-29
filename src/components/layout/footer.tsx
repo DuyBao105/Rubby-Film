@@ -62,16 +62,16 @@ export function Footer() {
               className="inline-flex items-baseline select-none group transition-opacity hover:opacity-90"
               title="Về đầu trang"
             >
-              <span className="font-extrabold text-2xl sm:text-3xl tracking-[-0.02em] text-[#F9FAFB]">
-                RUBBY
+              <span suppressHydrationWarning className="font-extrabold text-2xl sm:text-3xl tracking-[-0.02em] text-[#F9FAFB]">
+                RUBY
               </span>
-              <span className="font-extrabold text-sm sm:text-base tracking-wider text-[#E50000] ml-1 uppercase">
+              <span suppressHydrationWarning className="font-extrabold text-sm sm:text-base tracking-wider text-[#E50000] ml-1 uppercase">
                 FILM
               </span>
             </Link>
 
             <p className="text-[#9CA3AF] text-xs sm:text-sm font-normal leading-relaxed max-w-sm">
-              RubbyFilm là nền tảng xem phim trực tuyến hiện đại, đem lại trải nghiệm điện ảnh chuẩn 4K HDR cùng tốc độ tải mượt mà, giao diện tinh tế trên mọi thiết bị hoàn toàn miễn phí.
+              RubyFilm là nền tảng xem phim trực tuyến hiện đại, đem lại trải nghiệm điện ảnh chuẩn 4K HDR cùng tốc độ tải mượt mà, giao diện tinh tế trên mọi thiết bị hoàn toàn miễn phí.
             </p>
 
             {/* Quality Badges */}
@@ -271,22 +271,13 @@ export function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="pt-6 sm:pt-8 border-t border-[#1C1C1C] flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-[#71717A]">
-          <div className="flex flex-col sm:flex-row items-center gap-1.5 sm:gap-2 text-center sm:text-left">
-            <span>© {new Date().getFullYear()} <strong className="text-[#E5E7EB] font-semibold">RubbyFilm</strong>.</span>
-            <span className="hidden sm:inline">•</span>
-            <span>Nền tảng giải trí phim ảnh trực tuyến miễn phí.</span>
-          </div>
-
-          <div className="flex items-center justify-center gap-4 sm:gap-5 w-full sm:w-auto">
-            <Link href="/my-list" className="hover:text-white transition-colors text-xs text-[#9CA3AF]">
-              Yêu Thích
-            </Link>
-            <span className="w-1 h-1 rounded-full bg-[#333]" />
-            <Link href="/history" className="hover:text-white transition-colors text-xs text-[#9CA3AF]">
-              Lịch Sử Xem
-            </Link>
-          </div>
+        <div
+          suppressHydrationWarning
+          className="pt-6 sm:pt-8 border-t border-[#1C1C1C] flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 text-center text-xs text-[#71717A]"
+        >
+          <span>© 2026 <strong className="text-[#E5E7EB] font-semibold">RubyFilm</strong>.</span>
+          <span className="hidden sm:inline">•</span>
+          <span>Nền tảng giải trí phim ảnh trực tuyến miễn phí.</span>
         </div>
       </div>
 

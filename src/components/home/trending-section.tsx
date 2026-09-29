@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Play, Heart, Info } from "lucide-react";
+import { ChevronLeft, ChevronRight, Play, Heart, Info, Star } from "lucide-react";
 import { Movie } from "@/types/movie";
 import { getBilingualTitles } from "@/lib/utils/title";
 import { useMyList } from "@/lib/hooks/use-my-list";
@@ -89,7 +89,7 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
       className="relative flex-shrink-0 w-[170px] sm:w-[195px] md:w-[215px] lg:w-[230px] select-none"
     >
       {/* Base Card Link */}
-      <Link href={`/movie/${movie.slug}`} className="group block w-full">
+      <Link href={`/movie/${movie.slug}`} prefetch={true} className="group block w-full">
         {/* Poster */}
         <div className="relative aspect-[2/3] w-full rounded-2xl overflow-hidden bg-[#161616] shadow-lg mb-3">
           <Image
@@ -99,6 +99,7 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
             }
             alt={movie.title}
             fill
+            unoptimized={true}
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
             className="object-cover transition-transform duration-500 group-hover:scale-105"
             onError={() =>
@@ -135,7 +136,7 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
               {primaryTitle}
             </h3>
             <p className="text-xs text-[#9CA3AF] truncate leading-tight mt-0.5 font-normal">
-              {secondaryTitle || movie.originalTitle || "RubbyFilm Exclusive"}
+              {secondaryTitle || movie.originalTitle || "RubyFilm Exclusive"}
             </p>
             <p className="text-[11px] text-[#D1D5DB] truncate leading-tight mt-1 font-medium">
               {statusLine}
@@ -144,13 +145,13 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
         </div>
       </Link>
 
-      {/* Expanded Quick-Preview Popover Modal on Hover (Matching User Screenshot) */}
+      {/* Expanded Quick-Preview Popover Modal on Hover (Desktop only, hidden on mobile touch) */}
       {isHovered && (
         <div
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
           className={cn(
-            "absolute z-50 w-[300px] sm:w-[330px] md:w-[350px] bottom-16 sm:bottom-20 rounded-2xl bg-[#14161B] border border-white/15 shadow-[0_25px_60px_rgba(0,0,0,0.95)] overflow-hidden transition-all duration-200 animate-in fade-in zoom-in-95",
+            "hidden md:block absolute z-50 w-[290px] sm:w-[320px] md:w-[340px] -top-3 sm:-top-4 rounded-2xl bg-[#14161F]/95 backdrop-blur-2xl border border-white/20 shadow-[0_25px_60px_rgba(0,0,0,0.95)] overflow-hidden transition-all duration-200 animate-in fade-in zoom-in-95",
             index === 0
               ? "left-0"
               : index >= total - 2
@@ -168,31 +169,38 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
               }
               alt={movie.title}
               fill
-              sizes="350px"
+              unoptimized={true}
+              sizes="340px"
               className="object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#14161B] via-[#14161B]/50 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#14161F] via-[#14161F]/30 to-black/20" />
+            <div className="absolute top-2.5 right-2.5">
+              <span className="px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[10px] font-bold text-white shadow-sm">
+                Top #{rank}
+              </span>
+            </div>
           </div>
 
           {/* Body Content */}
-          <div className="p-4 pt-1">
+          <div className="p-4 pt-2">
             {/* Vietnamese Title */}
             <h4 className="font-extrabold text-base sm:text-[17px] text-[#F9FAFB] tracking-[-0.02em] leading-snug drop-shadow line-clamp-1">
               {primaryTitle}
             </h4>
 
-            {/* English Title in Gold */}
-            <p className="text-xs sm:text-[13px] font-semibold text-[#E5B54F] line-clamp-1 mt-0.5 drop-shadow">
-              {secondaryTitle || movie.originalTitle || "RubbyFilm"}
+            {/* English Title */}
+            <p className="text-xs sm:text-[13px] font-medium text-[#9CA3AF] line-clamp-1 mt-0.5">
+              {secondaryTitle || movie.originalTitle || "RubyFilm"}
             </p>
 
             {/* Action Buttons Row: Xem ngay, Thích, Chi tiết */}
             <div className="flex items-center gap-2 my-3">
               <Link
                 href={`/watch/${movie.slug}`}
-                className="flex-1 bg-[#F5C247] hover:bg-[#FFD15C] text-black font-bold text-xs sm:text-[13px] py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95"
+                prefetch={true}
+                className="flex-1 bg-gradient-to-r from-[#E50000] via-[#FF1A1A] to-[#B30000] hover:brightness-110 text-white font-extrabold text-xs sm:text-[13px] py-2 px-3 rounded-xl flex items-center justify-center gap-1.5 shadow-lg shadow-red-600/30 transition-all active:scale-95"
               >
-                <Play className="w-3.5 h-3.5 fill-black text-black" />
+                <Play className="w-3.5 h-3.5 fill-white text-white" />
                 <span>Xem ngay</span>
               </Link>
 
@@ -216,6 +224,7 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
 
               <Link
                 href={`/movie/${movie.slug}`}
+                prefetch={true}
                 className="bg-[#22252C] hover:bg-[#2C3039] text-white font-semibold text-xs sm:text-[13px] py-2 px-3 rounded-xl border border-white/10 flex items-center justify-center gap-1.5 transition-all active:scale-95"
               >
                 <Info className="w-3.5 h-3.5 text-white" />
@@ -225,12 +234,10 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
 
             {/* Badges Row: TMDb, Year, Quality, Status, Vietsub */}
             <div className="flex items-center flex-wrap gap-1.5 text-[11px] font-medium">
-              {/* Two-Tone TMDb Rating */}
-              <div className="flex items-center text-[10px] font-bold rounded overflow-hidden border border-[#01B4E4]/40 shadow-sm">
-                <span className="bg-[#01B4E4] text-white px-1.5 py-0.5">TMDb</span>
-                <span className="bg-[#01B4E4]/20 text-white px-1.5 py-0.5">
-                  {movie.rating ? movie.rating.toFixed(1) : "8.1"}
-                </span>
+              {/* Rating */}
+              <div className="flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold text-[10px]">
+                <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                <span>{movie.rating ? movie.rating.toFixed(1) : "8.1"}</span>
               </div>
 
               {/* Year */}
@@ -241,14 +248,8 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
               )}
 
               {/* Quality */}
-              <span
-                className="px-1.5 py-0.5 rounded font-black text-[10px] uppercase text-black"
-                style={{
-                  background:
-                    "linear-gradient(220deg, #FFD875 0%, #FFE7A8 45%, #FFFFFF 100%)",
-                }}
-              >
-                {movie.quality?.includes("4K") ? "4K" : movie.quality || "HD"}
+              <span className="px-2 py-0.5 rounded bg-red-600/20 border border-red-500/40 text-red-300 font-bold text-[10px] uppercase">
+                {movie.quality?.includes("4K") ? "4K" : movie.quality || "FHD"}
               </span>
 
               {/* Status */}
@@ -264,7 +265,7 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
             </div>
 
             {/* Genres */}
-            <p className="text-xs text-[#8E8E93] truncate mt-2 font-medium">
+            <p className="text-xs text-[#8E8E93] truncate mt-2.5 font-medium">
               {movie.genres && movie.genres.length > 0
                 ? movie.genres.slice(0, 3).join(" • ")
                 : "Hành Động • Khoa Học"}
@@ -348,7 +349,7 @@ export function TrendingSection({
         <div
           ref={scrollRef}
           onScroll={checkScroll}
-          className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-none px-4 sm:px-6 lg:px-8 pt-4 pb-4 scroll-smooth no-scrollbar"
+          className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-none px-4 sm:px-6 lg:px-8 pt-5 pb-6 scroll-smooth no-scrollbar"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {movies.slice(0, 10).map((movie, index) => (

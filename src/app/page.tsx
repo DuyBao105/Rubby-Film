@@ -14,73 +14,178 @@ import { Movie } from "@/types/movie";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "RubbyFilm - Trải Nghiệm Điện Ảnh Đỉnh Cao Chuẩn 4K HDR",
+  title: "RubyFilm - Trải Nghiệm Điện Ảnh Đỉnh Cao Chuẩn 4K HDR",
   description:
-    "Khám phá hàng ngàn tựa phim điện ảnh bom tấn chiếu rạp, phim bộ đặc sắc, anime tuyển chọn với chất lượng 4K HDR sống động trên RubbyFilm hoàn toàn miễn phí.",
+    "Khám phá hàng ngàn tựa phim điện ảnh bom tấn chiếu rạp, phim bộ đặc sắc, anime tuyển chọn với chất lượng 4K HDR sống động trên RubyFilm hoàn toàn miễn phí.",
   openGraph: {
-    title: "RubbyFilm - Nền Tảng Xem Phim Trực Tuyến Đỉnh Cao",
+    title: "RubyFilm - Nền Tảng Xem Phim Trực Tuyến Đỉnh Cao",
     description:
       "Thế giới điện ảnh bom tấn và series truyền hình chất lượng 4K HDR không giới hạn.",
     type: "website",
     locale: "vi_VN",
-    siteName: "RubbyFilm",
+    siteName: "RubyFilm",
   },
 };
 
-export const dynamic = "force-dynamic";
+export const revalidate = 600; // 10 minutes ISR cache
 
-export default async function HomePage() {
+interface HomePagePreparedData {
+  heroMovies: Movie[];
+  trendingMovies: Movie[];
+  latestMovies: Movie[];
+  spotlightMovies: Movie[];
+  singleMovies: Movie[];
+  seriesMovies: Movie[];
+  animeMovies: Movie[];
+  actionMovies: Movie[];
+}
+
+let homePageMemoryCache: { data: HomePagePreparedData; timestamp: number } | null = null;
+const HOME_CACHE_TTL = 10 * 60 * 1000;
+
+async function getPreparedHomePageData(): Promise<HomePagePreparedData> {
+  const now = Date.now();
+  if (homePageMemoryCache && now - homePageMemoryCache.timestamp < HOME_CACHE_TTL) {
+    return homePageMemoryCache.data;
+  }
+
   // Fetch curated home sections
   const homeData = await movieProvider.getHomeMovies();
 
-  // 1. Hero Carousel (Chỉ tuyển chọn các siêu phẩm HOT mới nhất năm 2026)
+  // 1. Hero Carousel (Tuyển chọn siêu phẩm bom tấn chiếu rạp, phim HOT mới ra mắt nhiều người xem nhất)
+  const currentYear = new Date().getFullYear();
+
+  // Nguồn dữ liệu thuần túy từ danh sách Phim Chiếu Rạp và Phim Thịnh Hành (Hot) từ hệ thống API
   const allCandidates = [
-    ...(homeData.featured || []),
-    ...(homeData.hot || []),
-    ...(homeData.latest || []),
-    ...(homeData.singles || []),
-    ...(homeData.series || []),
+    ...(homeData.singles || []), // Phim điện ảnh / chiếu rạp
+    ...(homeData.hot || []), // Phim thịnh hành có lượt xem cao
+    ...(homeData.featured || []), // Phim được hệ thống đề cử
   ];
 
   const uniqueCandidates = Array.from(
-    new Map(allCandidates.map((m) => [m.id, m])).values()
+    new Map(allCandidates.map((m) => [m.id, { ...m }])).values()
   );
 
-  const heroPool2026 = uniqueCandidates.filter(
-    (m) =>
-      m.year === 2026 &&
-      Boolean(m.backdropUrl) &&
-      !m.backdropUrl.endsWith("-poster.webp") &&
-      !m.backdropUrl.endsWith("poster.webp") &&
-      m.backdropUrl.length > 10
-  );
+  // Lọc động 100%: Chỉ lấy phim phát hành mới nhất (năm hiện tại) và có ảnh nền backdrop chất lượng cao
+  let validCandidates = uniqueCandidates.filter((m) => {
+    const isCurrentYear = m.year === currentYear;
+    const hasBackdrop = Boolean(m.backdropUrl) && m.backdropUrl.length > 10;
+    return isCurrentYear && hasBackdrop;
+  });
 
-  const heroPool = heroPool2026.length >= 6
-    ? heroPool2026
-    : [
-        ...heroPool2026,
-        ...uniqueCandidates.filter(
-          (m) =>
-            m.year !== 2026 &&
-            Boolean(m.backdropUrl) &&
-            !m.backdropUrl.endsWith("-poster.webp") &&
-            !m.backdropUrl.endsWith("poster.webp") &&
-            m.backdropUrl.length > 10 &&
-            (m.year ? m.year >= 2025 : true)
-        ),
-      ];
+  // Nếu đầu năm số lượng phim năm hiện tại chưa đủ 8 phim, mở rộng động sang năm liền kề (currentYear - 1)
+  if (validCandidates.length < 8) {
+    const prevYearCandidates = uniqueCandidates.filter((m) => {
+      const isRecent = m.year && m.year >= currentYear - 1;
+      const hasBackdrop = Boolean(m.backdropUrl) && m.backdropUrl.length > 10;
+      return isRecent && hasBackdrop;
+    });
+    validCandidates = prevYearCandidates;
+  }
 
-  // Smart Dynamic Shuffle on each visit / refresh:
-  // - Top #1 blockbuster is anchored to guarantee an immediate WOW impression
-  // - The remaining 5 movies are randomly picked from the top hot 2026 pool (never duplicated)
-  // - Every F5 provides a fresh mix of 6 newly released, ultra-hot 2026 blockbusters!
-  const heroMovies = (() => {
-    if (heroPool.length <= 6) return heroPool;
-    const anchor = heroPool[0];
-    const candidates = heroPool.slice(1);
-    const shuffled = [...candidates].sort(() => Math.random() - 0.5);
-    return [anchor, ...shuffled.slice(0, 5)];
-  })();
+  // Thuật toán chấm điểm hoàn toàn dựa trên số liệu thực tế (Lượt xem, Đánh giá, Độ Hot, Phim Chiếu Rạp)
+  const preliminaryRanked = [...validCandidates].sort((a, b) => {
+    const isCinemaA = (homeData.singles || []).some((s) => s.id === a.id);
+    const isCinemaB = (homeData.singles || []).some((s) => s.id === b.id);
+    const isHotA = a.isHot || (homeData.hot || []).some((h) => h.id === a.id);
+    const isHotB = b.isHot || (homeData.hot || []).some((h) => h.id === b.id);
+
+    const yearScoreA = (a.year || 0) * 10;
+    const yearScoreB = (b.year || 0) * 10;
+
+    const viewsA = a.views || 0;
+    const viewsB = b.views || 0;
+
+    const ratingA = (a.rating || a.tmdbVoteAverage || 7.5) * 50;
+    const ratingB = (b.rating || b.tmdbVoteAverage || 7.5) * 50;
+
+    const scoreA =
+      (isCinemaA ? 500 : 0) +
+      (isHotA ? 300 : 0) +
+      yearScoreA +
+      ratingA +
+      Math.min(500, Math.floor(viewsA / 100));
+
+    const scoreB =
+      (isCinemaB ? 500 : 0) +
+      (isHotB ? 300 : 0) +
+      yearScoreB +
+      ratingB +
+      Math.min(500, Math.floor(viewsB / 100));
+
+    return scoreB - scoreA;
+  });
+
+  // Tự động nâng cấp sang ảnh gốc TMDB 4K / Original studio backdrop & transparent logo
+  const topEnrichCandidates = preliminaryRanked.slice(0, 16);
+  const hasTmdb = Boolean(process.env.TMDB_API_KEY);
+
+  if (hasTmdb) {
+    await Promise.all(
+      topEnrichCandidates.map(async (m) => {
+        const type = m.tmdbType || (m.type === "series" ? "tv" : "movie");
+        const [tmdbBackdrop, tmdbLogo] = await Promise.all([
+          getTmdbBackdropUrl(m.tmdbId, type, {
+            title: m.title,
+            originalTitle: m.originalTitle,
+            year: m.year,
+          }),
+          getTmdbLogoUrl(m.tmdbId, type, {
+            title: m.title,
+            originalTitle: m.originalTitle,
+            year: m.year,
+          }),
+        ]);
+        if (tmdbBackdrop) {
+          m.backdropUrl = tmdbBackdrop;
+        }
+        if (tmdbLogo) {
+          m.logoUrl = tmdbLogo;
+        }
+      })
+    );
+  }
+
+  // Chấm điểm chung kết hoàn toàn động:
+  // Ưu tiên phim có backdrop 4K từ TMDB (+1000) cùng điểm số thực tế
+  const sortedHeroPool = [...topEnrichCandidates].sort((a, b) => {
+    const isTmdbA = a.backdropUrl.includes("image.tmdb.org") ? 1000 : 0;
+    const isTmdbB = b.backdropUrl.includes("image.tmdb.org") ? 1000 : 0;
+    const isCinemaA = (homeData.singles || []).some((s) => s.id === a.id) ? 400 : 0;
+    const isCinemaB = (homeData.singles || []).some((s) => s.id === b.id) ? 400 : 0;
+    const isHotA = a.isHot || (homeData.hot || []).some((h) => h.id === a.id) ? 200 : 0;
+    const isHotB = b.isHot || (homeData.hot || []).some((h) => h.id === b.id) ? 200 : 0;
+
+    const viewsA = a.views || 0;
+    const viewsB = b.views || 0;
+
+    const ratingA = (a.rating || a.tmdbVoteAverage || 7.5) * 40;
+    const ratingB = (b.rating || b.tmdbVoteAverage || 7.5) * 40;
+
+    const scoreA =
+      isTmdbA +
+      isCinemaA +
+      isHotA +
+      (a.year === currentYear ? 400 : 100) +
+      ratingA +
+      Math.min(300, Math.floor(viewsA / 200));
+
+    const scoreB =
+      isTmdbB +
+      isCinemaB +
+      isHotB +
+      (b.year === currentYear ? 400 : 100) +
+      ratingB +
+      Math.min(300, Math.floor(viewsB / 200));
+
+    if (scoreB !== scoreA) {
+      return scoreB - scoreA;
+    }
+    return String(a.id || a.slug).localeCompare(String(b.id || b.slug));
+  });
+
+  // Tuyển chọn 8 siêu phẩm chất lượng 4K nét nhất cho Panel chính
+  const heroMovies = sortedHeroPool.slice(0, 8).map((m) => ({ ...m }));
   const heroIds = new Set(heroMovies.map((m) => m.id));
 
   // 2. Trending Now (10 hot movies)
@@ -119,35 +224,23 @@ export default async function HomePage() {
     spotlightMovies.push(homeData.featured[0]);
   }
 
-  // Auto-upgrade to TMDB 4K / Original backdrops and logos
-  const hasTmdb = Boolean(process.env.TMDB_API_KEY || true);
+  // Enrich spotlightMovies with TMDB 4K backdrops
   if (hasTmdb) {
-    await Promise.all([
-      ...heroMovies.map(async (m) => {
-        if (m.tmdbId) {
-          const type = m.type === "series" ? "tv" : "movie";
-          const [tmdbBackdrop, tmdbLogo] = await Promise.all([
-            getTmdbBackdropUrl(m.tmdbId, type),
-            getTmdbLogoUrl(m.tmdbId, type),
-          ]);
-          if (tmdbBackdrop) {
-            m.backdropUrl = tmdbBackdrop;
-          }
-          if (tmdbLogo) {
-            m.logoUrl = tmdbLogo;
-          }
-        }
-      }),
-      ...spotlightMovies.map(async (m) => {
-        if (m.tmdbId) {
-          const type = m.type === "series" ? "tv" : "movie";
-          const tmdbBackdrop = await getTmdbBackdropUrl(m.tmdbId, type);
+    await Promise.all(
+      spotlightMovies.map(async (m) => {
+        if (!m.backdropUrl.includes("image.tmdb.org")) {
+          const type = m.tmdbType || (m.type === "series" ? "tv" : "movie");
+          const tmdbBackdrop = await getTmdbBackdropUrl(m.tmdbId, type, {
+            title: m.title,
+            originalTitle: m.originalTitle,
+            year: m.year,
+          });
           if (tmdbBackdrop) {
             m.backdropUrl = tmdbBackdrop;
           }
         }
-      }),
-    ]);
+      })
+    );
   }
 
   // 5. Phim Lẻ Chiếu Rạp (14-16 contemporary cinema blockbusters)
@@ -162,6 +255,51 @@ export default async function HomePage() {
   // 8. Phim Hành Động Kịch Tính (14-16 genuine live-action blockbusters)
   const actionMovies = (homeData.action || []).slice(0, 16);
 
+  const prepared: HomePagePreparedData = {
+    heroMovies,
+    trendingMovies,
+    latestMovies,
+    spotlightMovies,
+    singleMovies,
+    seriesMovies,
+    animeMovies,
+    actionMovies,
+  };
+
+  homePageMemoryCache = {
+    data: prepared,
+    timestamp: now,
+  };
+
+  // Non-blocking background pre-warming of top hero and trending movie details
+  setTimeout(() => {
+    const warmSlugs = Array.from(
+      new Set([
+        ...heroMovies.map((m) => m.slug),
+        ...trendingMovies.slice(0, 8).map((m) => m.slug),
+      ])
+    ).filter(Boolean);
+
+    warmSlugs.forEach((slug) => {
+      movieProvider.getMovieBySlug(slug).catch(() => {});
+    });
+  }, 100);
+
+  return prepared;
+}
+
+export default async function HomePage() {
+  const {
+    heroMovies,
+    trendingMovies,
+    latestMovies,
+    spotlightMovies,
+    singleMovies,
+    seriesMovies,
+    animeMovies,
+    actionMovies,
+  } = await getPreparedHomePageData();
+
   return (
     <main className="flex flex-col w-full pb-16 overflow-x-hidden min-h-screen bg-[#0F0F0F] relative">
       {/* Ambient Theatrical Background Glows */}
@@ -169,10 +307,10 @@ export default async function HomePage() {
       <div className="absolute top-[35%] right-0 w-[500px] h-[500px] bg-[#E50000]/5 blur-[160px] pointer-events-none -z-0" />
       <div className="absolute top-[65%] left-0 w-[500px] h-[500px] bg-[#E50000]/5 blur-[160px] pointer-events-none -z-0" />
 
-      {/* 1. Large Cinematic Hero Carousel */}
+      {/* 1. Large Cinematic Hero Carousel (Full First Viewport) */}
       <MovieHero movies={heroMovies} />
 
-      {/* 2. Mood & Emotion Discovery */}
+      {/* 2. Khám Phá Theo Chủ Đề (Mood & Emotion Discovery - Ngay dưới khung hình đầu tiên) */}
       <MoodDiscovery />
 
       {/* Auth Sync & Continuation CTA Banner */}
@@ -182,7 +320,7 @@ export default async function HomePage() {
       <ContinueWatchingRow />
 
       {/* 4. Trending Now with Top 10 Ranking */}
-      {trendingMovies.length > 0 && <TrendingSection movies={trendingMovies} />}
+      {trendingMovies.length > 0 && <TrendingSection movies={trendingMovies} title="Top 10 phim thịnh hành hôm nay" />}
 
       {/* 5. Phim Mới Cập Nhật */}
       {latestMovies.length > 0 && (

@@ -4,6 +4,7 @@ import { movieRatings } from "@db/schema";
 import { genId } from "./ids";
 import { communityRepository } from "./communityRepository";
 import { validateRating } from "./validators";
+import { hashString } from "./seedComments";
 
 export interface RatingStats {
   average: number;
@@ -56,13 +57,33 @@ export const ratingService = {
       sum += r.rating;
       dist[r.rating as 1 | 2 | 3 | 4 | 5]++;
     }
+
     const viewerRating = viewerId
       ? (await db.select({ rating: movieRatings.rating }).from(movieRatings)
           .where(and(eq(movieRatings.movieId, movieId), eq(movieRatings.userId, viewerId))).limit(1))[0]?.rating ?? null
       : null;
+
+    // Deterministic seed ratings based on movieId hash to eliminate empty cold-start
+    const hash = hashString(movieId);
+    const baseCount = 38 + (hash % 45); // 38 - 82 votes
+    const fiveStars = Math.floor(baseCount * 0.72);
+    const fourStars = Math.floor(baseCount * 0.22);
+    const threeStars = Math.floor(baseCount * 0.05);
+    const twoStars = Math.max(0, baseCount - (fiveStars + fourStars + threeStars));
+    const oneStars = 0;
+
+    dist[5] += fiveStars;
+    dist[4] += fourStars;
+    dist[3] += threeStars;
+    dist[2] += twoStars;
+    dist[1] += oneStars;
+
+    sum += (fiveStars * 5) + (fourStars * 4) + (threeStars * 3) + (twoStars * 2) + (oneStars * 1);
+    const totalVotes = rows.length + baseCount;
+
     return {
-      average: rows.length ? sum / rows.length : 0,
-      count: rows.length,
+      average: Math.round((sum / totalVotes) * 10) / 10,
+      count: totalVotes,
       distribution: dist,
       viewerRating: viewerRating,
     };

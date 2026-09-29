@@ -32,6 +32,8 @@ import { Genre, Country } from "@/types/movie";
 import { SearchOverlay } from "@/components/search/search-overlay";
 import { useMyList } from "@/lib/hooks/use-my-list";
 import { useAuth } from "@/lib/hooks/use-auth";
+import { useToast } from "@/components/ui/toast";
+import { checkAndNotifyDueReminders } from "@/lib/utils/airingSchedule";
 
 interface HeaderProps {
   genres?: Genre[];
@@ -42,6 +44,23 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { list, isLoaded } = useMyList();
+  const toast = useToast();
+
+  // Sitewide episode reminder checker
+  React.useEffect(() => {
+    const notifyHandler = () => {
+      checkAndNotifyDueReminders((dueRem) => {
+        toast.success(
+          "🎉 Tập mới đã lên sóng!",
+          `Tập ${dueRem.episodeNumber} của "${dueRem.movieTitle || "phim bạn theo dõi"}" đã sẵn sàng. Xem ngay!`
+        );
+      });
+    };
+
+    notifyHandler();
+    const interval = setInterval(notifyHandler, 30000);
+    return () => clearInterval(interval);
+  }, [toast]);
 
   const [isScrolled, setIsScrolled] = React.useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
@@ -50,8 +69,15 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
   const [countryDropdownOpen, setCountryDropdownOpen] = React.useState(false);
 
   const { user, isAuthenticated, isLoading: isAuthLoading, logout, openAuthModal } = useAuth();
+  const [mounted, setMounted] = React.useState(false);
   const [userMenuOpen, setUserMenuOpen] = React.useState(false);
   const userMenuRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isAuthed = mounted && Boolean(user);
 
   // Click outside to close user dropdown
   React.useEffect(() => {
@@ -165,10 +191,10 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
       <header className="fixed top-0 left-0 right-0 z-50 py-4 px-4 sm:px-8 bg-gradient-to-b from-[#080808]/90 via-[#080808]/50 to-transparent pointer-events-auto">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link href="/" className="inline-flex items-baseline group select-none">
-            <span className="font-black text-2xl sm:text-3xl tracking-[-0.03em] text-[#F9FAFB] group-hover:opacity-90 transition-opacity">
-              RUBBY
+            <span suppressHydrationWarning className="font-black text-2xl sm:text-3xl tracking-[-0.03em] text-[#F9FAFB] group-hover:opacity-90 transition-opacity">
+              RUBY
             </span>
-            <span className="font-extrabold text-xs sm:text-sm tracking-widest text-[#E50000] ml-1.5 uppercase">
+            <span suppressHydrationWarning className="font-extrabold text-xs sm:text-sm tracking-widest text-[#E50000] ml-1.5 uppercase">
               FILM
             </span>
           </Link>
@@ -232,17 +258,17 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
 
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            {/* Left: RubbyFilm Brand Logo */}
+            {/* Left: RubyFilm Brand Logo */}
             <Link
               href="/"
               onClick={handleHomeClick}
               className="flex items-baseline select-none flex-shrink-0 group py-1 transition-opacity hover:opacity-90"
               title="Về đầu trang"
             >
-              <span className="font-extrabold text-2xl sm:text-3xl tracking-[-0.02em] text-[#F9FAFB]">
-                RUBBY
+              <span suppressHydrationWarning className="font-extrabold text-2xl sm:text-3xl tracking-[-0.02em] text-[#F9FAFB]">
+                RUBY
               </span>
-              <span className="font-extrabold text-sm sm:text-base tracking-wider text-[#E50000] ml-1 uppercase">
+              <span suppressHydrationWarning className="font-extrabold text-sm sm:text-base tracking-wider text-[#E50000] ml-1 uppercase">
                 FILM
               </span>
             </Link>
@@ -273,6 +299,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                     <Link
                       key={link.href}
                       href="/"
+                      prefetch={true}
                       onClick={handleHomeClick}
                       className={tabClass}
                     >
@@ -285,6 +312,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                   <Link
                     key={link.href}
                     href={link.href}
+                    prefetch={true}
                     className={tabClass}
                   >
                     {link.label}
@@ -316,6 +344,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                         <Link
                           key={g.slug}
                           href={`/genre/${g.slug}`}
+                          prefetch={true}
                           className="px-2 py-1.5 rounded-lg text-xs text-[#D1D5DB] hover:text-[#E50000] hover:bg-[#1A1A1A] transition-colors font-medium text-center truncate"
                         >
                           {g.name}
@@ -350,6 +379,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                         <Link
                           key={c.slug}
                           href={`/country/${c.slug}`}
+                          prefetch={true}
                           className="px-2 py-1.5 rounded-lg text-xs text-[#D1D5DB] hover:text-[#E50000] hover:bg-[#1A1A1A] transition-colors font-medium text-center truncate"
                         >
                           {c.name}
@@ -375,8 +405,8 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
 
 
               {/* User Authentication Status / Avatar Menu */}
-              {user ? (
-                <div className="relative" ref={userMenuRef}>
+              {isAuthed && user ? (
+                <div className="relative" ref={userMenuRef} suppressHydrationWarning>
                   <button
                     type="button"
                     onClick={() => setUserMenuOpen((prev) => !prev)}
@@ -497,6 +527,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
               ) : (
                 <button
                   type="button"
+                  suppressHydrationWarning
                   onClick={() => openAuthModal("login")}
                   className="hidden sm:inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 sm:py-2.5 rounded-xl bg-[#1A1A1A] hover:bg-[#222222] border border-[#2E2E2E] hover:border-[#E50000]/60 text-[#F9FAFB] hover:text-[#E50000] font-bold text-xs sm:text-sm transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer"
                 >
@@ -531,12 +562,12 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#E50000]/10 rounded-full blur-3xl pointer-events-none" />
 
             {/* Mobile Auth Section */}
-            {!isAuthenticated ? (
+            {!isAuthed ? (
               <div className="relative z-10 p-3.5 mb-3 rounded-2xl bg-gradient-to-r from-[#171717] via-[#141414] to-[#121212] border border-[#2A2A2A] flex items-center justify-between gap-3 shadow-md">
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#E50000] animate-pulse" />
-                    <p className="text-xs font-black text-white tracking-wide">Tài khoản RubbyFilm</p>
+                    <p className="text-xs font-black text-white tracking-wide">Tài khoản RubyFilm</p>
                   </div>
                   <p className="text-[10px] text-[#A3A3A3] mt-0.5 truncate">Đăng nhập để đồng bộ yêu thích & lịch sử</p>
                 </div>
@@ -714,6 +745,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                   <Link
                     key={link.href}
                     href={link.href}
+                    prefetch={true}
                     onClick={() => setIsMobileMenuOpen(false)}
                     className={linkClasses}
                   >

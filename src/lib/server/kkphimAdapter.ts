@@ -26,15 +26,15 @@ function formatBrandServerName(rawName: string, isEmbed = false): string {
   const lower = clean.toLowerCase();
 
   if (lower.includes("hà nội") || lower.includes("vip 1") || clean === "1") {
-    return isEmbed ? "Rubby Embed VIP #1" : "Rubby VIP #1 (4K Ultra)";
+    return isEmbed ? "Ruby Embed VIP #1" : "Ruby VIP #1 (4K Ultra)";
   }
   if (lower.includes("sài gòn") || lower.includes("vip 2") || clean === "2") {
-    return isEmbed ? "Rubby Embed VIP #2" : "Rubby VIP #2 (HLS Fast)";
+    return isEmbed ? "Ruby Embed VIP #2" : "Ruby VIP #2 (HLS Fast)";
   }
   if (lower.includes("dự phòng") || lower.includes("backup")) {
-    return isEmbed ? "Rubby Embed Backup" : "Rubby Dự Phòng (Backup)";
+    return isEmbed ? "Ruby Embed Backup" : "Ruby Dự Phòng (Backup)";
   }
-  return isEmbed ? `Rubby Embed (${clean || "VIP"})` : `Rubby VIP (${clean || "HD"})`;
+  return isEmbed ? `Ruby Embed (${clean || "VIP"})` : `Ruby VIP (${clean || "HD"})`;
 }
 
 export function mapKkphimVideoSource(
@@ -171,7 +171,14 @@ export function mapKkphimMovie(raw: any, cdnDomain?: string): Movie {
 
   // Normalize type
   const rawType = raw.type || "";
-  const type: MovieType = rawType === "series" || rawType === "tvshows" ? "series" : "single";
+  const tmdbType: "movie" | "tv" | undefined =
+    raw.tmdb?.type === "tv" ? "tv" : raw.tmdb?.type === "movie" ? "movie" : undefined;
+  const isSeriesType =
+    rawType === "series" ||
+    rawType === "tvshows" ||
+    tmdbType === "tv" ||
+    (typeof raw.episode_total === "string" && !raw.episode_total.toLowerCase().includes("full") && parseInt(raw.episode_total, 10) > 1);
+  const type: MovieType = isSeriesType ? "series" : "single";
 
   // If raw type is hoathinh (donghua, anime), ensure it's tagged with hoat-hinh genre
   if (rawType === "hoathinh") {
@@ -191,9 +198,9 @@ export function mapKkphimMovie(raw: any, cdnDomain?: string): Movie {
     rating = Math.min(10, Math.round(raw.imdb.vote_average * 10) / 10);
   }
 
-  // Normalize image URLs
-  const posterUrl = getMovieImageUrl(raw.poster_url || raw.thumb_url, "poster", cdnDomain);
-  const backdropUrl = getMovieImageUrl(raw.thumb_url || raw.poster_url, "backdrop", cdnDomain);
+  // Normalize image URLs (thumb_url is the vertical 2:3 card poster, poster_url is the wide 16:9 banner)
+  const posterUrl = getMovieImageUrl(raw.thumb_url || raw.poster_url, "poster", cdnDomain);
+  const backdropUrl = getMovieImageUrl(raw.poster_url || raw.thumb_url, "backdrop", cdnDomain);
 
   // Normalize cast and director
   const cast = Array.isArray(raw.actor) ? raw.actor.filter(Boolean) : [];
@@ -239,6 +246,8 @@ export function mapKkphimMovie(raw: any, cdnDomain?: string): Movie {
     cast: cast.length > 0 ? cast : undefined,
     totalEpisodes,
     currentEpisode: raw.episode_current || undefined,
+    showtimes: typeof raw.showtimes === "string" && raw.showtimes.trim() ? raw.showtimes.trim() : undefined,
+    notify: typeof raw.notify === "string" && raw.notify.trim() ? raw.notify.trim() : undefined,
     isHot: raw.chieurap === true || rating >= 8.5,
     isLatest: true,
     isRecommended: rating >= 8.0,
@@ -252,6 +261,10 @@ export function mapKkphimMovie(raw: any, cdnDomain?: string): Movie {
       return Math.max(12000, votes * 150 + (hash % 500000) + 75000);
     })(),
     tmdbId: raw.tmdb?.id || undefined,
+    tmdbType: tmdbType || (type === "series" ? "tv" : "movie"),
+    trailerUrl: typeof raw.trailer_url === "string" && raw.trailer_url.trim() ? raw.trailer_url.trim() : undefined,
+    tmdbVoteAverage: raw.tmdb?.vote_average ? Math.round(Number(raw.tmdb.vote_average) * 10) / 10 : undefined,
+    imdbVoteAverage: raw.imdb?.vote_average ? Math.round(Number(raw.imdb.vote_average) * 10) / 10 : undefined,
   };
 }
 

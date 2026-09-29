@@ -334,7 +334,7 @@ export default function ForgotPasswordPage() {
               Đặt lại mật khẩu thành công!
             </h3>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-sm mx-auto">
-              Mật khẩu mới của bạn đã có hiệu lực ngay lập tức. Bây giờ bạn có thể đăng nhập vào RubbyFilm với mật khẩu mới.
+              Mật khẩu mới của bạn đã có hiệu lực ngay lập tức. Bây giờ bạn có thể đăng nhập vào RubyFilm với mật khẩu mới.
             </p>
             <div className="inline-block px-3 py-1.5 rounded-xl bg-white/[0.05] border border-white/10 text-xs sm:text-sm font-bold text-emerald-400">
               {email}

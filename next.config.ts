@@ -5,9 +5,23 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   compress: true,
   poweredByHeader: false,
+  experimental: {
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
+  },
   images: {
     formats: ["image/avif", "image/webp"],
-    minimumCacheTTL: 86400,
+    minimumCacheTTL: 2592000, // 30 days image cache
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920, 2048, 3840],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    qualities: [75, 80, 85, 90, 95, 100],
+    localPatterns: [
+      {
+        pathname: "/**",
+      },
+    ],
     remotePatterns: [
       {
         protocol: "https",
@@ -31,6 +45,24 @@ const nextConfig: NextConfig = {
         ],
       },
       {
+        source: "/_next/image(.*)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=86400, s-maxage=604800, stale-while-revalidate=86400",
+          },
+        ],
+      },
+      {
+        source: "/(favicon.ico|icon-192.png|favicon-32x32.png)",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "public, max-age=2592000, immutable",
+          },
+        ],
+      },
+      {
         source: "/api/auth/(.*)",
         headers: [
           {
@@ -44,7 +76,7 @@ const nextConfig: NextConfig = {
         ],
       },
       {
-        source: "/api/((?!auth).*)" as any,
+        source: "/api/((?!auth|user|community/stream).*)",
         headers: [
           {
             key: "Cache-Control",

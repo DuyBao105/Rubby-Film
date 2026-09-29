@@ -19,17 +19,36 @@ export interface IWatchHistoryService {
   isEpisodeWatched(movieId: string, episodeNumber: number): boolean;
   subscribe(callback: (history: WatchHistoryItem[]) => void): () => void;
   setUser(userId: string | null): void;
+  syncWithServer(): Promise<void>;
   flushSync(): void;
 }
 
 const PRIMARY_KEY = "rubbyfilm_watch_history";
 const LEGACY_KEY = "bfilm_watch_history";
 
+function getAuthHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    "Cache-Control": "no-cache",
+  };
+  if (typeof window !== "undefined") {
+    try {
+      const token = localStorage.getItem("rubbyfilm_token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch {}
+  }
+  return headers;
+}
+
 class WatchHistoryService implements IWatchHistoryService {
   private cache: WatchHistoryItem[] | null = null;
   private listeners: Set<(history: WatchHistoryItem[]) => void> = new Set();
   private currentUserId: string | null = null;
   private syncTimer: NodeJS.Timeout | null = null;
+  private lastAutoSyncTime = 0;
+  private syncPromise: Promise<void> | null = null;
+  private lastSyncTime = 0;
   private pendingSyncItem: {
     movie: Movie;
     progressSeconds: number;
@@ -52,16 +71,33 @@ class WatchHistoryService implements IWatchHistoryService {
           }
         }
       } catch {}
+
+      // Cross-device sync: auto re-sync when switching back to tab/browser window
+      const triggerAutoSync = () => {
+        const now = Date.now();
+        if (now - this.lastAutoSyncTime > 2500 && this.currentUserId) {
+          this.lastAutoSyncTime = now;
+          this.syncWithServer();
+        }
+      };
+
+      window.addEventListener("focus", triggerAutoSync);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          triggerAutoSync();
+        }
+      });
     }
   }
 
   public setUser(userId: string | null): void {
     const normalized = userId ? String(userId).trim() : null;
-    if (this.currentUserId === normalized) return;
+    const changed = this.currentUserId !== normalized;
     this.currentUserId = normalized;
-    this.cache = null;
-    this.notify();
-
+    if (changed) {
+      this.cache = null;
+      this.notify();
+    }
     if (normalized) {
       this.syncWithServer();
     }
@@ -140,93 +176,117 @@ class WatchHistoryService implements IWatchHistoryService {
 
   // --- Cloud Sync ---
 
-  private async syncWithServer(): Promise<void> {
+  public async syncWithServer(force: boolean = false): Promise<void> {
     if (typeof window === "undefined" || !this.currentUserId) return;
 
-    try {
-      const res = await fetch("/api/user/history", {
-        method: "GET",
-        headers: { "Cache-Control": "no-cache" },
-      });
+    if (this.syncPromise) return this.syncPromise;
 
-      if (!res.ok) return;
+    const now = Date.now();
+    if (!force && now - this.lastSyncTime < 4000) {
+      return;
+    }
+    this.lastSyncTime = now;
 
-      const body = (await res.json()) as {
-        success?: boolean;
-        data?: { history?: WatchHistoryItem[] };
-      };
+    this.syncPromise = (async () => {
+      try {
+        const res = await fetch("/api/user/history", {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
 
-      if (!body.success || !Array.isArray(body.data?.history)) return;
+        if (!res.ok) return;
 
-      const serverItems = body.data.history;
-      const localItems = this.load();
+        const body = (await res.json()) as {
+          success?: boolean;
+          data?: { history?: WatchHistoryItem[] };
+        };
 
-      // Merge server items and local items
-      const map = new Map<string, WatchHistoryItem>();
+        if (!body.success || !Array.isArray(body.data?.history)) return;
 
-      // Put server items first
-      for (const s of serverItems) {
-        const id = String(s.movieId || s.movie?.id || s.slug || "").trim();
-        if (id) map.set(id, s);
-      }
+        const serverItems = body.data.history;
+        const localItems = this.load();
 
-      let localHasNewer = false;
+        // Merge server items and local items
+        const map = new Map<string, WatchHistoryItem>();
 
-      // Merge local items
-      for (const l of localItems) {
-        const id = String(l.movieId || l.movie?.id || l.slug || "").trim();
-        if (!id) continue;
+        // Put server items first
+        for (const s of serverItems) {
+          const id = String(s.movieId || s.movie?.id || s.slug || "").trim();
+          if (id) map.set(id, s);
+        }
 
-        const serverMatch = map.get(id);
-        if (!serverMatch) {
-          map.set(id, l);
-          localHasNewer = true;
-        } else if ((l.watchedAt || 0) > (serverMatch.watchedAt || 0)) {
-          // Merge watchedEpisodes
-          const mergedEpisodes = {
-            ...(serverMatch.watchedEpisodes || {}),
-            ...(l.watchedEpisodes || {}),
-          };
-          map.set(id, {
-            ...l,
-            watchedEpisodes: mergedEpisodes,
-          });
-          localHasNewer = true;
-        } else {
-          // Keep server item but merge any episode watched locally that might not be on server
-          if (l.watchedEpisodes) {
-            serverMatch.watchedEpisodes = {
-              ...(l.watchedEpisodes || {}),
+        let localHasNewer = false;
+
+        // Merge local items only if local has newer watch timestamp than server
+        for (const l of localItems) {
+          const id = String(l.movieId || l.movie?.id || l.slug || "").trim();
+          if (!id) continue;
+
+          const serverMatch = map.get(id);
+          if (!serverMatch) {
+            // Only add if server was completely empty (initial seed)
+            if (serverItems.length === 0) {
+              map.set(id, l);
+              localHasNewer = true;
+            }
+          } else if ((l.watchedAt || 0) > (serverMatch.watchedAt || 0)) {
+            const mergedEpisodes = {
               ...(serverMatch.watchedEpisodes || {}),
+              ...(l.watchedEpisodes || {}),
             };
+            map.set(id, {
+              ...l,
+              watchedEpisodes: mergedEpisodes,
+            });
+            localHasNewer = true;
           }
         }
-      }
 
-      const merged = Array.from(map.values())
-        .sort((a, b) => (b.watchedAt || 0) - (a.watchedAt || 0))
-        .slice(0, 50);
+        const merged = Array.from(map.values())
+          .sort((a, b) => (b.watchedAt || 0) - (a.watchedAt || 0))
+          .slice(0, 50);
 
-      this.cache = merged;
-      if (this.currentUserId) {
-        const key = this.getStorageKey();
-        if (key) {
-          localStorage.setItem(key, JSON.stringify(merged));
+        const currentCached = this.cache || [];
+        const changed =
+          currentCached.length !== merged.length ||
+          currentCached.some(
+            (m, idx) =>
+              (m.movieId || m.slug) !== (merged[idx]?.movieId || merged[idx]?.slug) ||
+              m.progressSeconds !== merged[idx]?.progressSeconds
+          );
+
+        this.cache = merged;
+        if (this.currentUserId) {
+          const key = this.getStorageKey();
+          if (key) {
+            localStorage.setItem(key, JSON.stringify(merged));
+          }
         }
-      }
-      this.notify();
+        if (changed) {
+          this.notify();
+        }
 
-      // If local had items not yet on server or newer, push merged to server
-      if (localHasNewer || (serverItems.length === 0 && merged.length > 0)) {
-        fetch("/api/user/history", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: merged }),
-        }).catch(() => {});
+        // If local had items not yet on server or newer, push merged to server
+        if (localHasNewer || (serverItems.length === 0 && merged.length > 0)) {
+          fetch("/api/user/history", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            credentials: "include",
+            body: JSON.stringify({ items: merged }),
+          }).catch(() => {});
+        }
+      } catch (e) {
+        console.warn("[WatchHistoryService] syncWithServer error:", e);
+      } finally {
+        this.syncPromise = null;
       }
-    } catch (e) {
-      console.warn("[WatchHistoryService] syncWithServer error:", e);
-    }
+    })();
+
+    return this.syncPromise;
   }
 
   public flushSync(): void {
@@ -240,17 +300,21 @@ class WatchHistoryService implements IWatchHistoryService {
       this.pendingSyncItem = null;
 
       try {
-        if (navigator.sendBeacon) {
-          const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
-          navigator.sendBeacon("/api/user/history", blob);
-        } else {
-          fetch("/api/user/history", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-            keepalive: true,
-          }).catch(() => {});
-        }
+        fetch("/api/user/history", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getAuthHeaders(),
+          },
+          credentials: "include",
+          body: JSON.stringify(payload),
+          keepalive: true,
+        }).catch(() => {
+          if (navigator.sendBeacon) {
+            const blob = new Blob([JSON.stringify(payload)], { type: "application/json" });
+            navigator.sendBeacon("/api/user/history", blob);
+          }
+        });
       } catch {}
     }
   }
@@ -359,6 +423,8 @@ class WatchHistoryService implements IWatchHistoryService {
     if (this.currentUserId && typeof window !== "undefined") {
       fetch(`/api/user/history?id=${encodeURIComponent(target)}`, {
         method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
       }).catch(() => {});
     }
   }
@@ -373,6 +439,8 @@ class WatchHistoryService implements IWatchHistoryService {
 
       fetch("/api/user/history", {
         method: "DELETE",
+        headers: getAuthHeaders(),
+        credentials: "include",
       }).catch(() => {});
     }
   }

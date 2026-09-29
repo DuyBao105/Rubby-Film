@@ -28,13 +28,13 @@ async function ensureUser(p: {
 
 async function main() {
   await ensureUser({
-    id: "usr_demo_rubbyfilm_001", email: "demo@rubbyfilm.vn",
+    id: "usr_demo_rubyfilm_001", email: "demo@rubyfilm.vn",
     name: "Thành Viên VIP", password: "Demo@123456", role: "vip",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=faces",
   });
   await ensureUser({
-    id: "usr_admin_rubbyfilm_001", email: "admin@rubbyfilm.vn",
-    name: "Admin RubbyFilm", password: "Admin@123456", role: "admin",
+    id: "usr_admin_rubyfilm_001", email: "admin@rubyfilm.vn",
+    name: "Admin RubyFilm", password: "Admin@123456", role: "admin",
   });
   console.log("seed ok");
 }

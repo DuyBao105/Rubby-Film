@@ -122,7 +122,7 @@ function LoginForm() {
   }, []);
 
   const handleFillDemo = () => {
-    setEmail("demo@rubbyfilm.vn");
+    setEmail("demo@rubyfilm.vn");
     setPassword("Demo@123456");
     setError("");
     setFieldErrors({});
@@ -290,7 +290,7 @@ function LoginForm() {
       <div className="mt-4 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between text-xs text-[#9CA3AF]">
         <span className="flex items-center gap-1.5 truncate">
           <Sparkles className="w-3.5 h-3.5 text-[#FECF59] shrink-0" />
-          <span>Tài khoản VIP: <strong className="text-[#D1D5DB] font-mono">demo@rubbyfilm.vn</strong></span>
+          <span>Tài khoản VIP: <strong className="text-[#D1D5DB] font-mono">demo@rubyfilm.vn</strong></span>
         </span>
         <button
           type="button"

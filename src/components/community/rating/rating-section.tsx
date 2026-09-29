@@ -45,34 +45,30 @@ export function RatingSection({ movieId, movieSlug, onJumpToComments }: RatingSe
 
   const onRate = React.useCallback(
     async (n: number) => {
-      if (!user) {
-        openAuthModal("login");
-        return;
-      }
       setBusy(true);
       const r = await rate(n);
       setBusy(false);
       if (!r.ok) {
-        if (r.code === "UNAUTHENTICATED") {
-          openAuthModal("login");
-        } else if (r.code === "RATE_LIMITED") {
+        if (r.code === "RATE_LIMITED") {
           toast.error("Bạn đang thao tác quá nhanh.", "Vui lòng đợi một chút rồi thử lại.");
         } else {
           toast.error("Không thể gửi đánh giá", r.message ?? "Thử lại sau.");
         }
+      } else {
+        toast.success("Cảm ơn bạn!", `Bạn đã đánh giá ${n} sao cho bộ phim này.`);
       }
     },
-    [user, openAuthModal, rate, toast],
+    [rate, toast],
   );
 
   const onRemove = React.useCallback(async () => {
-    if (!user) {
-      openAuthModal("login");
-      return;
-    }
     const ok = await removeRating();
-    if (!ok) toast.error("Không thể xoá đánh giá.", "Thử lại sau.");
-  }, [user, openAuthModal, removeRating, toast]);
+    if (!ok) {
+      toast.error("Không thể xoá đánh giá.", "Thử lại sau.");
+    } else {
+      toast.success("Đã xoá đánh giá.");
+    }
+  }, [removeRating, toast]);
 
   const avg = stats?.average ?? 0;
   const cnt = stats?.count ?? 0;
@@ -109,7 +105,7 @@ export function RatingSection({ movieId, movieSlug, onJumpToComments }: RatingSe
               disabled={busy || isLoading}
             />
           </div>
-          {user && viewerRating != null && (
+          {viewerRating != null && (
             <button
               type="button"
               onClick={onRemove}

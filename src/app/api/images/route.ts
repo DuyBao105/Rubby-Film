@@ -9,6 +9,16 @@ const ALLOWED_HOSTS = new Set([
   "images.unsplash.com",
 ]);
 
+interface CachedImage {
+  buffer: ArrayBuffer;
+  contentType: string;
+  expiresAt: number;
+}
+
+const IMAGE_CACHE = new Map<string, CachedImage>();
+const MAX_IMAGE_ENTRIES = 150;
+const IMAGE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const p = searchParams.get("p");
@@ -30,6 +40,20 @@ export async function GET(request: NextRequest) {
     }
   }
 
+  // Check instant RAM cache
+  const cached = IMAGE_CACHE.get(targetUrl);
+  if (cached && Date.now() < cached.expiresAt) {
+    return new NextResponse(cached.buffer, {
+      status: 200,
+      headers: {
+        "Content-Type": cached.contentType,
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Served-By": "RubyFilm-Media-Cache",
+        "X-Cache": "HIT",
+      },
+    });
+  }
+
   try {
     const parsed = new URL(targetUrl);
     
@@ -40,10 +64,9 @@ export async function GET(request: NextRequest) {
 
     const res = await fetch(targetUrl, {
       headers: {
-        "User-Agent": "RubbyFilm-CDN/1.0",
+        "User-Agent": "RubyFilm-CDN/1.0",
         Accept: "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
       },
-      next: { revalidate: 86400 * 7 }, // Cache for 7 days
     });
 
     if (!res.ok) {
@@ -53,12 +76,24 @@ export async function GET(request: NextRequest) {
     const contentType = res.headers.get("content-type") || "image/jpeg";
     const buffer = await res.arrayBuffer();
 
+    // Cache in RAM (evict oldest if full)
+    if (IMAGE_CACHE.size >= MAX_IMAGE_ENTRIES) {
+      const oldest = IMAGE_CACHE.keys().next().value;
+      if (oldest) IMAGE_CACHE.delete(oldest);
+    }
+    IMAGE_CACHE.set(targetUrl, {
+      buffer,
+      contentType,
+      expiresAt: Date.now() + IMAGE_TTL_MS,
+    });
+
     return new NextResponse(buffer, {
       status: 200,
       headers: {
         "Content-Type": contentType,
-        "Cache-Control": "public, max-age=604800, s-maxage=2592000, stale-while-revalidate=86400",
-        "X-Served-By": "RubbyFilm-Media-Gateway",
+        "Cache-Control": "public, max-age=31536000, immutable",
+        "X-Served-By": "RubyFilm-Media-Gateway",
+        "X-Cache": "MISS",
       },
     });
   } catch (error) {

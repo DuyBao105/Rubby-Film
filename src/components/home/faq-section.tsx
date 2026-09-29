@@ -14,44 +14,44 @@ const faqs: FaqItem[] = [
   {
     id: "faq-1",
     number: "01",
-    question: "RubbyFilm là gì?",
+    question: "RubyFilm là gì?",
     answer:
-      "RubbyFilm là nền tảng xem phim trực tuyến cao cấp, cung cấp hàng ngàn tác phẩm điện ảnh chiếu rạp bom tấn, phim bộ đặc sắc và anime chất lượng cao với tốc độ tải mượt mà.",
+      "RubyFilm là nền tảng xem phim trực tuyến miễn phí chất lượng cao, cung cấp hàng ngàn tác phẩm điện ảnh bom tấn chiếu rạp, phim bộ đặc sắc (Hàn Quốc, Trung Quốc, Âu Mỹ, Thái Lan) và anime thịnh hành. Giao diện được thiết kế hiện đại, mượt mà và tối ưu hóa hiển thị sắc nét trên cả máy tính lẫn điện thoại.",
   },
   {
     id: "faq-2",
     number: "02",
     question: "Tôi có cần phải đăng nhập hoặc đăng ký tài khoản không?",
     answer:
-      "Hoàn toàn KHÔNG! Bạn có thể xem ngay lập tức mọi bộ phim mà không cần bất kỳ tài khoản hay mật khẩu nào. Không yêu cầu email hay thông tin cá nhân.",
+      "Bạn KHÔNG bắt buộc phải có tài khoản để xem phim – có thể bấm xem ngay lập tức mọi tác phẩm. Tuy nhiên, việc đăng ký tài khoản (hỗ trợ đăng nhập nhanh bằng Google) sẽ giúp bạn đồng bộ Lịch sử xem và Danh sách yêu thích giữa máy tính và điện thoại, đồng thời có thể tham gia bình luận thảo luận cùng cộng đồng.",
   },
   {
     id: "faq-3",
     number: "03",
-    question: "Làm thế nào để lưu phim yêu thích và xem tiếp khi không có tài khoản?",
+    question: "Làm thế nào để lưu phim yêu thích và xem tiếp trên thiết bị khác?",
     answer:
-      "RubbyFilm tự động lưu trữ 'Danh sách yêu thích' và 'Lịch sử đang xem' trực tiếp trong trình duyệt máy bạn (Local Storage). Bạn có thể quay lại tiếp tục xem bất cứ lúc nào đúng mốc thời gian đã dừng.",
+      "Nếu xem không đăng nhập, RubyFilm tự động lưu tiến trình và danh sách yêu thích ngay trên bộ nhớ trình duyệt của máy bạn. Khi bạn đăng nhập tài khoản, toàn bộ lịch sử xem (kèm thời lượng chính xác đến từng giây) sẽ được đồng bộ đám mây (Cloud Sync) giúp bạn đổi từ điện thoại sang máy tính vẫn xem tiếp đúng tập và giây đã dừng.",
   },
   {
     id: "faq-4",
     number: "04",
     question: "Chất lượng hình ảnh và âm thanh như thế nào?",
     answer:
-      "Các bộ phim trên RubbyFilm hỗ trợ độ phân giải sắc nét từ Full HD 1080p đến 4K Ultra HD với đường truyền máy chủ CDN băng thông cao, hạn chế tối đa độ trễ và giật lag.",
+      "Các bộ phim trên RubyFilm hỗ trợ chất lượng hình ảnh sắc nét từ Full HD (1080p) đến 4K Ultra HD cùng âm thanh sống động. Hệ thống cung cấp đầy đủ bản Vietsub, Thuyết minh, Lồng tiếng và tích hợp nhiều máy chủ phát tốc độ cao (Server VIP, Server Dự phòng) giúp phát mượt mà, hạn chế tối đa gián đoạn.",
   },
   {
     id: "faq-5",
     number: "05",
-    question: "Xem phim trên RubbyFilm có mất phí không?",
+    question: "Xem phim trên RubyFilm có mất phí hay bắt nạp VIP không?",
     answer:
-      "Hoàn toàn miễn phí 100%. Bạn có thể thưởng thức toàn bộ kho nội dung điện ảnh phong phú mà không cần đóng bất kỳ khoản phí duy trì nào.",
+      "Hoàn toàn MIỄN PHÍ 100%. Bạn có thể thưởng thức toàn bộ kho nội dung điện ảnh phong phú mà không cần nạp tiền hay mua bất kỳ gói VIP nào. RubyFilm cam kết mang đến trải nghiệm giải trí thoải mái, không chèn các quảng cáo popup độc hại hay gây phiền toái.",
   },
   {
     id: "faq-6",
     number: "06",
     question: "Nội dung phim được cập nhật với tần suất ra sao?",
     answer:
-      "Hệ thống cập nhật phim mới liên tục mỗi ngày, bao gồm các tập phim bộ mới phát sóng, phim chiếu rạp vừa ra mắt kèm bản phụ đề Vietsub và lồng tiếng chuẩn xác.",
+      "Hệ thống cập nhật phim mới liên tục 24/7 theo thời gian thực: các tập phim bộ mới nhất phát sóng cùng ngày với quốc tế, các bộ phim chiếu rạp bom tấn có bản đẹp sớm nhất kèm bản phụ đề Vietsub và thuyết minh chuẩn xác.",
   },
 ];
 
@@ -72,7 +72,7 @@ export function FaqSection() {
               Câu Hỏi Thường Gặp
             </h2>
             <p className="text-sm sm:text-base text-[#D1D5DB] font-normal leading-[1.6] max-w-2xl">
-              Bạn có thắc mắc? Dưới đây là những câu trả lời chi tiết và rõ ràng nhất về trải nghiệm xem phim tự do trên RubbyFilm.
+              Bạn có thắc mắc? Dưới đây là những câu trả lời chi tiết và rõ ràng nhất về trải nghiệm xem phim tự do trên RubyFilm.
             </p>
           </div>
 

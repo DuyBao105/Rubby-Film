@@ -176,7 +176,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       profile = {
         provider: "facebook",
         providerAccountId: fbInfo.id,
-        email: fbInfo.email || `${fbInfo.id}@facebook.user.rubbyfilm.vn`,
+        email: fbInfo.email || `${fbInfo.id}@facebook.user.rubyfilm.vn`,
         name: fbInfo.name || "Facebook User",
         avatarUrl: fbInfo.picture?.data?.url,
       };

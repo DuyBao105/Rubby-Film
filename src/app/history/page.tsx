@@ -15,6 +15,11 @@ import { AuthSyncBanner } from "@/components/home/auth-sync-banner";
 export default function HistoryPage() {
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const { history, isLoaded, removeFromHistory, clearHistory } = useWatchHistory();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const formatTime = (secs: number) => {
     const mins = Math.floor(secs / 60);
@@ -41,7 +46,7 @@ export default function HistoryPage() {
           </p>
         </div>
 
-        {history.length > 0 && (
+        {mounted && history.length > 0 && (
           <Button
             variant="outline"
             size="sm"
@@ -54,7 +59,7 @@ export default function HistoryPage() {
         )}
       </div>
 
-      {!isLoaded ? (
+      {!mounted || !isLoaded ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-32 w-full rounded-2xl" />
@@ -168,7 +173,7 @@ export default function HistoryPage() {
         <EmptyState
           icon={<History className="w-8 h-8 text-[#FECF59]" />}
           title="Đăng nhập để xem lịch sử phim"
-          description="Vui lòng đăng nhập tài khoản RubbyFilm để theo dõi các bộ phim đã xem và tiếp tục xem dở dang của riêng bạn."
+          description="Vui lòng đăng nhập tài khoản RubyFilm để theo dõi các bộ phim đã xem và tiếp tục xem dở dang của riêng bạn."
           actionText="Đăng Nhập Ngay"
           onAction={() => openAuthModal("login")}
         />
@@ -176,7 +181,7 @@ export default function HistoryPage() {
         <EmptyState
           icon={<History className="w-8 h-8 text-cinema-400" />}
           title="Chưa có lịch sử xem phim"
-          description="Khi bạn xem phim trên RubbyFilm, các tập phim và tiến trình xem dở sẽ tự động được lưu lại tại đây."
+          description="Khi bạn xem phim trên RubyFilm, các tập phim và tiến trình xem dở sẽ tự động được lưu lại tại đây."
           actionText="Bắt Đầu Xem Phim"
           actionHref="/"
         />

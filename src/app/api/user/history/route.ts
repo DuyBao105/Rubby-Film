@@ -25,7 +25,13 @@ async function parseRequestBody(request: NextRequest): Promise<Record<string, un
 }
 
 async function getAuthenticatedUserId(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  let token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.substring(7).trim();
+    }
+  }
   if (!token) return null;
   const session = await authRepository.getSession(token);
   return session ? session.user.id : null;
@@ -66,14 +72,30 @@ export async function POST(request: NextRequest) {
       const existing = userDataRepository.getWatchHistory(userId);
       const incoming = body.items;
 
-      // Merge incoming with existing by choosing latest watchedAt
+      // Merge incoming with existing by choosing latest watchedAt and merging episodes
       const map = new Map<string, WatchHistoryItem>();
       for (const item of [...existing, ...incoming]) {
         const id = String(item.movieId || item.movie?.id || item.slug || "").trim();
         if (!id) continue;
         const current = map.get(id);
-        if (!current || (item.watchedAt || 0) >= (current.watchedAt || 0)) {
+        if (!current) {
           map.set(id, item);
+        } else if ((item.watchedAt || 0) >= (current.watchedAt || 0)) {
+          map.set(id, {
+            ...item,
+            watchedEpisodes: {
+              ...(current.watchedEpisodes || {}),
+              ...(item.watchedEpisodes || {}),
+            },
+          });
+        } else {
+          map.set(id, {
+            ...current,
+            watchedEpisodes: {
+              ...(item.watchedEpisodes || {}),
+              ...(current.watchedEpisodes || {}),
+            },
+          });
         }
       }
 

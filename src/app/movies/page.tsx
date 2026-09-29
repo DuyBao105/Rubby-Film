@@ -7,24 +7,26 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Kho Phim Đặc Sắc - Xem Phim Hay Tuyển Chọn",
-  description: "Khám phá hàng ngàn bộ phim điện ảnh bom tấn, phim bộ truyền hình, anime hot nhất với chất lượng 4K Ultra HD bản quyền tại RubbyFilm.",
+  description: "Khám phá hàng ngàn bộ phim điện ảnh bom tấn, phim bộ truyền hình, anime hot nhất với chất lượng 4K Ultra HD bản quyền tại RubyFilm.",
   alternates: {
     canonical: "/movies",
   },
   openGraph: {
-    title: "Kho Phim Đặc Sắc - RubbyFilm",
-    description: "Khám phá hàng ngàn bộ phim điện ảnh bom tấn chất lượng 4K Ultra HD tại RubbyFilm.",
+    title: "Kho Phim Đặc Sắc - RubyFilm",
+    description: "Khám phá hàng ngàn bộ phim điện ảnh bom tấn chất lượng 4K Ultra HD tại RubyFilm.",
     url: "/movies",
-    siteName: "RubbyFilm",
+    siteName: "RubyFilm",
     locale: "vi_VN",
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Kho Phim Đặc Sắc - RubbyFilm",
-    description: "Khám phá hàng ngàn bộ phim điện ảnh bom tấn chất lượng 4K Ultra HD tại RubbyFilm.",
+    title: "Kho Phim Đặc Sắc - RubyFilm",
+    description: "Khám phá hàng ngàn bộ phim điện ảnh bom tấn chất lượng 4K Ultra HD tại RubyFilm.",
   },
 };
+
+export const revalidate = 300;
 
 import { MovieFilterPanel } from "@/components/movie/movie-filter-panel";
 

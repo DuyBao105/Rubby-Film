@@ -13,7 +13,13 @@ const NO_CACHE_HEADERS = {
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+    let token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+    if (!token) {
+      const authHeader = request.headers.get("authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        token = authHeader.substring(7).trim();
+      }
+    }
 
     if (!token) {
       return apiSuccess({ user: null, authenticated: false }, undefined, NO_CACHE_HEADERS);
@@ -27,6 +33,7 @@ export async function GET(request: NextRequest) {
     return apiSuccess(
       {
         user: session.user,
+        token: session.token,
         authenticated: true,
       },
       undefined,

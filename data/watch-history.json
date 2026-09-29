@@ -1,1 +1,1866 @@
-{}
+{
+  "usr_6e6d0e05fa97a575": [
+    {
+      "movieId": "ea3d768ebc7cfa5a5a21262a8ccc803e",
+      "slug": "van-tuoc-khieu-thien-luc",
+      "title": "Vân Tước Khiếu Thiên Lục",
+      "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260918%2Fvan-tuoc-khieu-thien-luc-poster.webp",
+      "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260918%2Fvan-tuoc-khieu-thien-luc-thumb.webp",
+      "movie": {
+        "id": "ea3d768ebc7cfa5a5a21262a8ccc803e",
+        "slug": "van-tuoc-khieu-thien-luc",
+        "title": "Vân Tước Khiếu Thiên Lục",
+        "originalTitle": "Gladiator In The Theater",
+        "description": "Câu chuyện kể về Mạnh Kim Phúc ở tuổi 18 vừa hoàn thành khóa học nghề, từng bước chuyển mình từ vai Võ Sửu (kép hề võ) sang Võ Sinh (kép võ) rồi đến Lão Sinh (kép già). Từ một tân binh chốn nghệ đài với tương lai mờ mịt, một thiếu niên bình thường tài năng bình thường, gia cảnh nghèo khó, anh đã trưởng thành và lột xác qua những biến chuyển của thời đại, cuối cùng đứng vững trong giới Lê Viên cạnh tranh khốc liệt và khắc tên mình vào sử sách như một huyền thoại chốn giang hồ.",
+        "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260918%2Fvan-tuoc-khieu-thien-luc-poster.webp",
+        "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260918%2Fvan-tuoc-khieu-thien-luc-thumb.webp",
+        "year": 2026,
+        "rating": 9,
+        "duration": "45 phút/tập",
+        "country": "Trung Quốc",
+        "countrySlug": "trung-quoc",
+        "genres": [
+          "Chính Kịch",
+          "Cổ Trang",
+          "Tâm Lý"
+        ],
+        "genreSlugs": [
+          "chinh-kich",
+          "co-trang",
+          "tam-ly"
+        ],
+        "quality": "FHD",
+        "language": "Vietsub",
+        "type": "series",
+        "rawType": "series",
+        "director": "Đang cập nhật",
+        "cast": [
+          "Zhang Yishan",
+          "Tan Zhuo",
+          "Cao Lei",
+          "Yang Lixin",
+          "Liu Wei"
+        ],
+        "totalEpisodes": 40,
+        "currentEpisode": "Tập 33",
+        "isHot": true,
+        "isLatest": true,
+        "isRecommended": true,
+        "views": 93594,
+        "tmdbId": "288873",
+        "tmdbType": "tv",
+        "tmdbVoteAverage": 9,
+        "episodes": [
+          {
+            "id": "tap-01",
+            "name": "Tập 01",
+            "slug": "tap-01",
+            "episodeNumber": 1,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTMyNDQ0MDczNDUzYzNiMzkxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTMyNDQ0MDczNDUzYzNiMzkxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-02",
+            "name": "Tập 02",
+            "slug": "tap-02",
+            "episodeNumber": 2,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTNhMzgwMDBkNDIwMDMzMDAxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTNhMzgwMDBkNDIwMDMzMDAxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-03",
+            "name": "Tập 03",
+            "slug": "tap-03",
+            "episodeNumber": 3,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTE0MTM0MzIyMTIzOTE0MTgxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTE0MTM0MzIyMTIzOTE0MTgxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-04",
+            "name": "Tập 04",
+            "slug": "tap-04",
+            "episodeNumber": 4,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTViMmUxYTEzMTgwMDMyMDAxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTViMmUxYTEzMTgwMDMyMDAxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-05",
+            "name": "Tập 05",
+            "slug": "tap-05",
+            "episodeNumber": 5,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTBkNDgwMTE0MmY3YTBkMGYxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTBkNDgwMTE0MmY3YTBkMGYxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-06",
+            "name": "Tập 06",
+            "slug": "tap-06",
+            "episodeNumber": 6,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTUwMTQxNjBjMzI3ODM1MWIxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTUwMTQxNjBjMzI3ODM1MWIxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-07",
+            "name": "Tập 07",
+            "slug": "tap-07",
+            "episodeNumber": 7,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTBhMjgwMjc5MDUyYzJlM2QxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTBhMjgwMjc5MDUyYzJlM2QxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-08",
+            "name": "Tập 08",
+            "slug": "tap-08",
+            "episodeNumber": 8,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTA2MzMwZDc0MTkxYjNjM2MxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTA2MzMwZDc0MTkxYjNjM2MxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-09",
+            "name": "Tập 09",
+            "slug": "tap-09",
+            "episodeNumber": 9,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTI0MzczODEyMTkyNDFlMzcxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTI0MzczODEyMTkyNDFlMzcxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-10",
+            "name": "Tập 10",
+            "slug": "tap-10",
+            "episodeNumber": 10,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTEyMGIxNjFhMzkzYjJkMjQxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTEyMGIxNjFhMzkzYjJkMjQxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-11",
+            "name": "Tập 11",
+            "slug": "tap-11",
+            "episodeNumber": 11,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTI0MTMyMjEwMTQyNzMyMDIxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTI0MTMyMjEwMTQyNzMyMDIxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-12",
+            "name": "Tập 12",
+            "slug": "tap-12",
+            "episodeNumber": 12,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTBhMWU0NzIyMTQyNzAzMmExZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YmQ2YTBhMWU0NzIyMTQyNzAzMmExZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-13",
+            "name": "Tập 13",
+            "slug": "tap-13",
+            "episodeNumber": 13,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYmFhMmFmZjJlNmY1YzJlMmM3ZTAwMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYmFhMmFmZjJlNmY1YzJlMmM3ZTAwMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-14",
+            "name": "Tập 14",
+            "slug": "tap-14",
+            "episodeNumber": 14,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYmFhMmFmZGNmMDg2ZTVlM2UxYjAwODRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYmFhMmFmZGNmMDg2ZTVlM2UxYjAwODRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-15",
+            "name": "Tập 15",
+            "slug": "tap-15",
+            "episodeNumber": 15,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZDQ5OWU3ZDBmZWQwZmYyYjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZDQ5OWU3ZDBmZWQwZmYyYjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-16",
+            "name": "Tập 16",
+            "slug": "tap-16",
+            "episodeNumber": 16,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmODZlMWUzYzBjYWRhYzQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmODZlMWUzYzBjYWRhYzQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-17",
+            "name": "Tập 17",
+            "slug": "tap-17",
+            "episodeNumber": 17,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZGNlODgxZGJjMGMwZTIyMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZGNlODgxZGJjMGMwZTIyMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-18",
+            "name": "Tập 18",
+            "slug": "tap-18",
+            "episodeNumber": 18,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZWZlOGY0ZThlYmMzZDMxMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZWZlOGY0ZThlYmMzZDMxMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-19",
+            "name": "Tập 19",
+            "slug": "tap-19",
+            "episodeNumber": 19,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZmRmYWYwYzRjMmZjYjIzNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZmRmYWYwYzRjMmZjYjIzNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-20",
+            "name": "Tập 20",
+            "slug": "tap-20",
+            "episodeNumber": 20,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZDhlYWQ4YWFkNWM2ZWIyMDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZDhlYWQ4YWFkNWM2ZWIyMDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-21",
+            "name": "Tập 21",
+            "slug": "tap-21",
+            "episodeNumber": 21,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmOGZjY2M0ZGFmOWFlYjQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmOGZjY2M0ZGFmOWFlYjQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-22",
+            "name": "Tập 22",
+            "slug": "tap-22",
+            "episodeNumber": 22,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmODJjM2NhYzFkNWNmZDIyYTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmODJjM2NhYzFkNWNmZDIyYTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-23",
+            "name": "Tập 23",
+            "slug": "tap-23",
+            "episodeNumber": 23,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZDNlOWNhZWJjNmVmY2MwMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZDNlOWNhZWJjNmVmY2MwMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-24",
+            "name": "Tập 24",
+            "slug": "tap-24",
+            "episodeNumber": 24,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmOGZmMmZkZmFkYmYwZTEzNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmOGZmMmZkZmFkYmYwZTEzNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-25",
+            "name": "Tập 25",
+            "slug": "tap-25",
+            "episodeNumber": 25,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmYzA5MDg1YzVlN2RmZjIyZTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmYzA5MDg1YzVlN2RmZjIyZTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-26",
+            "name": "Tập 26",
+            "slug": "tap-26",
+            "episodeNumber": 26,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmZDJjN2ZkYTdmY2Y0YzQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmZDJjN2ZkYTdmY2Y0YzQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-27",
+            "name": "Tập 27",
+            "slug": "tap-27",
+            "episodeNumber": 27,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmZGNjN2ZlYzBjMWRjZDMxNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmZGNjN2ZlYzBjMWRjZDMxNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-28",
+            "name": "Tập 28",
+            "slug": "tap-28",
+            "episodeNumber": 28,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhY2FmZGNlMmQ1YzdiYmU3ZTQxNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhY2FmZGNlMmQ1YzdiYmU3ZTQxNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-29",
+            "name": "Tập 29",
+            "slug": "tap-29",
+            "episodeNumber": 29,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhY2FmZjhmNmU4YzJjZGMxZTMyYjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhY2FmZjhmNmU4YzJjZGMxZTMyYjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-30",
+            "name": "Tập 30",
+            "slug": "tap-30",
+            "episodeNumber": 30,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhM2FmYzNjZGU3ZDRkYmY0Zjc3NDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhM2FmYzNjZGU3ZDRkYmY0Zjc3NDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-31",
+            "name": "Tập 31",
+            "slug": "tap-31",
+            "episodeNumber": 31,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhM2FmZTdkN2Q0ZGZmNGRiYjUyZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhM2FmZTdkN2Q0ZGZmNGRiYjUyZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-32",
+            "name": "Tập 32",
+            "slug": "tap-32",
+            "episodeNumber": 32,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmODJjYmY2ZTdiYWVlY2M3MTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmODJjYmY2ZTdiYWVlY2M3MTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-33",
+            "name": "Tập 33",
+            "slug": "tap-33",
+            "episodeNumber": 33,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZjU5NGUwYTdkOWY1Y2MyMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZjU5NGUwYTdkOWY1Y2MyMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          }
+        ]
+      },
+      "episodeId": "tap-01",
+      "episodeNumber": 1,
+      "episodeName": "Tập 01",
+      "progressSeconds": 655,
+      "durationSeconds": 2731,
+      "progressPercent": 24,
+      "watchedAt": 1790688690714,
+      "completed": false,
+      "watchedEpisodes": {
+        "1": {
+          "progressSeconds": 655,
+          "durationSeconds": 2731,
+          "progressPercent": 24,
+          "completed": false,
+          "watchedAt": 1790688690714
+        },
+        "2": {
+          "progressSeconds": 0,
+          "durationSeconds": 2721,
+          "progressPercent": 0,
+          "completed": false,
+          "watchedAt": 1790676189895
+        }
+      }
+    },
+    {
+      "movieId": "00202bcd988f414ee6fee12c2ea9ea2a",
+      "slug": "loi-dinh-lenh",
+      "title": "Lôi Đình Lệnh",
+      "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260929%2Floi-dinh-lenh-poster.webp",
+      "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260929%2Floi-dinh-lenh-thumb.webp",
+      "movie": {
+        "id": "00202bcd988f414ee6fee12c2ea9ea2a",
+        "slug": "loi-dinh-lenh",
+        "title": "Lôi Đình Lệnh",
+        "originalTitle": "Thunder Chaser",
+        "description": "Trước tình trạng buôn bán ma túy ngày càng hoành hành, Đội trưởng Đội phòng chống ma túy Bạch Hoa dẫn dắt các cảnh sát trẻ Trang Nghiêm, Lý Tiêu cùng đồng đội dấn thân vào hiểm nguy, bí mật nằm vùng, đấu tranh cam go với bọn buôn ma túy. Họ từng bước lần theo manh mối và bóc gỡ mạng lưới tội phạm, cuối cùng bắt giữ tên trùm ma túy khét tiếng, triệt phá tận gốc thế lực bảo kê đứng sau, bảo vệ sự bình yên nơi biên giới.",
+        "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260929%2Floi-dinh-lenh-poster.webp",
+        "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260929%2Floi-dinh-lenh-thumb.webp",
+        "year": 2026,
+        "rating": 8.5,
+        "duration": "45 phút/tập",
+        "country": "Trung Quốc",
+        "countrySlug": "trung-quoc",
+        "genres": [
+          "Hình Sự",
+          "Chính Kịch",
+          "Tâm Lý"
+        ],
+        "genreSlugs": [
+          "hinh-su",
+          "chinh-kich",
+          "tam-ly"
+        ],
+        "quality": "FHD",
+        "language": "Vietsub",
+        "type": "series",
+        "rawType": "series",
+        "director": "Đang cập nhật",
+        "cast": [
+          "Jin Han",
+          "Qin Hailu",
+          "Liu Duanduan"
+        ],
+        "totalEpisodes": 34,
+        "currentEpisode": "Tập 6",
+        "isHot": true,
+        "isLatest": true,
+        "isRecommended": true,
+        "views": 403218,
+        "tmdbId": "336706",
+        "tmdbType": "tv",
+        "episodes": [
+          {
+            "id": "tap-01",
+            "name": "Tập 01",
+            "slug": "tap-01",
+            "episodeNumber": 1,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZmFmNGM1ZTNjN2Y4ZTkzNDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZmFmNGM1ZTNjN2Y4ZTkzNDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-02",
+            "name": "Tập 02",
+            "slug": "tap-02",
+            "episodeNumber": 2,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZTFjYmUwYTBlZmE0Y2I3MTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZTFjYmUwYTBlZmE0Y2I3MTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-03",
+            "name": "Tập 03",
+            "slug": "tap-03",
+            "episodeNumber": 3,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmYzRlNWY3ZTdlYmY5YjMxNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmYzRlNWY3ZTdlYmY5YjMxNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-04",
+            "name": "Tập 04",
+            "slug": "tap-04",
+            "episodeNumber": 4,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZGJjMmMwYTZlZmUzYzYyNjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZGJjMmMwYTZlZmUzYzYyNjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-05",
+            "name": "Tập 05",
+            "slug": "tap-05",
+            "episodeNumber": 5,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZTFkOGZjZDRlN2ZlZmQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZTFkOGZjZDRlN2ZlZmQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-06",
+            "name": "Tập 06",
+            "slug": "tap-06",
+            "episodeNumber": 6,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZmRmNDhiYzdiNGE3ZjAwODRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZmRmNDhiYzdiNGE3ZjAwODRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          }
+        ]
+      },
+      "episodeId": "tap-01",
+      "episodeNumber": 1,
+      "episodeName": "Tập 01",
+      "progressSeconds": 546,
+      "durationSeconds": 2770,
+      "progressPercent": 20,
+      "watchedAt": 1790688680807,
+      "completed": false,
+      "watchedEpisodes": {
+        "1": {
+          "progressSeconds": 546,
+          "durationSeconds": 2770,
+          "progressPercent": 20,
+          "completed": false,
+          "watchedAt": 1790688680807
+        }
+      }
+    },
+    {
+      "movieId": "049bdbcec79b8e02245a64991d405ebf",
+      "slug": "thu-tinh-gui-ngoai",
+      "title": "Thư Tình Gửi Ngoại",
+      "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260913%2Fthu-tinh-gui-ngoai-poster.webp",
+      "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260913%2Fthu-tinh-gui-ngoai-thumb.webp",
+      "movie": {
+        "id": "049bdbcec79b8e02245a64991d405ebf",
+        "slug": "thu-tinh-gui-ngoai",
+        "title": "Thư Tình Gửi Ngoại",
+        "originalTitle": "Dear You",
+        "description": "Tác phẩm lấy bối cảnh Trung Quốc, Thái Lan từ thập niên 1950 tới hiện tại, nói về cuộc đời của bà Diệp Thục Như (Ngô Thiếu Khanh đóng). Xuất thân tiểu thư, bà trốn nhà đi theo chàng trai nghèo Trịnh Mộc Sinh (Vương Ngạn Đồng đóng), sinh ba người con. Vì biến cố chính trị, ông Mộc Sinh phiêu bạt tới Thái Lan, ở đây làm lụng kiếm tiền gửi về cho vợ con. Trịnh Mộc Sinh đầu óc nhanh nhạy, giỏi kiếm tiền, trợ cấp đủ đầy cho gia đình và một lòng một dạ với vợ. Đôi vợ chồng gửi gắm tình yêu qua những lá thư. Một ngày, Diệp Thục Như nhận bức ảnh chồng bên một phụ nữ và những đứa trẻ kèm tin ông đã qua đời. Cháu của Diệp Thục Như trưởng thành, từ Trung Quốc tới Thái Lan tìm thân nhân của ông nội, từ đó mở ra câu chuyện ấm áp, giàu nghĩa tình sau những lá thư mà Trịnh Mộc Sinh gửi cho vợ.",
+        "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260913%2Fthu-tinh-gui-ngoai-poster.webp",
+        "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260913%2Fthu-tinh-gui-ngoai-thumb.webp",
+        "year": 2026,
+        "rating": 8.9,
+        "duration": "118 phút",
+        "country": "Trung Quốc",
+        "countrySlug": "trung-quoc",
+        "genres": [
+          "Chính Kịch",
+          "Gia Đình",
+          "Hài Hước"
+        ],
+        "genreSlugs": [
+          "chinh-kich",
+          "gia-dinh",
+          "hai-huoc"
+        ],
+        "quality": "FHD",
+        "language": "Vietsub",
+        "type": "single",
+        "rawType": "single",
+        "director": "Lan Hongchun",
+        "cast": [
+          "Li Sitong",
+          "Wang Yantong",
+          "Wu Shaoqing",
+          "Zheng Runqi",
+          "Wang Xiaohui",
+          "Zhao Shuguang",
+          "Li Deru",
+          "Li Shuhao",
+          "Usha Seamkhum",
+          "Fang Peisong",
+          "Zhong Shaoxian",
+          "Zheng Pengsheng",
+          "Lese Mai",
+          "Xu Peiyong",
+          "Zheng Huisong"
+        ],
+        "totalEpisodes": 1,
+        "currentEpisode": "Full",
+        "isHot": true,
+        "isLatest": true,
+        "isRecommended": true,
+        "views": 495206,
+        "tmdbId": "1671548",
+        "tmdbType": "movie",
+        "trailerUrl": "https://www.youtube.com/watch?v=abeSQSbNXSk",
+        "tmdbVoteAverage": 8.9,
+        "imdbVoteAverage": 8.6,
+        "episodes": [
+          {
+            "id": "full",
+            "name": "Tập Full",
+            "slug": "full",
+            "episodeNumber": 1,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YjY2YTIyMjUwZDExMDYwNDE1NzYxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjIzNTczYjQzNWM1ZTc4NjU0MjU0NjY5NjkwOTc4NWM5YjRmY2ViZTZiNGIyODc5Mjg0YTJiNWE2YjY2YTIyMjUwZDExMDYwNDE1NzYxZjQ1NjE2MDRmNmYyNzdmMjRhYjgy",
+                "type": "hls"
+              }
+            ]
+          }
+        ]
+      },
+      "episodeId": "full",
+      "episodeNumber": 1,
+      "episodeName": "Tập Full",
+      "progressSeconds": 1002,
+      "durationSeconds": 7147,
+      "progressPercent": 14,
+      "watchedAt": 1790676179443,
+      "completed": false,
+      "watchedEpisodes": {
+        "1": {
+          "progressSeconds": 1002,
+          "durationSeconds": 7147,
+          "progressPercent": 14,
+          "completed": false,
+          "watchedAt": 1790676179442
+        }
+      }
+    },
+    {
+      "movieId": "75ef1021ee69eb5414f2103193d4c8dc",
+      "slug": "cu-soc",
+      "title": "Cú Sốc",
+      "posterUrl": "/api/images?p=%2Fupload%2Fvod%2F20260505-1%2Faa5419bddec64990d591f77262fc2e42.jpg",
+      "backdropUrl": "/api/images?p=%2Fupload%2Fvod%2F20260505-1%2F8d2f42eb4d2a2db443d7ad863d83ba51.jpg",
+      "movie": {
+        "id": "75ef1021ee69eb5414f2103193d4c8dc",
+        "slug": "cu-soc",
+        "title": "Cú Sốc",
+        "originalTitle": "The Drama",
+        "description": "Một cặp đôi đang hạnh phúc chuẩn bị kết hôn bất ngờ bị thử thách khi một biến cố ngoài dự kiến khiến cả tuần lễ cưới của họ rơi vào hỗn loạn.",
+        "posterUrl": "/api/images?p=%2Fupload%2Fvod%2F20260505-1%2Faa5419bddec64990d591f77262fc2e42.jpg",
+        "backdropUrl": "/api/images?p=%2Fupload%2Fvod%2F20260505-1%2F8d2f42eb4d2a2db443d7ad863d83ba51.jpg",
+        "year": 2026,
+        "rating": 6.9,
+        "duration": "105 phút",
+        "country": "Âu Mỹ",
+        "countrySlug": "au-my",
+        "genres": [
+          "Tình Cảm",
+          "Hài Hước",
+          "Chính Kịch",
+          "Tâm Lý"
+        ],
+        "genreSlugs": [
+          "tinh-cam",
+          "hai-huoc",
+          "chinh-kich",
+          "tam-ly"
+        ],
+        "quality": "FHD",
+        "language": "Vietsub",
+        "type": "single",
+        "rawType": "single",
+        "director": "Kristoffer Borgli",
+        "cast": [
+          "Zendaya",
+          "Robert Pattinson",
+          "Mamoudou Athie",
+          "Alana Haim",
+          "Jordyn Curet",
+          "Hailey Benton Gates",
+          "Michael Abbott Jr.",
+          "Hannah Gross",
+          "Sydney Lemmon",
+          "Zoë Winters",
+          "Anna Baryshnikov",
+          "Dee Nelson",
+          "Damon Gupton",
+          "Ken Cheeseman",
+          "Celia Rowlson-Hall",
+          "Doria Bramante",
+          "Jordan R"
+        ],
+        "totalEpisodes": 1,
+        "currentEpisode": "Full",
+        "isHot": true,
+        "isLatest": true,
+        "isRecommended": false,
+        "views": 4670774,
+        "tmdbId": "1325734",
+        "tmdbType": "movie",
+        "trailerUrl": "https://www.youtube.com/watch?v=0ZDzsH3XGFA",
+        "tmdbVoteAverage": 6.9,
+        "imdbVoteAverage": 7.5,
+        "episodes": [
+          {
+            "id": "full",
+            "name": "Tập Full",
+            "slug": "full",
+            "episodeNumber": 1,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmZDFlZmQ3ZDFmZWVkZTcyZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmZDFlZmQ3ZDFmZWVkZTcyZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          }
+        ]
+      },
+      "episodeId": "full",
+      "episodeNumber": 1,
+      "episodeName": "Tập Full",
+      "progressSeconds": 2573,
+      "durationSeconds": 6370,
+      "progressPercent": 40,
+      "watchedAt": 1790676150137,
+      "completed": false,
+      "watchedEpisodes": {
+        "1": {
+          "progressSeconds": 2573,
+          "durationSeconds": 6370,
+          "progressPercent": 40,
+          "completed": false,
+          "watchedAt": 1790676150137
+        }
+      }
+    },
+    {
+      "movieId": "363e33911ab0bb286396138f7202fbe9",
+      "slug": "thiep-von-chi-la-co-rac",
+      "title": "Thiếp Vốn Chỉ Là Cỏ Rác",
+      "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260920%2Fthiep-von-chi-la-co-rac-poster.webp",
+      "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260920%2Fthiep-von-chi-la-co-rac-thumb.webp",
+      "movie": {
+        "id": "363e33911ab0bb286396138f7202fbe9",
+        "slug": "thiep-von-chi-la-co-rac",
+        "title": "Thiếp Vốn Chỉ Là Cỏ Rác",
+        "originalTitle": "Revenge From A Wife",
+        "description": "Trần Thủ Hòa, một người thợ đan cỏ, vì “cỏ cùng gốc” mà chọc giận Thần phi, bị tra tấn đến chết một cách thê thảm. Người vợ Tô Vãn Nương ngày ngày mong ngóng chồng trở về, cuối cùng chỉ nhận lại thi thể của chàng bị nhồi đầy cỏ khô. Đau đớn tột cùng, nàng hóa thân thành nữ y Tô Thảo, lẻn vào hoàng thành. Lấy sạp thuốc làm vỏ bọc, nàng âm thầm xây dựng mạng lưới thu thập tin tức, từng bước tiếp cận Hoàng đế. Tất cả chỉ để báo thù cho người chồng đã chết thảm.",
+        "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260920%2Fthiep-von-chi-la-co-rac-poster.webp",
+        "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260920%2Fthiep-von-chi-la-co-rac-thumb.webp",
+        "year": 2026,
+        "rating": 8.5,
+        "duration": "8 phút/tập",
+        "country": "Trung Quốc",
+        "countrySlug": "trung-quoc",
+        "genres": [
+          "Chính Kịch",
+          "Cổ Trang",
+          "Tâm Lý"
+        ],
+        "genreSlugs": [
+          "chinh-kich",
+          "co-trang",
+          "tam-ly"
+        ],
+        "quality": "FHD",
+        "language": "Vietsub",
+        "type": "series",
+        "rawType": "series",
+        "director": "Đang cập nhật",
+        "cast": [
+          "Zhi Chunhe",
+          "Yan Zixian",
+          "Jin Yanna",
+          "Wang Peiyan",
+          "Wang Xingkai",
+          "Zhu Jingyi"
+        ],
+        "totalEpisodes": 30,
+        "currentEpisode": "Tập 26",
+        "isHot": true,
+        "isLatest": true,
+        "isRecommended": true,
+        "views": 293077,
+        "tmdbId": "335218",
+        "tmdbType": "tv",
+        "episodes": [
+          {
+            "id": "tap-01",
+            "name": "Tập 01",
+            "slug": "tap-01",
+            "episodeNumber": 1,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZmNjOWZiYTRiOGM0Y2EwMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZmNjOWZiYTRiOGM0Y2EwMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-02",
+            "name": "Tập 02",
+            "slug": "tap-02",
+            "episodeNumber": 2,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZDNjN2ViZTRjOWM3ZTAxZjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZDNjN2ViZTRjOWM3ZTAxZjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-03",
+            "name": "Tập 03",
+            "slug": "tap-03",
+            "episodeNumber": 3,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmODE5MGQ0ZTNmNGZlYzgyODRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmODE5MGQ0ZTNmNGZlYzgyODRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-04",
+            "name": "Tập 04",
+            "slug": "tap-04",
+            "episodeNumber": 4,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmYzZjMmMzZTZkOGQyZWIwZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmYzZjMmMzZTZkOGQyZWIwZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-05",
+            "name": "Tập 05",
+            "slug": "tap-05",
+            "episodeNumber": 5,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZDk5OWZmZmVkZmYwZTYzYzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmZDk5OWZmZmVkZmYwZTYzYzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-06",
+            "name": "Tập 06",
+            "slug": "tap-06",
+            "episodeNumber": 6,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmODFmMWM3ZThiOWNkYzcwOTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYmFmODFmMWM3ZThiOWNkYzcwOTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-07",
+            "name": "Tập 07",
+            "slug": "tap-07",
+            "episodeNumber": 7,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYWFmZWZkODg3YzJiZWU1ZWQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYWFmZWZkODg3YzJiZWU1ZWQ3ZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-08",
+            "name": "Tập 08",
+            "slug": "tap-08",
+            "episodeNumber": 8,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYWFmZTFmNGY0ZmJlMWUxZWUxMzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYWFmZTFmNGY0ZmJlMWUxZWUxMzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-09",
+            "name": "Tập 09",
+            "slug": "tap-09",
+            "episodeNumber": 9,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYWFmZjJlYmUwYTZlYmMxZDYxZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhYWFmZjJlYmUwYTZlYmMxZDYxZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-10",
+            "name": "Tập 10",
+            "slug": "tap-10",
+            "episodeNumber": 10,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZTFlOWUzZThmOWY0ZDUxMzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZTFlOWUzZThmOWY0ZDUxMzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-11",
+            "name": "Tập 11",
+            "slug": "tap-11",
+            "episodeNumber": 11,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZjBmMWQ0ZGFmOWUwZmMwNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmZjBmMWQ0ZGFmOWUwZmMwNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-12",
+            "name": "Tập 12",
+            "slug": "tap-12",
+            "episodeNumber": 12,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmYzRkOWM3ZmRjNWZkYjMzZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOWFmYzRkOWM3ZmRjNWZkYjMzZDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-13",
+            "name": "Tập 13",
+            "slug": "tap-13",
+            "episodeNumber": 13,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOGFmZWZjYmY2ZDFjZWU0ZWIwMzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOGFmZWZjYmY2ZDFjZWU0ZWIwMzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-14",
+            "name": "Tập 14",
+            "slug": "tap-14",
+            "episodeNumber": 14,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOGFmODFjMmM2ZDljNmFlZTM3MTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOGFmODFjMmM2ZDljNmFlZTM3MTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-15",
+            "name": "Tập 15",
+            "slug": "tap-15",
+            "episodeNumber": 15,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOGFmZDZlMWQzZGRkZmM3YzI3MzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhOGFmZDZlMWQzZGRkZmM3YzI3MzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-16",
+            "name": "Tập 16",
+            "slug": "tap-16",
+            "episodeNumber": 16,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmYzNjZmZkZTBlYWUzZDcyYjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmYzNjZmZkZTBlYWUzZDcyYjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-17",
+            "name": "Tập 17",
+            "slug": "tap-17",
+            "episodeNumber": 17,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmYzdlZmNhZTJkNmFlZWQzMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmYzdlZmNhZTJkNmFlZWQzMjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-18",
+            "name": "Tập 18",
+            "slug": "tap-18",
+            "episodeNumber": 18,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmZGM5M2RjYzFlM2Y5ZmMxZjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZmFmZGM5M2RjYzFlM2Y5ZmMxZjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-19",
+            "name": "Tập 19",
+            "slug": "tap-19",
+            "episodeNumber": 19,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZDFmOWZjYzRkZGQwYjExMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZDFmOWZjYzRkZGQwYjExMTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-20",
+            "name": "Tập 20",
+            "slug": "tap-20",
+            "episodeNumber": 20,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZDFlY2ZjYWJlZGQ4ZGMzNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZDFlY2ZjYWJlZGQ4ZGMzNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-21",
+            "name": "Tập 21",
+            "slug": "tap-21",
+            "episodeNumber": 21,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZjhjMmZmZGRjNGNkZGQzNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZWFmZjhjMmZmZGRjNGNkZGQzNzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-22",
+            "name": "Tập 22",
+            "slug": "tap-22",
+            "episodeNumber": 22,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmYzdjZWQ2ZDlkZWUxY2QzNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmYzdjZWQ2ZDlkZWUxY2QzNTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-23",
+            "name": "Tập 23",
+            "slug": "tap-23",
+            "episodeNumber": 23,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmYzVjMmRhYzRkNGU2ZmMyNjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhZGFmYzVjMmRhYzRkNGU2ZmMyNjRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-24",
+            "name": "Tập 24",
+            "slug": "tap-24",
+            "episodeNumber": 24,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhY2FmZWQ5MWM4ZDljN2UzZjU3NzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhY2FmZWQ5MWM4ZDljN2UzZjU3NzRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-25",
+            "name": "Tập 25",
+            "slug": "tap-25",
+            "episodeNumber": 25,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhM2FmZmJkYWU0ZDFjYmU1YjQ3NTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhM2FmZmJkYWU0ZDFjYmU1YjQ3NTRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          },
+          {
+            "id": "tap-26",
+            "name": "Tập 26",
+            "slug": "tap-26",
+            "episodeNumber": 26,
+            "seasonNumber": 1,
+            "duration": "Full HD",
+            "videoSources": [
+              {
+                "serverName": "Ruby VIP (Vietsub)",
+                "label": "Chuẩn 4K / Full HD",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZGRjYmY5ZDZmZmYyYjIxMDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              },
+              {
+                "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+                "label": "Chuẩn Full HD (Backup)",
+                "url": "RF_ENC_M2EwNjE4MDcxNjVmNmM3MjM0NGU3ZTVlNDcxOTIyM2EwMTQ3NjU5YWM2YzBjN2NjYWNhZmJkYjlhMmFmZGRjYmY5ZDZmZmYyYjIxMDRjMTQxYjI0MTAzMDc5MjMwMzU5Mzc",
+                "type": "hls"
+              }
+            ]
+          }
+        ]
+      },
+      "episodeId": "tap-01",
+      "episodeNumber": 1,
+      "episodeName": "Tập 01",
+      "progressSeconds": 56,
+      "durationSeconds": 521,
+      "progressPercent": 11,
+      "watchedAt": 1790676146376,
+      "completed": false,
+      "watchedEpisodes": {
+        "1": {
+          "progressSeconds": 56,
+          "durationSeconds": 521,
+          "progressPercent": 11,
+          "completed": false,
+          "watchedAt": 1790676146376
+        }
+      }
+    }
+  ],
+  "usr_7b83eade452d0cee": []
+}

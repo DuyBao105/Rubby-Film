@@ -126,11 +126,35 @@ export function parseSearchIntent(rawQuery: string): SearchCategoryIntent {
 
 export class KkphimService {
   private homeCache: { data: HomeSectionsData; expiresAt: number } | null = null;
+  private queryCache = new Map<string, { data: PaginatedMovies; expiresAt: number }>();
+  private movieDetailCache = new Map<string, { data: Movie | null; expiresAt: number }>();
+  private typeCache = new Map<string, { data: PaginatedMovies; expiresAt: number }>();
+  private genreCache = new Map<string, { data: PaginatedMovies; expiresAt: number }>();
+
+  private getFromCache<T>(cacheMap: Map<string, { data: T; expiresAt: number }>, key: string): T | null {
+    const entry = cacheMap.get(key);
+    if (entry && Date.now() < entry.expiresAt) {
+      return entry.data;
+    }
+    return null;
+  }
+
+  private setInCache<T>(cacheMap: Map<string, { data: T; expiresAt: number }>, key: string, data: T, ttlMs: number, maxEntries = 300) {
+    if (cacheMap.size >= maxEntries) {
+      const oldest = cacheMap.keys().next().value;
+      if (oldest) cacheMap.delete(oldest);
+    }
+    cacheMap.set(key, { data, expiresAt: Date.now() + ttlMs });
+  }
 
   /**
    * Get latest updated movies
    */
   async getLatestMovies(page: number = 1): Promise<PaginatedMovies> {
+    const cacheKey = `latest:${page}`;
+    const cached = this.getFromCache(this.queryCache, cacheKey);
+    if (cached !== null) return cached;
+
     const raw = await movieApiClient.get<any>(
       `/danh-sach/phim-moi-cap-nhat?page=${page}`,
       { revalidate: 1800 } // 30 min cache
@@ -142,16 +166,22 @@ export class KkphimService {
     const mapped = items.map((item: any) => mapKkphimMovie(item, cdnDomain));
     const pagination = mapKkphimPagination(raw?.pagination);
 
-    return {
+    const result = {
       items: mapped,
       pagination,
     };
+    this.setInCache(this.queryCache, cacheKey, result, 10 * 60 * 1000);
+    return result;
   }
 
   /**
    * Get movies by list type (phim-bo, phim-le, hoat-hinh, tv-shows)
    */
   async getMoviesByType(typeSlug: string, page: number = 1, limit: number = 24): Promise<PaginatedMovies> {
+    const cacheKey = `${typeSlug}:${page}:${limit}`;
+    const cached = this.getFromCache(this.typeCache, cacheKey);
+    if (cached !== null) return cached;
+
     const raw = await movieApiClient.get<any>(
       `/v1/api/danh-sach/${typeSlug}?page=${page}&limit=${limit}`,
       { revalidate: 3600 }
@@ -163,10 +193,12 @@ export class KkphimService {
     const mapped = items.map((item: any) => mapKkphimMovie(item, cdnDomain));
     const pagination = mapKkphimPagination(raw?.data?.params?.pagination);
 
-    return {
+    const result = {
       items: mapped,
       pagination,
     };
+    this.setInCache(this.typeCache, cacheKey, result, 15 * 60 * 1000);
+    return result;
   }
 
   /**
@@ -397,13 +429,20 @@ export class KkphimService {
       throw new MovieApiError("Movie slug is required", 400, "INVALID_SLUG");
     }
 
+    const cleanSlug = slug.trim();
+    const cached = this.getFromCache(this.movieDetailCache, cleanSlug);
+    if (cached !== null) {
+      return cached;
+    }
+
     try {
       const raw = await movieApiClient.get<any>(
-        `/phim/${encodeURIComponent(slug.trim())}`,
+        `/phim/${encodeURIComponent(cleanSlug)}`,
         { revalidate: 3600 } // 1 hour cache
       );
 
       if (!raw || !raw.movie) {
+        this.setInCache(this.movieDetailCache, cleanSlug, null, 10 * 60 * 1000);
         return null;
       }
 
@@ -415,9 +454,11 @@ export class KkphimService {
         movie.episodes = mapKkphimEpisodes(raw.episodes);
       }
 
+      this.setInCache(this.movieDetailCache, cleanSlug, movie, 30 * 60 * 1000);
       return movie;
     } catch (err: any) {
       if (err.statusCode === 404 || err.code === "NOT_FOUND") {
+        this.setInCache(this.movieDetailCache, cleanSlug, null, 10 * 60 * 1000);
         return null;
       }
       throw err;
@@ -434,6 +475,12 @@ export class KkphimService {
         items: [],
         pagination: { totalItems: 0, totalItemsPerPage: limit, currentPage: 1, totalPages: 1 },
       };
+    }
+
+    const cacheKey = `search:${rawQ.toLowerCase()}:${page}:${limit}`;
+    const cached = this.getFromCache(this.queryCache, cacheKey);
+    if (cached !== null) {
+      return cached;
     }
 
     // 0. Smart Category / List / Genre Intent Recognition (e.g. "phim chiếu rạp", "phim lẻ", "phim kinh dị", "phim hàn quốc")
@@ -469,112 +516,20 @@ export class KkphimService {
     let apiSearchKeyword = cleanQuery.replace(/\s+(của|bởi)\s+.*$/i, "").trim();
     if (!apiSearchKeyword) apiSearchKeyword = cleanQuery;
 
-    // 3. For page 1, resolve candidate slugs for exact matches and popular Vietnamese directors/franchises
-    const candidateSlugs = new Set<string>();
-
-    if (page === 1) {
-      // Special mappings for popular directors, actors, and titles
-      const SPECIAL_MAP: Array<{ patterns: string[]; slugs: string[] }> = [
-        {
-          patterns: ["tran thanh", "trấn thành"],
-          slugs: ["mai-2024", "nha-ba-nu", "bo-gia-2021"],
-        },
-        {
-          patterns: ["mai", "phim mai"],
-          slugs: ["mai-2024", "mai"],
-        },
-        {
-          patterns: ["ly hai", "lý hải", "lat mat", "lật mặt"],
-          slugs: ["lat-mat-7-mot-dieu-uoc", "lat-mat-6-tam-ve-dinh-menh", "lat-mat-48h"],
-        },
-        {
-          patterns: ["victor vu", "victor vũ"],
-          slugs: ["nguoi-vo-cuoi-cung", "mat-biec", "toi-thay-hoa-vang-tren-co-xanh"],
-        },
-        {
-          patterns: ["ngo thanh van", "ngô thanh vân"],
-          slugs: ["hai-phuong", "thanh-soi"],
-        },
-      ];
-
-      for (const entry of SPECIAL_MAP) {
-        if (entry.patterns.some((p) => q.includes(p) || cleanQuery.includes(p))) {
-          entry.slugs.forEach((s) => candidateSlugs.add(s));
-        }
-      }
-
-      // Base slug from cleanQuery
-      const baseSlug = cleanQuery
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/đ/g, "d")
-        .replace(/Đ/g, "D")
-        .replace(/[^a-z0-9]+/g, "-")
-        .replace(/^-+|-+$/g, "");
-
-      if (baseSlug && baseSlug.length >= 2) {
-        candidateSlugs.add(baseSlug);
-        candidateSlugs.add(`${baseSlug}-2024`);
-        candidateSlugs.add(`${baseSlug}-2025`);
-        candidateSlugs.add(`${baseSlug}-2023`);
-      }
-    }
-
-    // 4. Fetch candidate slugs in parallel with error suppression
-    const candidateFetches = Array.from(candidateSlugs).map(async (slug) => {
-      try {
-        const res = await movieApiClient.get<any>(`/phim/${encodeURIComponent(slug)}`, {
-          revalidate: 3600,
-        });
-        if (res?.movie?._id) {
-          const cdnDomain = "https://phimimg.com";
-          return mapKkphimMovie(res.movie, cdnDomain);
-        }
-      } catch {
-        // Ignore candidate fetch errors
-      }
-      return null;
-    });
-
-    // 5. Fetch search API
-    const apiFetch = movieApiClient
+    // 3. Fetch search API directly with revalidation cache
+    const raw = await movieApiClient
       .get<any>(
         `/v1/api/tim-kiem?keyword=${encodeURIComponent(apiSearchKeyword)}&page=${page}&limit=${limit}`,
-        { revalidate: 60 }
+        { revalidate: 180 }
       )
       .catch(() => null);
 
-    const [candidates, raw] = await Promise.all([
-      Promise.all(candidateFetches),
-      apiFetch,
-    ]);
-
-    const verifiedCandidates: Movie[] = candidates.filter((m): m is Movie => m !== null);
     const apiItems = Array.isArray(raw?.data?.items) ? raw.data.items : [];
     const cdnDomain = raw?.data?.APP_DOMAIN_CDN_IMAGE || "https://phimimg.com";
     const mappedApiMovies = apiItems.map((item: any) => mapKkphimMovie(item, cdnDomain));
 
-    // 6. Merge & Deduplicate
-    const seenIds = new Set<string>();
-    const merged: Movie[] = [];
-
-    for (const m of verifiedCandidates) {
-      const id = m.id || m.slug;
-      if (!seenIds.has(id)) {
-        seenIds.add(id);
-        merged.push(m);
-      }
-    }
-
-    for (const m of mappedApiMovies) {
-      const id = m.id || m.slug;
-      if (!seenIds.has(id)) {
-        seenIds.add(id);
-        merged.push(m);
-      }
-    }
-
-    // 7. Relevance scoring for smart re-ranking on page 1
+    // 4. Relevance scoring for smart re-ranking on page 1
+    const merged = mappedApiMovies;
     if (page === 1 && merged.length > 0) {
       const baseSlug = cleanQuery
         .normalize("NFD")
@@ -624,30 +579,23 @@ export class KkphimService {
           }
         }
 
-        if (candidateSlugs.has(m.slug)) {
-          score += 1500;
-        }
-
-        if (m.year === 2024 || m.year === 2025) {
+        if (m.year === 2024 || m.year === 2025 || m.year === 2026) {
           score += 300;
         }
 
         return score;
       };
 
-      merged.sort((a, b) => scoreMovie(b) - scoreMovie(a));
+      merged.sort((a: Movie, b: Movie) => scoreMovie(b) - scoreMovie(a));
     }
 
     const pagination = mapKkphimPagination(raw?.data?.params?.pagination);
-    if (verifiedCandidates.length > 0) {
-      pagination.totalItems = Math.max(pagination.totalItems, merged.length);
-      pagination.totalPages = Math.max(pagination.totalPages, 1);
-    }
-
-    return {
+    const finalResult = {
       items: merged,
       pagination,
     };
+    this.setInCache(this.queryCache, cacheKey, finalResult, 10 * 60 * 1000);
+    return finalResult;
   }
 
   /**
@@ -692,6 +640,10 @@ export class KkphimService {
       return this.getMoviesByType("hoat-hinh", page, limit);
     }
 
+    const cacheKey = `${genreSlug}:${page}:${limit}`;
+    const cached = this.getFromCache(this.genreCache, cacheKey);
+    if (cached !== null) return cached;
+
     const raw = await movieApiClient.get<any>(
       `/v1/api/the-loai/${encodeURIComponent(genreSlug)}?page=${page}&limit=${limit}`,
       { revalidate: 3600 }
@@ -710,10 +662,12 @@ export class KkphimService {
       m.genres.some((g: string) => g.toLowerCase().includes(cleanSlug.replace(/-/g, " ")))
     );
 
-    return {
+    const result = {
       items: verified.length > 0 ? verified : mapped,
       pagination,
     };
+    this.setInCache(this.genreCache, cacheKey, result, 15 * 60 * 1000);
+    return result;
   }
 
   /**
@@ -764,6 +718,12 @@ export class KkphimService {
    * Universal server-side multi-parameter movie filter
    */
   async queryMovies(options?: MovieFilterOptions): Promise<PaginatedMovies> {
+    const cacheKey = JSON.stringify(options || {});
+    const cached = this.getFromCache(this.queryCache, cacheKey);
+    if (cached !== null) {
+      return cached;
+    }
+
     const page = options?.page || 1;
     const limit = options?.limit || 24;
 
@@ -882,10 +842,12 @@ export class KkphimService {
         mapped = [...mapped].sort((a, b) => a.title.localeCompare(b.title, "vi"));
       }
 
-      return {
+      const result = {
         items: mapped,
         pagination,
       };
+      this.setInCache(this.queryCache, cacheKey, result, 10 * 60 * 1000);
+      return result;
     } catch (err) {
       console.error("KkphimService queryMovies error:", err);
       return this.getLatestMovies(page);

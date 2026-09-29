@@ -38,6 +38,9 @@ const POPULAR_TAGS = [
   "Châu Tinh Trì",
 ];
 
+// Client-side cache for instant pagination and repeated searches
+const pageSearchCache = new Map<string, any>();
+
 export function SearchPageView() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -79,7 +82,7 @@ export function SearchPageView() {
   const [typeFilter, setTypeFilter] = React.useState<MovieType | "all">("all");
   const [sortOption, setSortOption] = React.useState<"default" | "rating" | "year" | "alpha">("default");
 
-  const debouncedVal = useDebounce(inputVal, 350);
+  const debouncedVal = useDebounce(inputVal, 250);
   const abortControllerRef = React.useRef<AbortController | null>(null);
 
   // Sync input value if URL changes via back/forward buttons
@@ -105,6 +108,26 @@ export function SearchPageView() {
         return;
       }
 
+      let requestUrl = `/api/search?q=${encodeURIComponent(query)}&page=${page}&limit=24`;
+      if (forceType === "actor" || actorParam) {
+        requestUrl = `/api/search?actor=${encodeURIComponent(query)}&page=${page}&limit=24`;
+      } else if (forceType === "director" || directorParam) {
+        requestUrl = `/api/search?director=${encodeURIComponent(query)}&page=${page}&limit=24`;
+      }
+
+      // Check instant client cache
+      if (pageSearchCache.has(requestUrl)) {
+        const cached = pageSearchCache.get(requestUrl);
+        setResults(cached.results);
+        setTotalItems(cached.totalItems);
+        setTotalPages(cached.totalPages);
+        setSearchedQuery(cached.searchedQuery);
+        setPersonInfo(cached.personInfo);
+        setIsLoading(false);
+        setErrorState(null);
+        return;
+      }
+
       // Cancel stale previous request
       if (abortControllerRef.current) {
         abortControllerRef.current.abort();
@@ -115,13 +138,6 @@ export function SearchPageView() {
 
       setIsLoading(true);
       setErrorState(null);
-
-      let requestUrl = `/api/search?q=${encodeURIComponent(query)}&page=${page}&limit=24`;
-      if (forceType === "actor" || actorParam) {
-        requestUrl = `/api/search?actor=${encodeURIComponent(query)}&page=${page}&limit=24`;
-      } else if (forceType === "director" || directorParam) {
-        requestUrl = `/api/search?director=${encodeURIComponent(query)}&page=${page}&limit=24`;
-      }
 
       fetch(requestUrl, {
         signal: controller.signal,
@@ -141,23 +157,32 @@ export function SearchPageView() {
           if (json.success) {
             const items: Movie[] = Array.isArray(json.data) ? json.data : [];
             const pagination = json.pagination || {};
+            const pInfo = json.person
+              ? json.person
+              : json.director
+              ? {
+                  name: json.director.name,
+                  avatar: json.director.avatar,
+                  role: "director",
+                  roleTitle: "Đạo Diễn",
+                  movieCount: json.director.movieCount,
+                }
+              : null;
+
             setResults(items);
             setTotalItems(pagination.totalItems ?? items.length);
             setTotalPages(pagination.totalPages ?? 1);
             setSearchedQuery(query);
-            if (json.person) {
-              setPersonInfo(json.person);
-            } else if (json.director) {
-              setPersonInfo({
-                name: json.director.name,
-                avatar: json.director.avatar,
-                role: "director",
-                roleTitle: "Đạo Diễn",
-                movieCount: json.director.movieCount,
-              });
-            } else {
-              setPersonInfo(null);
-            }
+            setPersonInfo(pInfo);
+
+            pageSearchCache.set(requestUrl, {
+              results: items,
+              totalItems: pagination.totalItems ?? items.length,
+              totalPages: pagination.totalPages ?? 1,
+              searchedQuery: query,
+              personInfo: pInfo,
+            });
+
             addRecentSearch(query);
           } else {
             setErrorState({

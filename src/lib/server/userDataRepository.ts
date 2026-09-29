@@ -10,7 +10,8 @@ const FAVORITES_FILE = path.join(DATA_DIR, "favorites.json");
 class UserDataRepository {
   private historyMap: Map<string, WatchHistoryItem[]> = new Map();
   private favoritesMap: Map<string, Movie[]> = new Map();
-  private isLoaded = false;
+  private lastHistoryMtime = 0;
+  private lastFavoritesMtime = 0;
 
   constructor() {
     this.loadFromDisk();
@@ -26,43 +27,59 @@ class UserDataRepository {
     }
   }
 
-  private loadFromDisk() {
-    if (this.isLoaded) return;
+  private loadHistoryFromDisk() {
     this.ensureDirectory();
-
     try {
       if (fs.existsSync(HISTORY_FILE)) {
-        const raw = fs.readFileSync(HISTORY_FILE, "utf-8");
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") {
-          for (const [userId, items] of Object.entries(parsed)) {
-            if (Array.isArray(items)) {
-              this.historyMap.set(userId, items);
+        const stat = fs.statSync(HISTORY_FILE);
+        if (stat.mtimeMs > this.lastHistoryMtime) {
+          const raw = fs.readFileSync(HISTORY_FILE, "utf-8");
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            const nextMap = new Map<string, WatchHistoryItem[]>();
+            for (const [userId, items] of Object.entries(parsed)) {
+              if (Array.isArray(items)) {
+                nextMap.set(userId, items);
+              }
             }
+            this.historyMap = nextMap;
           }
+          this.lastHistoryMtime = stat.mtimeMs;
         }
       }
     } catch (e) {
       console.error("[UserDataRepository] Failed to load watch history:", e);
     }
+  }
 
+  private loadFavoritesFromDisk() {
+    this.ensureDirectory();
     try {
       if (fs.existsSync(FAVORITES_FILE)) {
-        const raw = fs.readFileSync(FAVORITES_FILE, "utf-8");
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === "object") {
-          for (const [userId, items] of Object.entries(parsed)) {
-            if (Array.isArray(items)) {
-              this.favoritesMap.set(userId, items);
+        const stat = fs.statSync(FAVORITES_FILE);
+        if (stat.mtimeMs > this.lastFavoritesMtime) {
+          const raw = fs.readFileSync(FAVORITES_FILE, "utf-8");
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === "object") {
+            const nextMap = new Map<string, Movie[]>();
+            for (const [userId, items] of Object.entries(parsed)) {
+              if (Array.isArray(items)) {
+                nextMap.set(userId, items);
+              }
             }
+            this.favoritesMap = nextMap;
           }
+          this.lastFavoritesMtime = stat.mtimeMs;
         }
       }
     } catch (e) {
       console.error("[UserDataRepository] Failed to load favorites:", e);
     }
+  }
 
-    this.isLoaded = true;
+  private loadFromDisk() {
+    this.loadHistoryFromDisk();
+    this.loadFavoritesFromDisk();
   }
 
   private saveHistoryToDisk() {
@@ -73,6 +90,7 @@ class UserDataRepository {
         obj[userId] = items;
       }
       fs.writeFileSync(HISTORY_FILE, JSON.stringify(obj, null, 2), "utf-8");
+      this.lastHistoryMtime = fs.statSync(HISTORY_FILE).mtimeMs;
     } catch (e) {
       console.error("[UserDataRepository] Failed to save watch history:", e);
     }
@@ -86,6 +104,7 @@ class UserDataRepository {
         obj[userId] = items;
       }
       fs.writeFileSync(FAVORITES_FILE, JSON.stringify(obj, null, 2), "utf-8");
+      this.lastFavoritesMtime = fs.statSync(FAVORITES_FILE).mtimeMs;
     } catch (e) {
       console.error("[UserDataRepository] Failed to save favorites:", e);
     }

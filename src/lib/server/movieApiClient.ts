@@ -26,6 +26,7 @@ interface CacheEntry<T> {
 
 class MovieApiClient {
   private memoryCache = new Map<string, CacheEntry<any>>();
+  private inFlight = new Map<string, Promise<any>>();
 
   private getBaseUrl(): string {
     return process.env.MOVIE_API_BASE_URL || "https://phimapi.com";
@@ -79,12 +80,40 @@ class MovieApiClient {
     const cacheKey = path;
     const ttlSeconds = typeof options.revalidate === "number" ? options.revalidate : 300;
 
-    // Check fast in-memory cache
+    // 1. Check in-memory cache
     const cached = this.memoryCache.get(cacheKey);
-    if (cached && Date.now() < cached.expiresAt) {
+    if (cached) {
+      // If fresh, return immediately in 0ms
+      if (Date.now() < cached.expiresAt) {
+        return cached.data as T;
+      }
+      // Stale-While-Revalidate: Return stale cached data immediately (0ms) and revalidate in background
+      this.fetchDirectly<T>(path, cacheKey, ttlSeconds, options).catch(() => {});
       return cached.data as T;
     }
 
+    // 2. In-flight request deduplication: merge concurrent calls to same path
+    const inFlightPromise = this.inFlight.get(cacheKey);
+    if (inFlightPromise) {
+      return inFlightPromise as Promise<T>;
+    }
+
+    const fetchPromise = this.fetchDirectly<T>(path, cacheKey, ttlSeconds, options);
+    this.inFlight.set(cacheKey, fetchPromise);
+
+    try {
+      return await fetchPromise;
+    } finally {
+      this.inFlight.delete(cacheKey);
+    }
+  }
+
+  private async fetchDirectly<T>(
+    path: string,
+    cacheKey: string,
+    ttlSeconds: number,
+    options: RequestOptions
+  ): Promise<T> {
     const url = this.validateSafeUrl(this.getBaseUrl(), path);
 
     const maxRetries = options.retries !== undefined ? options.retries : this.getDefaultRetries();
@@ -102,7 +131,7 @@ class MovieApiClient {
           method: "GET",
           headers: {
             "Accept": "application/json",
-            "User-Agent": "RubbyFilm-BFF/1.0",
+            "User-Agent": "RubyFilm-BFF/1.0",
             ...options.headers,
           },
           signal: controller.signal,
@@ -151,8 +180,8 @@ class MovieApiClient {
         try {
           const data = (await response.json()) as T;
 
-          // Save to memory cache (limit to 500 items to prevent RAM bloat)
-          if (this.memoryCache.size > 500) {
+          // Save to memory cache (limit to 1000 items to prevent RAM bloat)
+          if (this.memoryCache.size > 1000) {
             const oldestKey = this.memoryCache.keys().next().value;
             if (oldestKey) this.memoryCache.delete(oldestKey);
           }
@@ -171,7 +200,6 @@ class MovieApiClient {
         }
       } catch (err: unknown) {
         clearTimeout(timer);
-
         const error = err as Error;
 
         // Abort error (Timeout)

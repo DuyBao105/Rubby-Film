@@ -22,6 +22,17 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Movie, Episode, VideoSource } from "@/types/movie";
+import { CommentSection } from "@/components/community/comments/comment-section";
+import { EpisodeSelector } from "./episode-selector";
+import { ServerSelector } from "./server-selector";
+import { AiringScheduleBanner } from "./airing-schedule-banner";
+import { getAiringSchedule } from "@/lib/utils/airingSchedule";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useWatchHistory } from "@/lib/hooks/use-watch-history";
+import { useMyList } from "@/lib/hooks/use-my-list";
+import { cn, formatRating } from "@/lib/utils";
+import { FALLBACK_POSTER } from "@/lib/utils/image";
 
 const VideoPlayer = dynamic(
   () => import("./video-player").then((mod) => mod.VideoPlayer),
@@ -37,14 +48,6 @@ const VideoPlayer = dynamic(
     ),
   }
 );
-import { EpisodeSelector } from "./episode-selector";
-import { ServerSelector } from "./server-selector";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useWatchHistory } from "@/lib/hooks/use-watch-history";
-import { useMyList } from "@/lib/hooks/use-my-list";
-import { cn, formatRating } from "@/lib/utils";
-import { FALLBACK_POSTER } from "@/lib/utils/image";
 
 interface WatchViewProps {
   movie: Movie;
@@ -60,7 +63,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   const seasonQuery = searchParams.get("season");
   const serverQuery = searchParams.get("server");
 
-  const { history, updateProgress, getMovieProgress, getEpisodeProgress } = useWatchHistory();
+  const { history, updateProgress, getMovieProgress, getEpisodeProgress, sync } = useWatchHistory();
   const { isInList, toggleMovie } = useMyList();
 
   const [copied, setCopied] = React.useState(false);
@@ -72,8 +75,26 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   const [reportSubmitted, setReportSubmitted] = React.useState(false);
   const inList = isInList(movie.id);
 
+  // Proactively fetch latest cross-device watch history on mount
+  React.useEffect(() => {
+    sync().catch(() => {});
+  }, [sync]);
+
   // Setup episodes
-  const episodes = movie.episodes || [];
+  const episodes = React.useMemo(() => movie.episodes || [], [movie.episodes]);
+  const scheduleInfo = React.useMemo(() => {
+    return getAiringSchedule({
+      id: movie.id,
+      slug: movie.slug,
+      title: movie.title,
+      type: movie.type,
+      totalEpisodes: movie.totalEpisodes,
+      currentEpisode: movie.currentEpisode,
+      episodes,
+      showtimes: movie.showtimes,
+      notify: movie.notify,
+    });
+  }, [movie, episodes]);
   const currentEpNumber = episodeQuery ? parseInt(episodeQuery, 10) : 1;
   const currentEpisode: Episode | undefined =
     episodes.find((e) => e.episodeNumber === currentEpNumber) ||
@@ -103,19 +124,23 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     type: "mp4",
   };
 
-  // Saved playback progress - evaluate ONCE per episode/movie change.
-  // The `history` state updates every ~4s while watching; if we depended on it,
-  // this effect would re-fire `setResumePromptVisible(true)` indefinitely, keeping
-  // the "đang phát tiếp từ..." notification visible forever. Guard with a ref.
+  // Saved playback progress & cross-device sync
   const [initialTime, setInitialTime] = React.useState(0);
   const currentPlaybackRef = React.useRef<{ currentTime: number; duration: number } | null>(null);
-  const evaluatedResumeKeyRef = React.useRef<string | null>(null);
+  const appliedResumeKeyRef = React.useRef<string | null>(null);
+  const dismissedResumeKeysRef = React.useRef<Set<string>>(new Set());
 
+  // Evaluate saved progress: applies initial progress or cloud-synced progress if not yet actively playing
   React.useEffect(() => {
     const epNum = currentEpisode?.episodeNumber ?? 1;
     const evalKey = `${movie.id}:${epNum}`;
-    if (evaluatedResumeKeyRef.current === evalKey) return;
-    evaluatedResumeKeyRef.current = evalKey;
+
+    // Already applied resume for this episode -> do not re-apply or re-open prompt on history polls
+    if (appliedResumeKeyRef.current === evalKey) return;
+
+    // If user has already actively played past 5s on this page, do not seek back to saved progress
+    const currentPlayed = currentPlaybackRef.current?.currentTime || 0;
+    if (currentPlayed > 5) return;
 
     const savedProgress = currentEpisode
       ? getEpisodeProgress(movie.id, epNum)
@@ -126,16 +151,17 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       savedProgress.progressSeconds > 5 &&
       !savedProgress.completed
     ) {
+      appliedResumeKeyRef.current = evalKey;
       setInitialTime(savedProgress.progressSeconds);
-      setResumePromptVisible(true);
-      const timer = setTimeout(() => setResumePromptVisible(false), 9000);
-      return () => clearTimeout(timer);
-    } else {
-      setInitialTime(0);
-      setResumePromptVisible(false);
+
+      // Only show banner if user has not explicitly dismissed it for this episode
+      if (!dismissedResumeKeysRef.current.has(evalKey)) {
+        setResumePromptVisible(true);
+        const timer = setTimeout(() => setResumePromptVisible(false), 9000);
+        return () => clearTimeout(timer);
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentEpisode, movie.id]);
+  }, [currentEpisode, movie.id, history, getEpisodeProgress, getMovieProgress]);
 
   // Synchronize playback progress immediately when page is hidden or unloaded (e.g. mobile tab switch/close)
   React.useEffect(() => {
@@ -173,13 +199,15 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   // Handle episode change
   const handleSelectEpisode = (ep: Episode) => {
     setResumePromptVisible(false);
+    appliedResumeKeyRef.current = null;
     router.push(`/watch/${movie.slug}?episode=${ep.episodeNumber}`);
   };
 
-  // Prev / Next logic
+  // Prev / Next logic - only active for series with multiple episodes
+  const isSeries = movie.type === "series" && episodes.length > 1;
   const currentEpIndex = episodes.findIndex((e) => e.id === currentEpisode?.id);
-  const hasPrevEpisode = currentEpIndex > 0;
-  const hasNextEpisode = currentEpIndex >= 0 && currentEpIndex < episodes.length - 1;
+  const hasPrevEpisode = isSeries && currentEpIndex > 0;
+  const hasNextEpisode = isSeries && currentEpIndex >= 0 && currentEpIndex < episodes.length - 1;
 
   const handlePrevEpisode = () => {
     if (hasPrevEpisode) {
@@ -245,7 +273,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     if (typeof navigator !== "undefined" && navigator.share) {
       try {
         await navigator.share({
-          title: `Đang xem ${movie.title} - RubbyFilm`,
+          title: `Đang xem ${movie.title} - RubyFilm`,
           text: movie.description,
           url: window.location.href,
         });
@@ -356,6 +384,9 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
           <VideoPlayer
             key={`${movie.id}-${currentEpisode?.id || 1}-${activeSource.url}`}
             source={activeSource}
+            sources={sources}
+            activeSourceIndex={activeSourceIndex}
+            onSelectSourceIndex={(idx) => setActiveSourceIndex(idx)}
             title={movie.title}
             subtitle={
               movie.type === "series" && currentEpisode
@@ -366,11 +397,12 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
             onTimeUpdate={handleTimeUpdate}
             onPause={handleVideoPause}
             initialTime={initialTime}
+            isSeries={isSeries}
             onEnded={hasNextEpisode ? handleNextEpisode : undefined}
             hasNextEpisode={hasNextEpisode}
-            onNextEpisode={handleNextEpisode}
+            onNextEpisode={isSeries ? handleNextEpisode : undefined}
             hasPrevEpisode={hasPrevEpisode}
-            onPrevEpisode={handlePrevEpisode}
+            onPrevEpisode={isSeries ? handlePrevEpisode : undefined}
             autoNextEnabled={autoNextEnabled}
             onSwitchServer={sources.length > 1 ? handleSwitchServer : undefined}
             isCinemaMode={isCinemaMode}
@@ -390,6 +422,8 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                 <button
                   type="button"
                   onClick={() => {
+                    const epNum = currentEpisode?.episodeNumber ?? 1;
+                    dismissedResumeKeysRef.current.add(`${movie.id}:${epNum}`);
                     setInitialTime(0);
                     setResumePromptVisible(false);
                   }}
@@ -400,7 +434,11 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setResumePromptVisible(false)}
+                  onClick={() => {
+                    const epNum = currentEpisode?.episodeNumber ?? 1;
+                    dismissedResumeKeysRef.current.add(`${movie.id}:${epNum}`);
+                    setResumePromptVisible(false);
+                  }}
                   className="p-1.5 text-cinema-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
                   aria-label="Đóng thông báo"
                 >
@@ -420,12 +458,13 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
               const idx = sources.findIndex((s) => s.serverName === src.serverName);
               if (idx !== -1) setActiveSourceIndex(idx);
             }}
+            isSeries={isSeries}
             hasPrevEpisode={hasPrevEpisode}
             hasNextEpisode={hasNextEpisode}
-            onPrevEpisode={handlePrevEpisode}
-            onNextEpisode={handleNextEpisode}
+            onPrevEpisode={isSeries ? handlePrevEpisode : undefined}
+            onNextEpisode={isSeries ? handleNextEpisode : undefined}
             autoNextEnabled={autoNextEnabled}
-            onToggleAutoNext={() => setAutoNextEnabled(!autoNextEnabled)}
+            onToggleAutoNext={isSeries ? () => setAutoNextEnabled(!autoNextEnabled) : undefined}
           />
         )}
       </div>
@@ -516,6 +555,34 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
             </Button>
           </div>
 
+          {/* Mobile Only: Episode Selector & Schedule Banner (Placed right below quick actions before comments) */}
+          {movie.type === "series" && scheduleInfo && (
+            <div className="block lg:hidden">
+              <AiringScheduleBanner
+                movieId={movie.id}
+                movieTitle={movie.title}
+                schedule={scheduleInfo}
+              />
+            </div>
+          )}
+
+          {movie.type === "series" && episodes.length > 0 && (
+            <div className="block lg:hidden">
+              <EpisodeSelector
+                movieId={movie.id}
+                movieSlug={movie.slug}
+                movieTitle={movie.title}
+                totalEpisodes={movie.totalEpisodes}
+                currentEpisodeStr={movie.currentEpisode}
+                showtimes={movie.showtimes}
+                notify={movie.notify}
+                episodes={episodes}
+                activeEpisodeId={currentEpisode?.id || ""}
+                onSelectEpisode={handleSelectEpisode}
+              />
+            </div>
+          )}
+
           {/* Synopsis */}
           <div className="p-5 rounded-2xl bg-cinema-850/60 border border-cinema-700/60">
             <h3 className="text-sm font-semibold text-[#F9FAFB] tracking-[-0.02em] uppercase mb-2 flex items-center gap-2">
@@ -574,17 +641,40 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
               </div>
             </div>
           </div>
+
+          {/* Community Comments Section */}
+          <div id="comments-section" className="mt-6">
+            <CommentSection movieId={movie.id} />
+          </div>
         </div>
 
-        {/* Right Column: Episode Selector & Related */}
+        {/* Right Column: Episode Selector & Related (Desktop) */}
         <div className="lg:col-span-4 space-y-6">
+          {movie.type === "series" && scheduleInfo && (
+            <div className="hidden lg:block">
+              <AiringScheduleBanner
+                movieId={movie.id}
+                movieTitle={movie.title}
+                schedule={scheduleInfo}
+              />
+            </div>
+          )}
+
           {movie.type === "series" && episodes.length > 0 && (
-            <EpisodeSelector
-              movieId={movie.id}
-              episodes={episodes}
-              activeEpisodeId={currentEpisode?.id || ""}
-              onSelectEpisode={handleSelectEpisode}
-            />
+            <div className="hidden lg:block">
+              <EpisodeSelector
+                movieId={movie.id}
+                movieSlug={movie.slug}
+                movieTitle={movie.title}
+                totalEpisodes={movie.totalEpisodes}
+                currentEpisodeStr={movie.currentEpisode}
+                showtimes={movie.showtimes}
+                notify={movie.notify}
+                episodes={episodes}
+                activeEpisodeId={currentEpisode?.id || ""}
+                onSelectEpisode={handleSelectEpisode}
+              />
+            </div>
           )}
 
           {/* Recommended Side Box */}
@@ -651,7 +741,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                 </div>
                 <h4 className="text-sm font-bold text-white">Đã gửi báo cáo thành công!</h4>
                 <p className="text-xs text-cinema-300 max-w-xs mx-auto">
-                  Cảm ơn bạn! Đội ngũ kỹ thuật của RubbyFilm đã ghi nhận và sẽ kiểm tra khắc phục nguồn phát sớm nhất.
+                  Cảm ơn bạn! Đội ngũ kỹ thuật của RubyFilm đã ghi nhận và sẽ kiểm tra khắc phục nguồn phát sớm nhất.
                 </p>
                 <Button
                   variant="primary"

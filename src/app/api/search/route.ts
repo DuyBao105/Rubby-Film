@@ -4,6 +4,34 @@ import { apiSuccess, apiError, handleRouteError } from "@/lib/server/apiResponse
 import { checkRateLimit } from "@/lib/server/rateLimiter";
 import { sanitizeSearchQuery, parseBoundedInt } from "@/lib/server/validator";
 
+interface CacheEntry {
+  data: any;
+  meta: any;
+  createdAt: number;
+}
+
+const SEARCH_CACHE = new Map<string, CacheEntry>();
+const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes cache
+const MAX_CACHE_ENTRIES = 500;
+
+function getFromCache(key: string): CacheEntry | null {
+  const entry = SEARCH_CACHE.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.createdAt > CACHE_TTL_MS) {
+    SEARCH_CACHE.delete(key);
+    return null;
+  }
+  return entry;
+}
+
+function setToCache(key: string, data: any, meta: any): void {
+  if (SEARCH_CACHE.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = SEARCH_CACHE.keys().next().value;
+    if (oldestKey) SEARCH_CACHE.delete(oldestKey);
+  }
+  SEARCH_CACHE.set(key, { data, meta, createdAt: Date.now() });
+}
+
 export async function GET(request: NextRequest) {
   const ip = request.headers.get("x-forwarded-for") || "127.0.0.1";
   const rateLimit = checkRateLimit(`search_${ip}`, 80, 60);
@@ -23,6 +51,15 @@ export async function GET(request: NextRequest) {
     const limit = parseBoundedInt(searchParams.get("limit"), 20, 1, 40);
     const page = parseBoundedInt(searchParams.get("page"), 1, 1, 100);
 
+    const cacheKey = `${query || ""}_${directorParam || ""}_${actorParam || ""}_${personParam || ""}_p${page}_l${limit}`.toLowerCase();
+    const cached = getFromCache(cacheKey);
+    if (cached) {
+      return apiSuccess(cached.data, cached.meta, {
+        "X-Cache": "HIT",
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      });
+    }
+
     const explicitPersonQuery = actorParam || directorParam || personParam;
     const explicitRole = actorParam ? "actor" : directorParam ? "director" : undefined;
 
@@ -31,13 +68,17 @@ export async function GET(request: NextRequest) {
       const { personService } = await import("@/lib/server/personService");
       const result = await personService.searchPerson(explicitPersonQuery, explicitRole);
       if (result && result.movies.length > 0) {
-        return apiSuccess(result.movies, {
+        const meta = {
           totalItems: result.movies.length,
           totalItemsPerPage: limit,
           currentPage: 1,
           totalPages: 1,
           person: result.person,
           director: result.person.role === "director" ? result.person : undefined,
+        };
+        setToCache(cacheKey, result.movies, meta);
+        return apiSuccess(result.movies, meta, {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
         });
       }
     }
@@ -62,13 +103,17 @@ export async function GET(request: NextRequest) {
       const { personService } = await import("@/lib/server/personService");
       const personResult = await personService.searchPerson(query, forcedRole);
       if (personResult && personResult.movies.length > 0) {
-        return apiSuccess(personResult.movies, {
+        const meta = {
           totalItems: personResult.movies.length,
           totalItemsPerPage: limit,
           currentPage: 1,
           totalPages: 1,
           person: personResult.person,
           director: personResult.person.role === "director" ? personResult.person : undefined,
+        };
+        setToCache(cacheKey, personResult.movies, meta);
+        return apiSuccess(personResult.movies, meta, {
+          "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
         });
       }
     }
@@ -76,30 +121,38 @@ export async function GET(request: NextRequest) {
     const { kkphimService } = await import("@/lib/server/kkphimService");
     const result = await kkphimService.searchMovies(query, page, limit);
 
-    // 4. On page 1: Check if the query is a well-known actor or director
+    // 4. On page 1: Check if the query is a well-known actor or director (curated only, 0ms)
     if (page === 1) {
       const { personService } = await import("@/lib/server/personService");
-      const personResult = await personService.searchPerson(query);
+      const personResult = await personService.searchPerson(query, undefined, false);
       if (personResult && personResult.movies.length > 0) {
         // If title search produced zero items or matches a known celebrity
         if (!result.items || result.items.length <= 2 || personResult.person.movieCount >= 3) {
-          return apiSuccess(personResult.movies, {
+          const meta = {
             totalItems: personResult.movies.length,
             totalItemsPerPage: limit,
             currentPage: 1,
             totalPages: 1,
             person: personResult.person,
             director: personResult.person.role === "director" ? personResult.person : undefined,
+          };
+          setToCache(cacheKey, personResult.movies, meta);
+          return apiSuccess(personResult.movies, meta, {
+            "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
           });
         }
       }
     }
 
-    return apiSuccess(result.items, {
+    const meta = {
       totalItems: result.pagination.totalItems,
       totalItemsPerPage: result.pagination.totalItemsPerPage,
       currentPage: result.pagination.currentPage,
       totalPages: result.pagination.totalPages,
+    };
+    setToCache(cacheKey, result.items, meta);
+    return apiSuccess(result.items, meta, {
+      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
     });
   } catch (error) {
     return handleRouteError(error);

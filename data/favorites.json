@@ -1,1 +1,513 @@
-{}
+{
+  "usr_6e6d0e05fa97a575": [
+    {
+      "id": "ba6e473d24d1e1aa6b3b977caff021b4",
+      "slug": "vuot-nguc-phan-5",
+      "title": "Vượt Ngục (Phần 5)",
+      "originalTitle": "Prison Break (Season 5): Sequel",
+      "description": "Lincoln và Sara tái ngộ sau khi họ khám phá ra rằng Michael vẫn còn sống trong một nhà tù ở Yemen. Và họ lên kế hoạch vượt ngục cực kì lớn với sự giúp đỡ của những người bạn cũ.",
+      "posterUrl": "/api/images?p=%2Fupload%2Fvod%2F20240409-1%2Fd2f1e11648689897162e2cc874265c82.jpg",
+      "backdropUrl": "/api/images?p=%2Fupload%2Fvod%2F20240409-1%2Ff9fe7909136434a4031b5848e1f668d5.jpg",
+      "year": 2017,
+      "rating": 8.1,
+      "duration": "45 phút/tập",
+      "country": "Âu Mỹ",
+      "countrySlug": "au-my",
+      "genres": [
+        "Hành Động",
+        "Hình Sự"
+      ],
+      "genreSlugs": [
+        "hanh-dong",
+        "hinh-su"
+      ],
+      "quality": "FHD",
+      "language": "Vietsub + Thuyết Minh",
+      "type": "series",
+      "rawType": "series",
+      "director": "Paul T. Scheuring",
+      "cast": [
+        "Wentworth Miller",
+        "Dominic Purcell",
+        "Sarah Wayne Callies",
+        "Paul Adelstein",
+        "Rockmond Dunbar",
+        "Robert Knepper",
+        "Amaury Nolasco",
+        "Inbar Lavi",
+        "Augustus Prew",
+        "Mark Feuerstein",
+        "Said Bey"
+      ],
+      "totalEpisodes": 9,
+      "currentEpisode": "Hoàn Tất (9/9)",
+      "isHot": false,
+      "isLatest": true,
+      "isRecommended": true,
+      "views": 424898,
+      "tmdbId": "2288",
+      "episodes": [
+        {
+          "id": "tap-01",
+          "name": "Tập 01",
+          "slug": "tap-01",
+          "episodeNumber": 1,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/YBcYkRK8/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/YBcYkRK8/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/fSKj6Krf/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/fSKj6Krf/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-02",
+          "name": "Tập 02",
+          "slug": "tap-02",
+          "episodeNumber": 2,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/LXYjcMUz/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/LXYjcMUz/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/sgSCtivr/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/sgSCtivr/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-03",
+          "name": "Tập 03",
+          "slug": "tap-03",
+          "episodeNumber": 3,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/gCw2YeZU/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/gCw2YeZU/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/QhR1jXd1/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/QhR1jXd1/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-04",
+          "name": "Tập 04",
+          "slug": "tap-04",
+          "episodeNumber": 4,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/HJu96ke0/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/HJu96ke0/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/vdz59fSV/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/vdz59fSV/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-05",
+          "name": "Tập 05",
+          "slug": "tap-05",
+          "episodeNumber": 5,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/PANGCRR2/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/PANGCRR2/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/6cDtrtZU/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/6cDtrtZU/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-06",
+          "name": "Tập 06",
+          "slug": "tap-06",
+          "episodeNumber": 6,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/5WpxBj24/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/5WpxBj24/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/Wdgi6oWg/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/Wdgi6oWg/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-07",
+          "name": "Tập 07",
+          "slug": "tap-07",
+          "episodeNumber": 7,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/DToqcVSq/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/DToqcVSq/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/0AFxLwEr/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/0AFxLwEr/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-08",
+          "name": "Tập 08",
+          "slug": "tap-08",
+          "episodeNumber": 8,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/TntsyHmb/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/TntsyHmb/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/f6u6PPC1/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/f6u6PPC1/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        },
+        {
+          "id": "tap-09",
+          "name": "Tập 09",
+          "slug": "tap-09",
+          "episodeNumber": 9,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/eykLKewg/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/eykLKewg/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://a.kvp726.com/20260924/zhFCgRSF/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Thuyết Minh) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://a.kvp726.com/20260924/zhFCgRSF/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "7e4ddecd5564e9fe8a83e41821797ca3",
+      "slug": "mot-bo-phim-minecraft",
+      "title": "Một Bộ Phim Minecraft",
+      "originalTitle": "A Minecraft Movie",
+      "description": "Câu chuyện ngọt ngào và đong đầy cảm xúc trong Một Bộ Phim Minecraft (2025) chạm tới trái tim người xem qua những khoảnh khắc lãng mạn, hóm hỉnh và chữa lành tâm hồn.",
+      "posterUrl": "/api/images?p=%2Fupload%2Fvod%2F20250508-1%2Fd43ada4cb5f9a1dbdb9d614406726a53.jpg",
+      "backdropUrl": "/api/images?p=%2Fupload%2Fvod%2F20250513-1%2F7c40c5e1c5f88fdff52d54b03d084497.jpg",
+      "year": 2025,
+      "rating": 6.3,
+      "duration": "101 phút",
+      "country": "Thụy Điển",
+      "countrySlug": "thuy-dien",
+      "genres": [
+        "Gia Đình",
+        "Hài Hước",
+        "Phiêu Lưu",
+        "Viễn Tưởng"
+      ],
+      "genreSlugs": [
+        "gia-dinh",
+        "hai-huoc",
+        "phieu-luu",
+        "vien-tuong"
+      ],
+      "quality": "FHD",
+      "language": "Vietsub + Thuyết Minh",
+      "type": "single",
+      "rawType": "single",
+      "currentEpisode": "Full",
+      "isHot": true,
+      "isLatest": true,
+      "isRecommended": false,
+      "views": 806099,
+      "tmdbId": "950387"
+    }
+  ],
+  "usr_7b83eade452d0cee": [
+    {
+      "id": "049bdbcec79b8e02245a64991d405ebf",
+      "slug": "thu-tinh-gui-ngoai",
+      "title": "Thư Tình Gửi Ngoại",
+      "originalTitle": "Dear You",
+      "description": "Câu chuyện ngọt ngào và đong đầy cảm xúc trong Thư Tình Gửi Ngoại (2026) chạm tới trái tim người xem qua những khoảnh khắc lãng mạn, hóm hỉnh và chữa lành tâm hồn.",
+      "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260913%2Fthu-tinh-gui-ngoai-poster.webp",
+      "backdropUrl": "https://image.tmdb.org/t/p/original/dzWGnIAjUafpmY57F6vnm44FwWB.jpg",
+      "year": 2026,
+      "rating": 8.9,
+      "duration": "118 phút",
+      "country": "Trung Quốc",
+      "countrySlug": "trung-quoc",
+      "genres": [
+        "Chính Kịch",
+        "Gia Đình",
+        "Hài Hước"
+      ],
+      "genreSlugs": [
+        "chinh-kich",
+        "gia-dinh",
+        "hai-huoc"
+      ],
+      "quality": "FHD",
+      "language": "Vietsub",
+      "type": "single",
+      "rawType": "single",
+      "currentEpisode": "Full",
+      "isHot": true,
+      "isLatest": true,
+      "isRecommended": true,
+      "views": 256670,
+      "tmdbId": "1671548",
+      "logoUrl": "https://image.tmdb.org/t/p/original/bFd1iAZlr2GUuXv9nh0DPnyk0vt.png"
+    },
+    {
+      "id": "af28037dc21fedb68cf53f8f0f8f5b70",
+      "slug": "su-thi-odyssey",
+      "title": "Sử Thi Odyssey",
+      "originalTitle": "The Odyssey",
+      "description": "Câu chuyện theo chân Odysseus trong hành trình kéo dài 10 năm trở về nhà sau cuộc chiến thành Troy, nơi ông phải đối mặt với các vị thần, quái vật và vô vàn thử thách, đồng thời nỗ lực đoàn tụ với vợ và giành lại vương quốc của mình.",
+      "posterUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260829%2Fsu-thi-odyssey-poster.webp",
+      "backdropUrl": "/api/images?p=%2Fuploads%2Fmovies%2F20260829%2Fsu-thi-odyssey-thumb.webp",
+      "year": 2026,
+      "rating": 8,
+      "duration": "173 phút",
+      "country": "Anh",
+      "countrySlug": "anh",
+      "genres": [
+        "Phiêu Lưu",
+        "Hành Động",
+        "Viễn Tưởng",
+        "Tâm Lý",
+        "Chính Kịch"
+      ],
+      "genreSlugs": [
+        "phieu-luu",
+        "hanh-dong",
+        "vien-tuong",
+        "tam-ly",
+        "chinh-kich"
+      ],
+      "quality": "CAM",
+      "language": "Vietsub",
+      "type": "single",
+      "rawType": "single",
+      "director": "Christopher Nolan",
+      "cast": [
+        "Matt Damon",
+        "Tom Holland",
+        "Anne Hathaway",
+        "Robert Pattinson",
+        "Himesh Patel",
+        "Charlize Theron",
+        "John Leguizamo",
+        "Travis Scott",
+        "Corey Hawkins",
+        "Jarreth J. Merz",
+        "Niko Nicotera",
+        "Elliot Page",
+        "Shiloh Fernandez",
+        "Rafi Gavron",
+        "Elyes Gabel"
+      ],
+      "totalEpisodes": 1,
+      "currentEpisode": "Full",
+      "isHot": false,
+      "isLatest": true,
+      "isRecommended": true,
+      "views": 600781,
+      "tmdbId": "1368337",
+      "episodes": [
+        {
+          "id": "full",
+          "name": "Tập Full",
+          "slug": "full",
+          "episodeNumber": 1,
+          "seasonNumber": 1,
+          "duration": "Full HD",
+          "videoSources": [
+            {
+              "serverName": "Ruby VIP (Vietsub)",
+              "label": "Chuẩn 4K / Full HD",
+              "url": "https://v7.kkphimplayer7.com/20260730/8KFPcIMk/index.m3u8",
+              "type": "hls"
+            },
+            {
+              "serverName": "Ruby VIP (Vietsub) (Dự phòng)",
+              "label": "Chuẩn Full HD (Backup)",
+              "url": "https://v7.kkphimplayer7.com/20260730/8KFPcIMk/index.m3u8",
+              "type": "hls"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

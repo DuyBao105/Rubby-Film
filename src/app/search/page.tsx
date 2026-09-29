@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Tìm Kiếm Phim - RubbyFilm",
+  title: "Tìm Kiếm Phim - RubyFilm",
   description: "Tìm kiếm hàng ngàn bộ phim điện ảnh, phim truyền hình, anime với hệ thống lọc thông minh.",
   robots: {
     index: false,

@@ -25,12 +25,19 @@ export interface Movie {
   cast?: string[];
   totalEpisodes?: number;
   currentEpisode?: string;
+  showtimes?: string;
+  notify?: string;
   episodes?: Episode[];
   isHot?: boolean;
   isLatest?: boolean;
   isRecommended?: boolean;
   views?: number;
   tmdbId?: string | number;
+  tmdbType?: "movie" | "tv";
+  logoUrl?: string;
+  trailerUrl?: string;
+  tmdbVoteAverage?: number;
+  imdbVoteAverage?: number;
 }
 
 export interface Genre {

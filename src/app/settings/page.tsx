@@ -158,7 +158,7 @@ export default function SettingsPage() {
                   <div>
                     <h3 className="text-sm font-bold text-white">Tài Khoản Liên Kết (Connected Accounts)</h3>
                     <p className="text-xs text-cinema-400 mt-0.5">
-                      Quản lý các tài khoản mạng xã hội dùng để đăng nhập vào RubbyFilm
+                      Quản lý các tài khoản mạng xã hội dùng để đăng nhập vào RubyFilm
                     </p>
                   </div>
                 </div>

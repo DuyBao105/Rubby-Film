@@ -1,4 +1,4 @@
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { authRepository } from "@/lib/auth/authService";
 import type { AuthUser } from "@/lib/auth/authTypes";
 
@@ -6,7 +6,16 @@ export const AUTH_COOKIE_NAME = "rubbyfilm_session";
 
 export async function getCurrentUser(): Promise<AuthUser | null> {
   const jar = await cookies();
-  const token = jar.get(AUTH_COOKIE_NAME)?.value;
+  let token = jar.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) {
+    try {
+      const head = await headers();
+      const authHeader = head.get("authorization");
+      if (authHeader?.startsWith("Bearer ")) {
+        token = authHeader.substring(7).trim();
+      }
+    } catch {}
+  }
   if (!token) return null;
   const s = await authRepository.getSession(token);
   return s?.user ?? null;

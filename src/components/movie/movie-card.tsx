@@ -72,12 +72,14 @@ export function MovieCard({
       {/* Poster Container */}
       <Link
         href={`/movie/${movie.slug}`}
+        prefetch={true}
         className="block relative aspect-poster w-full rounded-xl overflow-hidden bg-[#111111]"
       >
         <Image
           src={imgSrc}
           alt={movie.title}
           fill
+          unoptimized={true}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
           className="object-cover transition-transform duration-700 group-hover:scale-105"
           priority={priority}
@@ -179,6 +181,7 @@ export function MovieCard({
         <div>
           <Link
             href={`/movie/${movie.slug}`}
+            prefetch={true}
             className="font-extrabold text-xs sm:text-sm text-[#F9FAFB] tracking-[-0.02em] truncate hover:text-[#E50000] transition-colors block"
             title={primaryTitle}
           >

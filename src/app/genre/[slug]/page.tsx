@@ -57,7 +57,7 @@ export async function generateMetadata({
   const genreName = genre?.name || slug;
   const pageTitle = `Phim ${genreName} Hay Nhất Tuyển Chọn - Vietsub 4K`;
   const pageDescription =
-    genre?.description || `Xem ngay danh sách phim thể loại ${genreName} hay nhất, mới nhất với độ phân giải cao và phụ đề chuẩn trên RubbyFilm.`;
+    genre?.description || `Xem ngay danh sách phim thể loại ${genreName} hay nhất, mới nhất với độ phân giải cao và phụ đề chuẩn trên RubyFilm.`;
 
   return {
     title: pageTitle,
@@ -69,7 +69,7 @@ export async function generateMetadata({
       title: pageTitle,
       description: pageDescription,
       url: `/genre/${slug}`,
-      siteName: "RubbyFilm",
+      siteName: "RubyFilm",
       locale: "vi_VN",
       type: "website",
     },

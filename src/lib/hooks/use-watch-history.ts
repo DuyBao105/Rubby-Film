@@ -83,6 +83,10 @@ export function useWatchHistory() {
     [history]
   );
 
+  const sync = useCallback(async () => {
+    await watchHistoryService.syncWithServer();
+  }, []);
+
   return {
     history,
     isLoaded,
@@ -94,5 +98,6 @@ export function useWatchHistory() {
     isEpisodeWatched,
     getRecentlyViewed,
     getContinueWatching,
+    sync,
   };
 }

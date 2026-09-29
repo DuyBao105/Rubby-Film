@@ -33,13 +33,45 @@ export async function POST(request: NextRequest) {
     const safeUser = authRepository.getSafeUser(storedUser);
     const session = await authRepository.createSession(safeUser);
 
-    const response = apiSuccess(safeUser);
+    const host = request.headers.get("host") || "";
+    const isLocal =
+      host.includes("localhost") ||
+      host.includes("127.0.0.1") ||
+      host.startsWith("192.168.") ||
+      host.startsWith("10.") ||
+      request.nextUrl.protocol === "http:";
+
+    const response = apiSuccess({
+      ...safeUser,
+      user: safeUser,
+      token: session.token,
+    });
+
     response.cookies.set(AUTH_COOKIE_NAME, session.token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: process.env.NODE_ENV === "production" && !isLocal,
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
+    });
+
+    const userHint = Buffer.from(
+      JSON.stringify({
+        id: safeUser.id,
+        name: safeUser.name,
+        email: safeUser.email,
+        avatarUrl: safeUser.avatarUrl,
+        role: safeUser.role,
+        providers: safeUser.providers,
+      })
+    ).toString("base64url");
+
+    response.cookies.set("rubbyfilm_user_hint", userHint, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === "production" && !isLocal,
+      sameSite: "lax",
+      path: "/",
+      maxAge: 30 * 24 * 60 * 60,
     });
 
     return response;

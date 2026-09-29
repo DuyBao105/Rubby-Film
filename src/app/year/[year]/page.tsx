@@ -24,12 +24,12 @@ export async function generateMetadata({
 
   if (isNaN(yearInt) || yearInt < 1920 || yearInt > 2030) {
     return {
-      title: "Phim Theo Năm - RubbyFilm",
+      title: "Phim Theo Năm - RubyFilm",
     };
   }
 
-  const pageTitle = `Phim Năm ${yearInt} Hay Nhất - Tuyển Chọn Phim Mới Vietsub 4K | RubbyFilm`;
-  const pageDescription = `Tổng hợp các bộ phim ra mắt năm ${yearInt} hay nhất, phim chiếu rạp bom tấn và series truyền hình chất lượng 4K HDR hoàn toàn miễn phí tại RubbyFilm.`;
+  const pageTitle = `Phim Năm ${yearInt} Hay Nhất - Tuyển Chọn Phim Mới Vietsub 4K | RubyFilm`;
+  const pageDescription = `Tổng hợp các bộ phim ra mắt năm ${yearInt} hay nhất, phim chiếu rạp bom tấn và series truyền hình chất lượng 4K HDR hoàn toàn miễn phí tại RubyFilm.`;
 
   return {
     title: pageTitle,

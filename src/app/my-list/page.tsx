@@ -13,6 +13,11 @@ import { AuthSyncBanner } from "@/components/home/auth-sync-banner";
 export default function MyListPage() {
   const { user, isAuthenticated, openAuthModal } = useAuth();
   const { list, isLoaded, clearList } = useMyList();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   return (
     <div className="pt-20 sm:pt-24 pb-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full">
@@ -30,7 +35,7 @@ export default function MyListPage() {
           </p>
         </div>
 
-        {list.length > 0 && (
+        {mounted && list.length > 0 && (
           <Button
             variant="outline"
             size="sm"
@@ -43,7 +48,7 @@ export default function MyListPage() {
         )}
       </div>
 
-      {!isLoaded ? (
+      {!mounted || !isLoaded ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="aspect-poster w-full rounded-xl" />
@@ -60,7 +65,7 @@ export default function MyListPage() {
         <EmptyState
           icon={<Heart className="w-8 h-8 text-[#E50000]" />}
           title="Đăng nhập để xem phim yêu thích"
-          description="Vui lòng đăng nhập tài khoản RubbyFilm để quản lý và xem lại các bộ phim yêu thích của riêng bạn."
+          description="Vui lòng đăng nhập tài khoản RubyFilm để quản lý và xem lại các bộ phim yêu thích của riêng bạn."
           actionText="Đăng Nhập Ngay"
           onAction={() => openAuthModal("login")}
         />

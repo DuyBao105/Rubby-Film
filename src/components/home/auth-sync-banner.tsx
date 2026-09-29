@@ -118,7 +118,7 @@ export function AuthSyncBanner({ className }: AuthSyncBannerProps) {
               <div className="relative w-[230px] h-[215px] overflow-hidden rounded-r-2xl">
                 <Image
                   src="/images/auth-banner-actors.jpg"
-                  alt="Đồng bộ trải nghiệm xem phim RubbyFilm"
+                  alt="Đồng bộ trải nghiệm xem phim RubyFilm"
                   fill
                   className="object-cover object-top scale-105"
                   sizes="260px"

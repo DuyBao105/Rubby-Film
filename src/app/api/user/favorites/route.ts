@@ -25,7 +25,13 @@ async function parseRequestBody(request: NextRequest): Promise<Record<string, un
 }
 
 async function getAuthenticatedUserId(request: NextRequest): Promise<string | null> {
-  const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  let token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
+  if (!token) {
+    const authHeader = request.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      token = authHeader.substring(7).trim();
+    }
+  }
   if (!token) return null;
   const session = await authRepository.getSession(token);
   return session ? session.user.id : null;

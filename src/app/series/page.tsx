@@ -6,11 +6,13 @@ import { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Phim Bộ Đặc Sắc - Xem Trọn Bộ HD/4K Vietsub",
-  description: "Tuyển chọn phim bộ truyền hình Hàn Quốc, Trung Quốc, Âu Mỹ, Anime Nhật Bản trọn bộ vietsub chất lượng cao tại RubbyFilm.",
+  description: "Tuyển chọn phim bộ truyền hình Hàn Quốc, Trung Quốc, Âu Mỹ, Anime Nhật Bản trọn bộ vietsub chất lượng cao tại RubyFilm.",
   alternates: {
     canonical: "/series",
   },
 };
+
+export const revalidate = 300;
 
 import { MovieFilterPanel } from "@/components/movie/movie-filter-panel";
 

@@ -23,7 +23,6 @@ interface MovieHeroProps {
 export function MovieHero({ movies }: MovieHeroProps) {
   const [mounted, setMounted] = React.useState(false);
   const [currentIndex, setCurrentIndex] = React.useState(0);
-  const [isPaused, setIsPaused] = React.useState(false);
   const touchStartXRef = React.useRef<number | null>(null);
   const { isInList, toggleMovie } = useMyList();
 
@@ -31,7 +30,7 @@ export function MovieHero({ movies }: MovieHeroProps) {
     setMounted(true);
   }, []);
 
-  const heroMovies = React.useMemo(() => (movies || []).slice(0, 6), [movies]);
+  const heroMovies = React.useMemo(() => (movies || []).slice(0, 8), [movies]);
   const totalSlides = heroMovies.length;
   const currentMovie = heroMovies[currentIndex] || heroMovies[0];
 
@@ -45,15 +44,14 @@ export function MovieHero({ movies }: MovieHeroProps) {
     setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
 
-  // Autoplay with pause on hover (3.5 seconds per slide)
-  // Re-starts fresh 3.5s countdown when user clicks or slide changes
+  // Autoplay (5 seconds per slide, continuous without pause on hover)
   React.useEffect(() => {
-    if (totalSlides <= 1 || isPaused) return;
+    if (totalSlides <= 1) return;
     const timer = setInterval(() => {
       nextSlide();
-    }, 6500);
+    }, 5000);
     return () => clearInterval(timer);
-  }, [totalSlides, isPaused, nextSlide, currentIndex]);
+  }, [totalSlides, nextSlide, currentIndex]);
 
   // Keyboard navigation
   React.useEffect(() => {
@@ -106,10 +104,9 @@ export function MovieHero({ movies }: MovieHeroProps) {
 
   return (
     <section
+      suppressHydrationWarning
       aria-label="Phim đề cử đặc sắc"
-      className="relative w-full h-[62vh] min-h-[460px] max-h-[540px] sm:h-[75vh] sm:min-h-[580px] sm:max-h-[700px] lg:h-[88vh] lg:min-h-[660px] lg:max-h-[920px] overflow-hidden bg-[#0F0F0F] select-none group/hero"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
+      className="relative w-full h-[100svh] min-h-[640px] sm:h-[100vh] sm:min-h-[720px] lg:h-[100vh] lg:min-h-[780px] overflow-hidden bg-[#0F0F0F] select-none group/hero"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
@@ -140,28 +137,22 @@ export function MovieHero({ movies }: MovieHeroProps) {
                   : "translate-x-[4%] scale-[1.04]"
               )}
             >
-              {/* Mobile View: High-res Vertical Key Art with Ambient Glow (Prevents 2.4x stretching and pixelation) */}
-              {/* Mobile View: High-res Vertical Key Art with Ambient Glow */}
+              {/* Mobile View: Crisp Vertical Key Art */}
               <div className="sm:hidden absolute inset-0">
-                {/* Layer A: Pure CSS ambient glow (zero GPU memory footprint, prevents mobile crash) */}
-                <div className="absolute inset-0 bg-gradient-to-b from-[#E50000]/10 via-[#0F0F0F]/50 to-[#0F0F0F] pointer-events-none" />
-                {/* Layer B: Crisp vertical poster art */}
                 {isNearby && (
                   <Image
                     src={m.posterUrl || m.backdropUrl || FALLBACK_POSTER}
                     alt={m.title || "Phim nổi bật"}
                     fill
                     priority={idx === 0}
-                    className="object-cover object-top filter contrast-[1.05] brightness-[0.92] transform-gpu"
-                    sizes="(max-width: 640px) 100vw, 1px"
-                    style={{
-                      imageRendering: "-webkit-optimize-contrast",
-                    }}
+                    unoptimized={true}
+                    className="object-cover object-top filter contrast-[1.02] transform-gpu"
+                    sizes="(max-width: 640px) 100vw, 50vw"
                   />
                 )}
               </div>
 
-              {/* Desktop & Tablet: 16:9 Cinematic Landscape Backdrop */}
+              {/* Desktop & Tablet: 16:9 Cinematic Landscape Backdrop (Crystal Clear 4K / Full HD) */}
               <div className="hidden sm:block absolute inset-0">
                 {isNearby && (
                   <Image
@@ -169,11 +160,9 @@ export function MovieHero({ movies }: MovieHeroProps) {
                     alt={m.title || "Phim nổi bật"}
                     fill
                     priority={idx === 0}
-                    className="object-cover object-[center_30%] filter contrast-[1.08] saturate-[1.06] brightness-[1.02] transform-gpu"
+                    unoptimized={true}
+                    className="object-cover object-[center_25%] filter contrast-[1.02] transform-gpu"
                     sizes="100vw"
-                    style={{
-                      imageRendering: "-webkit-optimize-contrast",
-                    }}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
                       target.src = FALLBACK_BACKDROP;
@@ -183,34 +172,24 @@ export function MovieHero({ movies }: MovieHeroProps) {
               </div>
             </div>
 
-            {/* Layer 2: TopHim Signature Film-Grain Texture Dot Grid */}
-            <div
-              className="absolute inset-0 pointer-events-none opacity-25 hidden md:block"
-              style={{
-                backgroundImage:
-                  "radial-gradient(rgba(0, 0, 0, 0.45) 0.5px, transparent 1px)",
-                backgroundSize: "3px 3px",
-              }}
-            />
+            {/* Layer 2: Subtle Header Breathing Room (Clean, no dark fog) */}
+            <div className="absolute top-0 left-0 right-0 h-24 sm:h-32 bg-gradient-to-b from-[#0F0F0F]/80 via-[#0F0F0F]/30 to-transparent pointer-events-none z-10" />
 
-            {/* Layer 3: Top Edge Lighting Clearance (Ensures actors heads and header capsule have plenty of breathing room) */}
-            <div className="absolute top-0 left-0 right-0 h-36 sm:h-48 bg-gradient-to-b from-[#0F0F0F] via-[#0F0F0F]/50 to-transparent pointer-events-none z-10" />
+            {/* Layer 3: Text Contrast Lighting (Keeps image sharp, vivid & colorful) */}
+            {/* Mobile: Clean bottom gradient only where title and buttons sit */}
+            <div className="sm:hidden absolute inset-0 bg-gradient-to-t from-[#0F0F0F] via-[#0F0F0F]/70 via-35% to-transparent pointer-events-none z-10" />
 
-            {/* Layer 4: Text Contrast Vignette */}
-            {/* Mobile bottom fade with deep cinematic gradient */}
-            <div className="sm:hidden absolute inset-0 bg-gradient-to-t from-[#0F0F0F] via-[#0F0F0F]/85 via-50% to-[#0F0F0F]/30 pointer-events-none z-10" />
-
-            {/* Desktop 3-direction cinematic gradient lighting */}
+            {/* Desktop: Crisp left gradient behind text and smooth bottom blend (Leaves right 60% ultra-clear) */}
             <div
               className="hidden sm:block absolute inset-0 pointer-events-none z-10"
               style={{
                 background:
-                  "linear-gradient(to right, rgba(15, 15, 15, 0.85) 0%, rgba(15, 15, 15, 0.35) 35%, transparent 65%), linear-gradient(to top, #0F0F0F 0%, transparent 35%), radial-gradient(transparent 65%, rgba(15, 15, 15, 0.75) 100%)",
+                  "linear-gradient(to right, rgba(15, 15, 15, 0.90) 0%, rgba(15, 15, 15, 0.55) 30%, rgba(15, 15, 15, 0.12) 55%, transparent 75%), linear-gradient(to top, #0F0F0F 0%, rgba(15, 15, 15, 0.5) 18%, transparent 35%)",
               }}
             />
 
             {/* Layer 5: Hero Content with Staggered Parallax Slide (1200ms ease + delay-[200ms]) */}
-            <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pt-20 sm:pt-32 pb-14 sm:pb-24 lg:pb-20 z-20">
+            <div className="relative h-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col justify-end pt-24 sm:pt-36 pb-24 sm:pb-36 lg:pb-32 z-20">
               <div
                 className={cn(
                   "max-w-2xl select-none transition-all duration-[1200ms] ease-[cubic-bezier(0.2,0.8,0.2,1)]",
@@ -261,7 +240,17 @@ export function MovieHero({ movies }: MovieHeroProps) {
                 </p>
 
                 {/* Metadata Badges Row */}
-                <div className="flex flex-wrap items-center gap-2 mb-4 text-xs">
+                <div suppressHydrationWarning className="flex flex-wrap items-center gap-2 mb-4 text-xs">
+                  {/* HOT / Nhiều lượt xem Badge */}
+                  {Boolean(m.isHot || (m.rating && m.rating >= 8.0)) && (
+                    <span
+                      suppressHydrationWarning
+                      className="inline-flex items-center gap-1 rounded px-2.5 py-1 text-[11px] font-black tracking-wider text-white bg-gradient-to-r from-[#E50000] to-[#B30000] shadow-md shadow-red-600/40 uppercase"
+                    >
+                      🔥 HOT
+                    </span>
+                  )}
+
                   {/* FHD / 4K Luxury Gradient Badge */}
                   <span
                     className="inline-flex items-center justify-center rounded px-2.5 py-1 text-[11px] font-black tracking-wider text-black shadow-md uppercase"
@@ -385,9 +374,26 @@ export function MovieHero({ movies }: MovieHeroProps) {
       {/* Carousel Navigation (Persistent across slides) */}
       {totalSlides > 1 && (
         <>
+          {/* Mobile Indicator Dots */}
+          <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 pointer-events-auto">
+            {heroMovies.map((_, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => setCurrentIndex(idx)}
+                aria-label={`Chuyển đến slide ${idx + 1}`}
+                className={cn(
+                  "h-1.5 rounded-full transition-all duration-300",
+                  idx === currentIndex
+                    ? "w-6 bg-[#E50000]"
+                    : "w-1.5 bg-white/40"
+                )}
+              />
+            ))}
+          </div>
 
           {/* Desktop & Tablet Rich Thumbnails Container (sm:flex) */}
-          <div className="hidden sm:flex absolute bottom-5 sm:bottom-7 left-1/2 -translate-x-1/2 md:left-auto md:right-8 lg:right-10 md:translate-x-0 z-30 items-center pointer-events-auto max-w-[calc(100%-1rem)]">
+          <div className="hidden sm:flex absolute bottom-8 sm:bottom-10 md:bottom-12 left-1/2 -translate-x-1/2 md:left-auto md:right-8 lg:right-10 md:translate-x-0 z-30 items-center pointer-events-auto max-w-[calc(100%-2rem)] overflow-x-auto no-scrollbar">
             <div className="flex items-center gap-1.5 sm:gap-2 px-0.5 py-1">
               {heroMovies.map((m, idx) => {
                 const isActive = idx === currentIndex;
@@ -426,13 +432,8 @@ export function MovieHero({ movies }: MovieHeroProps) {
                     {isActive && (
                       <div className="absolute bottom-0 left-0 right-0 h-[3px] bg-black/70 z-20 overflow-hidden">
                         <div
-                          key={`prog-${currentIndex}-${isPaused}`}
-                          className={cn(
-                            "h-full bg-[#E50000] shadow-[0_0_8px_rgba(229,0,0,0.9)]",
-                            isPaused
-                              ? "w-full opacity-80"
-                              : "animate-hero-progress"
-                          )}
+                          key={`prog-${currentIndex}`}
+                          className="h-full bg-[#E50000] shadow-[0_0_8px_rgba(229,0,0,0.9)] animate-hero-progress"
                         />
                       </div>
                     )}
