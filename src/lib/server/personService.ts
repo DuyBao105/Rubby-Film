@@ -15,7 +15,7 @@ export interface PersonSearchResult {
   movies: Movie[];
 }
 
-const TMDB_API_KEY = process.env.TMDB_API_KEY;
+import { TMDB_API_KEY } from "@/lib/server/tmdb";
 
 // Comprehensive curated mapping of high-impact Vietnamese, Asian, and International Actors & Directors
 const CURATED_PEOPLE: Record<

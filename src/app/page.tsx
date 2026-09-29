@@ -9,7 +9,7 @@ import { YearDiscovery } from "@/components/home/year-discovery";
 import { FaqSection } from "@/components/home/faq-section";
 import { StreamCta } from "@/components/home/stream-cta";
 import { AuthSyncBanner } from "@/components/home/auth-sync-banner";
-import { getTmdbBackdropUrl, getTmdbLogoUrl } from "@/lib/server/tmdb";
+import { getTmdbBackdropUrl, getTmdbLogoUrl, TMDB_API_KEY } from "@/lib/server/tmdb";
 import { Movie } from "@/types/movie";
 import { Metadata } from "next";
 
@@ -118,7 +118,7 @@ async function getPreparedHomePageData(): Promise<HomePagePreparedData> {
 
   // Tự động nâng cấp sang ảnh gốc TMDB 4K / Original studio backdrop & transparent logo
   const topEnrichCandidates = preliminaryRanked.slice(0, 16);
-  const hasTmdb = Boolean(process.env.TMDB_API_KEY);
+  const hasTmdb = Boolean(TMDB_API_KEY);
 
   if (hasTmdb) {
     await Promise.all(

@@ -5,6 +5,8 @@
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 const TMDB_IMAGE_ORIGINAL = "https://image.tmdb.org/t/p/original";
+export const DEFAULT_TMDB_API_KEY = "8d1cb1491ebac0d7292095e5c5bcecd0";
+export const TMDB_API_KEY = process.env.TMDB_API_KEY || DEFAULT_TMDB_API_KEY;
 
 // In-memory LRU cache to avoid hammering TMDB API
 const tmdbBackdropCache = new Map<string, string>();
@@ -65,7 +67,7 @@ export async function getTmdbBackdropUrl(
   type: "movie" | "tv" = "movie",
   fallbackSearch?: TmdbFallbackSearch
 ): Promise<string | null> {
-  const apiKey = process.env.TMDB_API_KEY;
+  const apiKey = TMDB_API_KEY;
   if (!apiKey) return null;
 
   const idStr = tmdbId ? String(tmdbId).trim() : "";
@@ -146,7 +148,7 @@ export async function getTmdbLogoUrl(
   type: "movie" | "tv" = "movie",
   fallbackSearch?: TmdbFallbackSearch
 ): Promise<string | null> {
-  const apiKey = process.env.TMDB_API_KEY;
+  const apiKey = TMDB_API_KEY;
   if (!apiKey) return null;
 
   const idStr = tmdbId ? String(tmdbId).trim() : "";
