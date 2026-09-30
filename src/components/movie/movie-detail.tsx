@@ -689,7 +689,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
 
               {/* TAB 1: EPISODES */}
               {(activeTab === "episodes" || episodes.length === 0) && episodes.length > 0 && (
-                <div className="animate-in fade-in duration-300 space-y-5">
+                <div className="animate-in fade-in duration-300 space-y-5 pb-6">
                   {/* Server selector + Season Filter + Search */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     {/* Server Pills */}
@@ -899,30 +899,29 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 </div>
               )}
             </div>
-
-            {/* KEYWORDS & TOPICS */}
-            {movie.keywords && movie.keywords.length > 0 && (
-              <div className="bg-[#161824] border border-white/10 rounded-2xl p-5 shadow-lg">
-                <h4 className="text-xs uppercase font-bold text-red-500 tracking-wider mb-3 flex items-center gap-1.5">
-                  <Tag className="w-4 h-4" />
-                  <span>Chủ đề & Từ khóa liên quan</span>
-                </h4>
-                <div className="flex flex-wrap gap-2">
-                  {movie.keywords.map((kw) => (
-                    <Link
-                      key={kw}
-                      href={`/search?q=${encodeURIComponent(kw)}`}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/5 hover:bg-red-500/15 text-zinc-300 hover:text-red-300 border border-white/10 hover:border-red-500/40 transition-all cursor-pointer"
-                    >
-                      <span>#{kw}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            )}
-
           </div>
         </div>
+
+        {/* 3.5 KEYWORDS & TOPICS */}
+        {movie.keywords && movie.keywords.length > 0 && (
+          <div className="mt-12 bg-[#161824] border border-white/10 rounded-2xl p-6 shadow-lg">
+            <h4 className="text-xs uppercase font-bold text-red-500 tracking-wider mb-4 flex items-center gap-2">
+              <Tag className="w-4 h-4" />
+              <span>Chủ đề & Từ khóa liên quan</span>
+            </h4>
+            <div className="flex flex-wrap gap-2.5">
+              {movie.keywords.map((kw) => (
+                <Link
+                  key={kw}
+                  href={`/search?q=${encodeURIComponent(kw)}`}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs font-semibold bg-white/5 hover:bg-red-500/15 text-zinc-300 hover:text-red-300 border border-white/10 hover:border-red-500/40 transition-all cursor-pointer shadow-sm hover:scale-105 active:scale-95"
+                >
+                  <span>#{kw}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* 4. COMMUNITY RATINGS & COMMENTS (Always accessible on page flow) */}
         <div id="comment-section" className="mt-14 border-t border-white/10 pt-10 space-y-8">
