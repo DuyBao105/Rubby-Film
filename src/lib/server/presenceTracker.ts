@@ -77,10 +77,11 @@ export interface RealtimeAnalyticsStats {
   todayPageViewsLogs: TodayPageViewLog[];
 }
 
-const DEFAULT_DATABASE_URL =
-  "postgresql://neondb_owner:npg_mROw7ziUQG5j@ep-aged-frost-az6ao807.c-3.ap-southeast-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
-
-const sql = neon(process.env.DATABASE_URL || DEFAULT_DATABASE_URL);
+function getSql() {
+  const url = process.env.DATABASE_URL;
+  if (!url) return null;
+  return neon(url);
+}
 
 // Inactivity timeout: considered offline if no heartbeat for 45 seconds (client sends every 12s)
 const INACTIVITY_TIMEOUT_MS = 45 * 1000;
@@ -171,6 +172,9 @@ export const presenceTracker = {
     const userRole = input.userRole || null;
 
     try {
+      const sql = getSql();
+      if (!sql) return;
+
       // 1. Check previous active session to detect page change / navigation
       const existing = (await sql.query(
         `SELECT page, first_seen FROM analytics_active_sessions WHERE session_id = $1 LIMIT 1`,
@@ -227,6 +231,8 @@ export const presenceTracker = {
     if (!sessionId) return;
     const cleanId = sessionId.slice(0, 64);
     try {
+      const sql = getSql();
+      if (!sql) return;
       await sql.query(`DELETE FROM analytics_active_sessions WHERE session_id = $1`, [cleanId]);
       cachedStats = null;
       notifyLocalListeners();
@@ -247,6 +253,9 @@ export const presenceTracker = {
     }
 
     try {
+      const sql = getSql();
+      if (!sql) return getEmptyStats();
+
       const activeCutoff = now - INACTIVITY_TIMEOUT_MS;
 
       // Lazy cleanup: purge sessions inactive for > 15 minutes
