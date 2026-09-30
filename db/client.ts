@@ -6,7 +6,8 @@ import * as schema from "./schema";
 export type Db = NeonHttpDatabase<typeof schema>;
 
 function createDb(): Db {
-  const url = process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
+  const rawUrl = process.env.DATABASE_URL?.replace(/^[\uFEFF\s]+|[\uFEFF\s]+$/g, "");
+  const url = rawUrl || "postgresql://placeholder:placeholder@localhost:5432/placeholder";
   return drizzle(neon(url), { schema });
 }
 

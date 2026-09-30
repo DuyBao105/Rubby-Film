@@ -78,7 +78,7 @@ export interface RealtimeAnalyticsStats {
 }
 
 function getSql() {
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL?.replace(/^[\uFEFF\s]+|[\uFEFF\s]+$/g, "");
   if (!url) return null;
   return neon(url);
 }

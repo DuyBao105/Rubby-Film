@@ -4,7 +4,7 @@ const g = globalThis as unknown as { __bfilm_listen?: ReturnType<typeof postgres
 
 export function getListenClient() {
   if (g.__bfilm_listen) return g.__bfilm_listen;
-  const url = process.env.DATABASE_URL;
+  const url = process.env.DATABASE_URL?.replace(/^[\uFEFF\s]+|[\uFEFF\s]+$/g, "");
   if (!url) return null;
   try {
     g.__bfilm_listen = postgres(url, {
