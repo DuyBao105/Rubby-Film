@@ -79,6 +79,7 @@ import { AuthProvider } from "@/lib/auth/authContext";
 import { SwipeBackNavigation } from "@/components/common/swipe-back-navigation";
 
 import { NavigationProgressBar } from "@/components/common/navigation-progress-bar";
+import { AnalyticsHeartbeat } from "@/components/analytics/analytics-heartbeat";
 
 export default async function RootLayout({
   children,
@@ -105,6 +106,9 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={`${beVietnamPro.variable} ${spaceGrotesk.variable} ${beVietnamPro.className} font-sans min-h-screen flex flex-col bg-[#0F0F0F] text-[#D1D5DB] antialiased selection:bg-brand selection:text-white`}
       >
+        <React.Suspense fallback={null}>
+          <AnalyticsHeartbeat />
+        </React.Suspense>
         <React.Suspense fallback={null}>
           <NavigationProgressBar />
         </React.Suspense>

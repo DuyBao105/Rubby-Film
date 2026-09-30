@@ -26,6 +26,7 @@ import {
   Globe,
   Sparkles,
   Shield,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Genre, Country } from "@/types/movie";
@@ -34,6 +35,7 @@ import { useMyList } from "@/lib/hooks/use-my-list";
 import { useAuth } from "@/lib/hooks/use-auth";
 import { useToast } from "@/components/ui/toast";
 import { checkAndNotifyDueReminders } from "@/lib/utils/airingSchedule";
+import { AdminLivePresenceBadge } from "@/components/admin/admin-live-presence-badge";
 
 interface HeaderProps {
   genres?: Genre[];
@@ -403,6 +405,8 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                 <Search className="w-4 h-4" />
               </button>
 
+              {/* Admin-only Live Traffic Presence Badge (Invisible to regular users) */}
+              <AdminLivePresenceBadge />
 
               {/* User Authentication Status / Avatar Menu */}
               {isAuthed && user ? (
@@ -454,7 +458,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                         </div>
                         <div className="mt-2 pt-2 border-t border-[#2A2A2A] flex items-center justify-between">
                           <span className="text-[10px] uppercase font-bold tracking-wider text-[#FECF59] bg-[#FECF59]/10 px-2 py-0.5 rounded-full border border-[#FECF59]/20">
-                            {user.role === "vip" ? "★ Thành Viên VIP" : "Thành Viên"}
+                            {user.role === "admin" ? "🛡️ Quản Trị Viên" : user.role === "vip" ? "★ Thành Viên VIP" : "Thành Viên"}
                           </span>
                           <span className="text-[10px] text-[#9CA3AF]">
                             {user.providers?.includes("google") ? "Google" : user.providers?.includes("facebook") ? "Facebook" : "Email"}
@@ -496,14 +500,24 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                           <span>Lịch sử xem</span>
                         </Link>
                         {user.role === "admin" && (
-                          <Link
-                            href="/admin/moderation"
-                            onClick={() => setUserMenuOpen(false)}
-                            className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#D1D5DB] hover:text-[#F9FAFB] hover:bg-[#222222] transition-colors"
-                          >
-                            <Shield className="w-4 h-4 text-[#E50000]" />
-                            <span>Kiểm duyệt</span>
-                          </Link>
+                          <>
+                            <Link
+                              href="/admin/analytics"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 transition-colors"
+                            >
+                              <Activity className="w-4 h-4 text-emerald-400" />
+                              <span>Thống kê Traffic</span>
+                            </Link>
+                            <Link
+                              href="/admin/moderation"
+                              onClick={() => setUserMenuOpen(false)}
+                              className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-[#D1D5DB] hover:text-[#F9FAFB] hover:bg-[#222222] transition-colors"
+                            >
+                              <Shield className="w-4 h-4 text-[#E50000]" />
+                              <span>Kiểm duyệt</span>
+                            </Link>
+                          </>
                         )}
                       </div>
 
@@ -654,6 +668,28 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                     <span>Lịch sử xem</span>
                   </Link>
                 </div>
+
+                {/* Admin Quick Actions in Mobile Menu */}
+                {user?.role === "admin" && (
+                  <div className="grid grid-cols-2 gap-2 mt-2 pt-2 border-t border-[#262626]">
+                    <Link
+                      href="/admin/analytics"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-500/40 text-xs font-bold text-emerald-400 transition-colors"
+                    >
+                      <Activity className="w-3.5 h-3.5" />
+                      <span>Traffic Live</span>
+                    </Link>
+                    <Link
+                      href="/admin/moderation"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="flex items-center justify-center gap-1.5 px-2.5 py-2 rounded-xl bg-[#1C1C1C] hover:bg-[#252525] border border-[#2E2E2E] text-xs font-semibold text-red-400 transition-colors"
+                    >
+                      <Shield className="w-3.5 h-3.5" />
+                      <span>Kiểm duyệt</span>
+                    </Link>
+                  </div>
+                )}
 
                 {/* Footer Settings & Logout */}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-[#262626]/70">
