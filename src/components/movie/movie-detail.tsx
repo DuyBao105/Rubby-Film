@@ -507,20 +507,16 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 <span>{watchButtonText}</span>
               </Link>
 
-              {/* Trailer Button */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (trailerEmbedUrl) {
-                    setIsTrailerOpen(true);
-                  } else {
-                    window.open(youtubeDirectUrl, "_blank", "noopener,noreferrer");
-                  }
-                }}
-                className="inline-flex justify-center items-center px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white text-[14px] md:text-[15px] font-semibold rounded-full transition-colors w-[90%] max-w-[340px] md:max-w-none md:w-auto min-w-[120px] border border-white/10 cursor-pointer active:scale-95"
-              >
-                Trailer
-              </button>
+              {/* Trailer Button - Only show when movie has trailer */}
+              {trailerEmbedUrl && (
+                <button
+                  type="button"
+                  onClick={() => setIsTrailerOpen(true)}
+                  className="inline-flex justify-center items-center px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white text-[14px] md:text-[15px] font-semibold rounded-full transition-colors w-[90%] max-w-[340px] md:max-w-none md:w-auto min-w-[120px] border border-white/10 cursor-pointer active:scale-95"
+                >
+                  Trailer
+                </button>
+              )}
 
               {/* Divider line for desktop */}
               <div className="hidden md:block w-px h-8 bg-white/15 mx-2" />
@@ -913,77 +909,40 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
       </div>
 
       {/* 4. YOUTUBE TRAILER MODAL */}
-      {isTrailerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
-          <div className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden border border-white/15 shadow-2xl">
+      {isTrailerOpen && trailerEmbedUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200"
+          onClick={() => setIsTrailerOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden border border-white/15 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-3.5 bg-[#161824] border-b border-white/10">
-              <h4 className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md">
+              <h4 className="text-sm font-bold text-white truncate max-w-[280px] sm:max-w-md">
                 Trailer: {movie.title}
               </h4>
-              <div className="flex items-center gap-3">
-                <a
-                  href={youtubeDirectUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors"
-                >
-                  <span className="hidden sm:inline">Mở trên YouTube</span>
-                  <span className="sm:hidden">YouTube</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => setIsTrailerOpen(false)}
-                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setIsTrailerOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Đóng trailer"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
 
             {/* Video Iframe Container */}
             <div className="relative aspect-video w-full bg-black">
-              {trailerEmbedUrl ? (
-                <iframe
-                  src={trailerEmbedUrl}
-                  title={`Trailer ${movie.title}`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
-                  <p className="text-cinema-300 text-sm mb-4">
-                    Trailer trực tiếp không khả dụng hoặc bị nhà phát hành giới hạn nhúng.
-                  </p>
-                  <a
-                    href={youtubeDirectUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
-                  >
-                    <span>Mở xem Trailer trên YouTube</span>
-                    <ExternalLink className="w-4 h-4" />
-                  </a>
-                </div>
-              )}
+              <iframe
+                src={trailerEmbedUrl}
+                title={`Trailer ${movie.title}`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="w-full h-full border-0"
+              />
             </div>
-
-            {/* Notice if video fails to play due to publisher embed restrictions */}
-            {trailerEmbedUrl && (
-              <div className="px-5 py-2.5 bg-[#161824] flex items-center justify-between text-xs text-cinema-400 border-t border-white/10">
-                <span className="truncate mr-2">Nếu video bị đen hoặc không phát do bản quyền:</span>
-                <a
-                  href={youtubeDirectUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-red-400 hover:text-red-300 font-medium underline flex items-center gap-1 shrink-0"
-                >
-                  Mở trên YouTube <ExternalLink className="w-3 h-3" />
-                </a>
-              </div>
-            )}
           </div>
         </div>
       )}
