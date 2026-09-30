@@ -78,9 +78,16 @@ export interface RealtimeAnalyticsStats {
 }
 
 function getSql() {
-  const url = process.env.DATABASE_URL?.replace(/^[\uFEFF\s]+|[\uFEFF\s]+$/g, "");
+  const url = (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL)
+    ?.replace(/^[\uFEFF\s"']+|[\uFEFF\s"']+$/g, "")
+    .trim();
   if (!url) return null;
-  return neon(url);
+  try {
+    return neon(url);
+  } catch (err) {
+    console.error("[presenceTracker] Failed to connect to Neon DB:", err);
+    return null;
+  }
 }
 
 // Inactivity timeout: considered offline if no heartbeat for 45 seconds (client sends every 12s)

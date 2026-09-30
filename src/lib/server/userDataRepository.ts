@@ -3,9 +3,16 @@ import type { Movie } from "@/types/movie";
 import type { WatchHistoryItem, EpisodeWatchedState } from "@/types/user";
 
 function getSql() {
-  const rawUrl = process.env.DATABASE_URL?.replace(/^[\uFEFF\s]+|[\uFEFF\s]+$/g, "");
+  const rawUrl = (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL)
+    ?.replace(/^[\uFEFF\s"']+|[\uFEFF\s"']+$/g, "")
+    .trim();
   if (!rawUrl) return null;
-  return neon(rawUrl);
+  try {
+    return neon(rawUrl);
+  } catch (err) {
+    console.error("[userDataRepository] Failed to connect to Neon DB:", err);
+    return null;
+  }
 }
 
 class UserDataRepository {
