@@ -445,6 +445,41 @@ const CURATED_PEOPLE: Record<
   },
 };
 
+function isMovieMatch(item: any, credit: any): boolean {
+  if (!item || !credit) return false;
+
+  // 1. Exact TMDB ID match: 100% guaranteed
+  if (item.tmdb?.id && credit.id && String(item.tmdb.id) === String(credit.id)) {
+    return true;
+  }
+
+  // 2. Normalized Title / Origin Name exact or clean match
+  const normOrigin = (item.origin_name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const normName = (item.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const creditTitles = [credit.title, credit.name, credit.original_title]
+    .filter((t): t is string => Boolean(t && typeof t === "string"))
+    .map((t: string) => t.toLowerCase().replace(/[^a-z0-9]/g, ""));
+
+  for (const cTitle of creditTitles) {
+    if (!cTitle || cTitle.length < 2) continue;
+    if (normOrigin === cTitle || normName === cTitle) {
+      return true;
+    }
+    if (cTitle.length >= 6 && normOrigin.length >= 6) {
+      if (normOrigin.includes(cTitle) || cTitle.includes(normOrigin)) {
+        const creditYear = parseInt((credit.release_date || credit.first_air_date || "").slice(0, 4), 10);
+        const itemYear = parseInt(item.year, 10);
+        if (creditYear && itemYear && Math.abs(creditYear - itemYear) <= 1) {
+          return true;
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 export class PersonService {
   /**
    * Search movies by actor or director
@@ -535,7 +570,7 @@ export class PersonService {
 
       if (targetCredits.length === 0) return null;
 
-      // Match each movie in KKPhim by candidate titles
+      // Match each movie in KKPhim by candidate titles with strict validation
       const moviePromises = targetCredits.map(async (c: any) => {
         const candidateTitles = [c.title, c.name, c.original_title].filter(
           (t): t is string => Boolean(t && typeof t === "string" && t.trim().length > 0)
@@ -543,12 +578,13 @@ export class PersonService {
         for (const qTitle of candidateTitles) {
           try {
             const searchRes = await movieApiClient.get<any>(
-              `/v1/api/tim-kiem?keyword=${encodeURIComponent(qTitle)}&limit=1`,
+              `/v1/api/tim-kiem?keyword=${encodeURIComponent(qTitle)}&limit=5`,
               { revalidate: 3600 }
             );
             const items = searchRes?.data?.items || [];
-            if (items.length > 0) {
-              return mapKkphimMovie(items[0], cdnDomain);
+            const matchedItem = items.find((it: any) => isMovieMatch(it, c));
+            if (matchedItem) {
+              return mapKkphimMovie(matchedItem, cdnDomain);
             }
           } catch {}
         }
