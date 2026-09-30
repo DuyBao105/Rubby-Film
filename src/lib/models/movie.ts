@@ -2,6 +2,12 @@ import { Episode } from "./episode";
 
 export type MovieType = "single" | "series";
 
+export interface CastMember {
+  name: string;
+  character?: string;
+  avatar?: string;
+}
+
 export interface Movie {
   id: string;
   slug: string;
@@ -23,6 +29,7 @@ export interface Movie {
   rawType?: string;
   director?: string;
   cast?: string[];
+  actors?: CastMember[];
   totalEpisodes?: number;
   currentEpisode?: string;
   showtimes?: string;

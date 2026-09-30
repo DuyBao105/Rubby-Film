@@ -223,16 +223,19 @@ export async function getTmdbLogoUrl(
   return null;
 }
 
+import { CastMember } from "@/types/movie";
+
 export interface TmdbMediaResult {
   backdropUrl?: string;
   posterUrl?: string;
   logoUrl?: string;
+  actors?: CastMember[];
 }
 
 const tmdbMediaCache = new Map<string, TmdbMediaResult>();
 
 /**
- * Fetches original 4K backdrop, ultra-crisp studio poster, and transparent logo in a single API call
+ * Fetches original 4K backdrop, ultra-crisp studio poster, transparent logo, and actor avatars in a single API call
  */
 export async function getTmdbMedia(
   tmdbId?: string | number | null,
@@ -288,7 +291,7 @@ export async function getTmdbMedia(
 
   for (const currentType of [primaryType, secondaryType]) {
     try {
-      const endpoint = `${TMDB_BASE_URL}/${currentType}/${resolvedId}?api_key=${apiKey}&append_to_response=images&include_image_language=vi,en,null`;
+      const endpoint = `${TMDB_BASE_URL}/${currentType}/${resolvedId}?api_key=${apiKey}&append_to_response=images,credits&include_image_language=vi,en,null`;
       const res = await fetch(endpoint, {
         next: { revalidate: 86400 * 7 },
       });
@@ -319,7 +322,17 @@ export async function getTmdbMedia(
           }
         }
 
-        if (result.backdropUrl || result.posterUrl || result.logoUrl) {
+        // Extract real actor avatars and characters from TMDB credits
+        const rawCast: any[] = data.credits?.cast || [];
+        if (rawCast.length > 0) {
+          result.actors = rawCast.slice(0, 30).map((c: any) => ({
+            name: c.name || "",
+            character: c.character || undefined,
+            avatar: c.profile_path ? `https://image.tmdb.org/t/p/w185${c.profile_path}` : undefined,
+          }));
+        }
+
+        if (result.backdropUrl || result.posterUrl || result.logoUrl || result.actors) {
           if (cacheKey) tmdbMediaCache.set(cacheKey, result);
           return result;
         }

@@ -542,6 +542,9 @@ export class KkphimService {
         if (tmdbMedia.backdropUrl) movie.backdropUrl = tmdbMedia.backdropUrl;
         if (tmdbMedia.posterUrl) movie.posterUrl = tmdbMedia.posterUrl;
         if (tmdbMedia.logoUrl) movie.logoUrl = tmdbMedia.logoUrl;
+        if (tmdbMedia.actors && tmdbMedia.actors.length > 0) {
+          movie.actors = tmdbMedia.actors;
+        }
       } catch {}
 
       // Map episodes and servers

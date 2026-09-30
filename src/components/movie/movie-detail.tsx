@@ -847,26 +847,54 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                       <Layers className="w-4 h-4 text-brand" />
                       <span>Danh sách diễn viên</span>
                     </h4>
-                    {movie.cast && movie.cast.length > 0 ? (
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                        {movie.cast.map((actor) => (
-                          <Link
-                            key={actor}
-                            href={`/search?actor=${encodeURIComponent(actor.trim())}`}
-                            className="flex items-center gap-2.5 p-3 rounded-xl bg-[#161824] hover:bg-[#1E2130] border border-white/10 hover:border-brand/40 transition-all group"
-                          >
-                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600 to-rose-700 text-white font-bold flex items-center justify-center shrink-0 text-sm shadow-md">
-                              {actor.trim().charAt(0).toUpperCase()}
-                            </div>
-                            <span className="text-xs font-semibold text-zinc-200 group-hover:text-red-300 transition-colors line-clamp-1">
-                              {actor.trim()}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-zinc-500">Danh sách diễn viên đang được cập nhật.</p>
-                    )}
+                    {(() => {
+                      const displayActors: Array<{ name: string; avatar?: string; character?: string }> =
+                        movie.actors && movie.actors.length > 0
+                          ? movie.actors
+                          : (movie.cast || []).map((name) => ({ name, avatar: undefined, character: undefined }));
+
+                      if (displayActors.length === 0) {
+                        return <p className="text-xs text-zinc-500">Danh sách diễn viên đang được cập nhật.</p>;
+                      }
+
+                      return (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                          {displayActors.map((actor, idx) => (
+                            <Link
+                              key={`${actor.name}-${idx}`}
+                              href={`/search?actor=${encodeURIComponent(actor.name.trim())}`}
+                              className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[#161824] hover:bg-[#1E2130] border border-white/10 hover:border-brand/50 transition-all group overflow-hidden"
+                            >
+                              <div className="relative w-10 h-10 rounded-full overflow-hidden shrink-0 shadow-md border border-white/10 bg-zinc-800">
+                                {actor.avatar ? (
+                                  <Image
+                                    src={actor.avatar}
+                                    alt={actor.name}
+                                    fill
+                                    sizes="40px"
+                                    className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-red-600 to-rose-700 text-white font-bold flex items-center justify-center text-sm shadow-md">
+                                    {actor.name.trim().charAt(0).toUpperCase()}
+                                  </div>
+                                )}
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <span className="text-xs font-semibold text-zinc-200 group-hover:text-red-300 transition-colors line-clamp-1 block">
+                                  {actor.name.trim()}
+                                </span>
+                                {actor.character && (
+                                  <span className="text-[11px] text-zinc-400 line-clamp-1 block">
+                                    {actor.character}
+                                  </span>
+                                )}
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
               )}
