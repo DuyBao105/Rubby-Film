@@ -134,6 +134,8 @@ async function getPreparedHomePageData(): Promise<HomePagePreparedData> {
         }
         if (media.posterUrl) {
           m.posterUrl = media.posterUrl;
+        } else if (m.posterUrl && m.posterUrl.includes("phimimg.com") && m.posterUrl.includes("-thumb.")) {
+          m.posterUrl = m.posterUrl.replace("-thumb.", "-poster.");
         }
         if (media.logoUrl) {
           m.logoUrl = media.logoUrl;
@@ -143,10 +145,14 @@ async function getPreparedHomePageData(): Promise<HomePagePreparedData> {
   }
 
   // Chấm điểm chung kết hoàn toàn động:
-  // Ưu tiên phim có backdrop 4K từ TMDB (+1000) cùng điểm số thực tế
+  // Ưu tiên phim có backdrop 4K và poster dọc 4K từ TMDB (+1000) cùng điểm số thực tế
   const sortedHeroPool = [...topEnrichCandidates].sort((a, b) => {
-    const isTmdbA = a.backdropUrl.includes("image.tmdb.org") ? 1000 : 0;
-    const isTmdbB = b.backdropUrl.includes("image.tmdb.org") ? 1000 : 0;
+    const isTmdbA =
+      (a.backdropUrl.includes("image.tmdb.org") ? 500 : 0) +
+      (a.posterUrl?.includes("image.tmdb.org") ? 500 : 0);
+    const isTmdbB =
+      (b.backdropUrl.includes("image.tmdb.org") ? 500 : 0) +
+      (b.posterUrl?.includes("image.tmdb.org") ? 500 : 0);
     const isCinemaA = (homeData.singles || []).some((s) => s.id === a.id) ? 400 : 0;
     const isCinemaB = (homeData.singles || []).some((s) => s.id === b.id) ? 400 : 0;
     const isHotA = a.isHot || (homeData.hot || []).some((h) => h.id === a.id) ? 200 : 0;

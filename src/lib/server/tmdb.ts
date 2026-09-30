@@ -265,7 +265,12 @@ export async function getTmdbMedia(
         );
         if (sRes.ok) {
           const sData = await sRes.json();
-          const match = sData.results?.[0];
+          const match =
+            sData.results?.find(
+              (r: any) =>
+                (r.media_type === "movie" || r.media_type === "tv") &&
+                (r.poster_path || r.backdrop_path)
+            ) || sData.results?.[0];
           if (match?.id) {
             resolvedId = String(match.id);
             resolvedType = match.media_type === "tv" ? "tv" : "movie";
@@ -294,9 +299,14 @@ export async function getTmdbMedia(
 
         if (data.backdrop_path) {
           result.backdropUrl = `${TMDB_IMAGE_ORIGINAL}${data.backdrop_path}`;
+        } else if (data.images?.backdrops?.length > 0) {
+          result.backdropUrl = `${TMDB_IMAGE_ORIGINAL}${data.images.backdrops[0].file_path}`;
         }
+
         if (data.poster_path) {
           result.posterUrl = `${TMDB_IMAGE_ORIGINAL}${data.poster_path}`;
+        } else if (data.images?.posters?.length > 0) {
+          result.posterUrl = `${TMDB_IMAGE_ORIGINAL}${data.images.posters[0].file_path}`;
         }
 
         const logos: Array<{ file_path: string; iso_639_1?: string }> = data.images?.logos || [];
