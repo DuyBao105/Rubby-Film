@@ -462,6 +462,94 @@ class UserDataRepository {
       }
     }
   }
+
+  // --- Search History ---
+  private searchHistoryMap: Map<string, string[]> = new Map();
+
+  public async getSearchHistory(userId: string): Promise<string[]> {
+    if (!userId) return [];
+    const sql = getSql();
+    if (!sql) return this.searchHistoryMap.get(userId) || [];
+
+    try {
+      const rows = (await sql.query(
+        `SELECT searches FROM user_search_history WHERE user_id = $1`,
+        [userId]
+      )) as any[];
+
+      if (rows && rows.length > 0) {
+        let list: string[] = [];
+        try {
+          list = typeof rows[0].searches === "string" ? JSON.parse(rows[0].searches) : rows[0].searches || [];
+        } catch {}
+        if (Array.isArray(list)) {
+          const clean = list.filter((s) => typeof s === "string" && s.trim().length > 0).slice(0, 20);
+          this.searchHistoryMap.set(userId, clean);
+          return clean;
+        }
+      }
+      return this.searchHistoryMap.get(userId) || [];
+    } catch (err) {
+      console.error("[userDataRepository] getSearchHistory error:", err);
+      return this.searchHistoryMap.get(userId) || [];
+    }
+  }
+
+  public async saveSearchHistory(userId: string, searches: string[]): Promise<string[]> {
+    if (!userId) return [];
+    const clean = Array.from(new Set(searches.map((s) => (s || "").trim()).filter(Boolean))).slice(0, 20);
+    this.searchHistoryMap.set(userId, clean);
+
+    const sql = getSql();
+    if (sql) {
+      try {
+        const now = Date.now();
+        await sql.query(
+          `INSERT INTO user_search_history (user_id, searches, updated_at)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (user_id) DO UPDATE SET
+             searches = EXCLUDED.searches,
+             updated_at = EXCLUDED.updated_at`,
+          [userId, JSON.stringify(clean), now]
+        );
+      } catch (err) {
+        console.error("[userDataRepository] saveSearchHistory error:", err);
+      }
+    }
+    return clean;
+  }
+
+  public async addSearchTerm(userId: string, term: string): Promise<string[]> {
+    if (!userId || !term) return this.getSearchHistory(userId);
+    const cleanTerm = term.trim();
+    if (!cleanTerm || cleanTerm.length < 2) return this.getSearchHistory(userId);
+
+    const current = await this.getSearchHistory(userId);
+    const filtered = current.filter((s) => s.toLowerCase() !== cleanTerm.toLowerCase());
+    const updated = [cleanTerm, ...filtered].slice(0, 20);
+    return this.saveSearchHistory(userId, updated);
+  }
+
+  public async removeSearchTerm(userId: string, term: string): Promise<string[]> {
+    if (!userId || !term) return this.getSearchHistory(userId);
+    const cleanTerm = term.trim().toLowerCase();
+    const current = await this.getSearchHistory(userId);
+    const updated = current.filter((s) => s.toLowerCase() !== cleanTerm);
+    return this.saveSearchHistory(userId, updated);
+  }
+
+  public async clearSearchHistory(userId: string): Promise<void> {
+    if (!userId) return;
+    this.searchHistoryMap.delete(userId);
+    const sql = getSql();
+    if (sql) {
+      try {
+        await sql.query(`DELETE FROM user_search_history WHERE user_id = $1`, [userId]);
+      } catch (err) {
+        console.error("[userDataRepository] clearSearchHistory error:", err);
+      }
+    }
+  }
 }
 
 export const userDataRepository = new UserDataRepository();

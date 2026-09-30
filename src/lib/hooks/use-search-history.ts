@@ -39,11 +39,16 @@ export function useSearchHistory() {
     searchHistoryService.clear();
   }, []);
 
+  const sync = useCallback(async () => {
+    await searchHistoryService.syncWithServer(true);
+  }, []);
+
   return {
     recentSearches,
     isLoaded,
     addRecentSearch,
     removeRecentSearch,
     clearRecentSearches,
+    sync,
   };
 }
