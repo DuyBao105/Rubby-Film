@@ -149,15 +149,15 @@ export class KkphimService {
   }
 
   /**
-   * Get latest updated movies
+   * Get latest updated movies (Upgraded to v3 with full category, country, quality, and ratings)
    */
   async getLatestMovies(page: number = 1): Promise<PaginatedMovies> {
-    const cacheKey = `latest:${page}`;
+    const cacheKey = `latest:v3:${page}`;
     const cached = this.getFromCache(this.queryCache, cacheKey);
     if (cached !== null) return cached;
 
     const raw = await movieApiClient.get<any>(
-      `/danh-sach/phim-moi-cap-nhat?page=${page}`,
+      `/danh-sach/phim-moi-cap-nhat-v3?page=${page}`,
       { revalidate: 1800 } // 30 min cache
     );
 
@@ -173,6 +173,88 @@ export class KkphimService {
     };
     this.setInCache(this.queryCache, cacheKey, result, 10 * 60 * 1000);
     return result;
+  }
+
+  /**
+   * Get movie directly by TMDB ID (instant 100% exact match without search ambiguity)
+   */
+  async getMovieByTmdb(tmdbId: string | number, type: "movie" | "tv" = "movie"): Promise<Movie | null> {
+    if (!tmdbId) return null;
+    const cacheKey = `tmdb:${type}:${tmdbId}`;
+    const cached = this.getFromCache(this.movieDetailCache, cacheKey);
+    if (cached !== null) return cached;
+
+    try {
+      const raw = await movieApiClient.get<any>(
+        `/tmdb/${type}/${tmdbId}`,
+        { revalidate: 86400 } // 24h cache
+      );
+      if (raw && raw.movie) {
+        const movie = mapKkphimMovie(raw.movie, "https://phimimg.com");
+        if (Array.isArray(raw.episodes)) {
+          movie.episodes = mapKkphimEpisodes(raw.episodes);
+        }
+        this.setInCache(this.movieDetailCache, cacheKey, movie, 86400 * 1000);
+        return movie;
+      }
+    } catch (err: any) {
+      if (err.statusCode === 404 || err.code === "NOT_FOUND") {
+        this.setInCache(this.movieDetailCache, cacheKey, null, 3600 * 1000);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get movie directly by IMDb ID (e.g. tt4154796)
+   */
+  async getMovieByImdb(imdbId: string): Promise<Movie | null> {
+    if (!imdbId) return null;
+    const cleanId = imdbId.trim();
+    const cacheKey = `imdb:${cleanId}`;
+    const cached = this.getFromCache(this.movieDetailCache, cacheKey);
+    if (cached !== null) return cached;
+
+    try {
+      const raw = await movieApiClient.get<any>(
+        `/imdb/title/${encodeURIComponent(cleanId)}`,
+        { revalidate: 86400 } // 24h cache
+      );
+      if (raw && raw.movie) {
+        const movie = mapKkphimMovie(raw.movie, "https://phimimg.com");
+        if (Array.isArray(raw.episodes)) {
+          movie.episodes = mapKkphimEpisodes(raw.episodes);
+        }
+        this.setInCache(this.movieDetailCache, cacheKey, movie, 86400 * 1000);
+        return movie;
+      }
+    } catch (err: any) {
+      if (err.statusCode === 404 || err.code === "NOT_FOUND") {
+        this.setInCache(this.movieDetailCache, cacheKey, null, 3600 * 1000);
+        return null;
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Get movie keywords/tags directly from KKPhim
+   */
+  async getMovieKeywords(slug: string): Promise<string[]> {
+    if (!slug) return [];
+    try {
+      const raw = await movieApiClient.get<any>(
+        `/v1/api/phim/${encodeURIComponent(slug)}/keywords`,
+        { revalidate: 86400 } // 24h cache
+      );
+      const items = Array.isArray(raw?.data?.keywords) ? raw.data.keywords : [];
+      return items
+        .map((k: any) => k.name_vn || k.name)
+        .filter((k: any): k is string => Boolean(k && typeof k === "string"));
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -466,6 +548,14 @@ export class KkphimService {
       if (Array.isArray(raw.episodes)) {
         movie.episodes = mapKkphimEpisodes(raw.episodes);
       }
+
+      // Fetch keywords / tags from KKPhim
+      try {
+        const keywords = await this.getMovieKeywords(cleanSlug);
+        if (keywords.length > 0) {
+          movie.keywords = keywords;
+        }
+      } catch {}
 
       this.setInCache(this.movieDetailCache, cleanSlug, movie, 30 * 60 * 1000);
       return movie;
@@ -775,6 +865,14 @@ export class KkphimService {
     // Append year if not already the base endpoint
     if (options?.year && !endpoint.includes("/nam/")) {
       searchParams.set("year", String(options.year));
+    }
+
+    // Append language filter (KKPhim supports sort_lang: vs, tm, lt)
+    if (options?.language) {
+      const l = options.language.toLowerCase();
+      if (l === "vietsub") searchParams.set("sort_lang", "vs");
+      else if (l === "thuyet-minh") searchParams.set("sort_lang", "tm");
+      else if (l === "long-tieng") searchParams.set("sort_lang", "lt");
     }
 
     // Append sorting

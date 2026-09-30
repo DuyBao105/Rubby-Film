@@ -54,6 +54,7 @@ export interface Movie {
   trailerUrl?: string;
   tmdbVoteAverage?: number;
   imdbVoteAverage?: number;
+  keywords?: string[];
 }
 
 export interface Genre {

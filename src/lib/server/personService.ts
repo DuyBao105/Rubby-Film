@@ -1,6 +1,7 @@
 import { Movie } from "@/types/movie";
 import { movieApiClient } from "./movieApiClient";
 import { mapKkphimMovie } from "./kkphimAdapter";
+import { kkphimService } from "./kkphimService";
 
 export interface PersonInfo {
   name: string;
@@ -570,8 +571,20 @@ export class PersonService {
 
       if (targetCredits.length === 0) return null;
 
-      // Match each movie in KKPhim by candidate titles with strict validation
+      // Match each movie in KKPhim:
+      // 1. Direct TMDB ID lookup via KKPhim's /tmdb/{type}/{id} API (100% exact instant hit)
+      // 2. Fallback to candidate title search with strict isMovieMatch verification
       const moviePromises = targetCredits.map(async (c: any) => {
+        const mediaType = c.media_type === "tv" ? "tv" : "movie";
+        if (c.id) {
+          try {
+            const tmdbMovie = await kkphimService.getMovieByTmdb(c.id, mediaType);
+            if (tmdbMovie) {
+              return tmdbMovie;
+            }
+          } catch {}
+        }
+
         const candidateTitles = [c.title, c.name, c.original_title].filter(
           (t): t is string => Boolean(t && typeof t === "string" && t.trim().length > 0)
         );

@@ -31,6 +31,7 @@ import {
   Lock,
   Sparkles,
   ExternalLink,
+  Tag,
 } from "lucide-react";
 import { Movie, Episode } from "@/types/movie";
 import { Button } from "@/components/ui/button";
@@ -870,6 +871,27 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 </div>
               )}
             </div>
+
+            {/* KEYWORDS & TOPICS */}
+            {movie.keywords && movie.keywords.length > 0 && (
+              <div className="bg-[#161824] border border-white/10 rounded-2xl p-5 shadow-lg">
+                <h4 className="text-xs uppercase font-bold text-red-500 tracking-wider mb-3 flex items-center gap-1.5">
+                  <Tag className="w-4 h-4" />
+                  <span>Chủ đề & Từ khóa liên quan</span>
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {movie.keywords.map((kw) => (
+                    <Link
+                      key={kw}
+                      href={`/search?q=${encodeURIComponent(kw)}`}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-white/5 hover:bg-red-500/15 text-zinc-300 hover:text-red-300 border border-white/10 hover:border-red-500/40 transition-all cursor-pointer"
+                    >
+                      <span>#{kw}</span>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </div>
         </div>
