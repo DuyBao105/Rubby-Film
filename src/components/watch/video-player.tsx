@@ -241,6 +241,23 @@ export function VideoPlayer({
   const hideControlsTimer = React.useRef<NodeJS.Timeout | null>(null);
   const autoNextTimerRef = React.useRef<NodeJS.Timeout | null>(null);
 
+  // Seek feedback animation state (+10s / -10s floating badge)
+  const [seekFeedback, setSeekFeedback] = React.useState<{
+    direction: "rewind" | "forward";
+    time: number;
+    key: number;
+  } | null>(null);
+  const seekFeedbackTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+  const lastTapRef = React.useRef<{ time: number; x: number }>({ time: 0, x: 0 });
+
+  const triggerSeekFeedback = (direction: "rewind" | "forward", seconds: number) => {
+    if (seekFeedbackTimerRef.current) clearTimeout(seekFeedbackTimerRef.current);
+    setSeekFeedback({ direction, time: Math.abs(seconds), key: Date.now() });
+    seekFeedbackTimerRef.current = setTimeout(() => {
+      setSeekFeedback(null);
+    }, 700);
+  };
+
   React.useEffect(() => {
     if (typeof document !== "undefined" && document.pictureInPictureEnabled) {
       setIsPipSupported(true);
@@ -506,6 +523,7 @@ export function VideoPlayer({
       const nextTime = Math.max(0, Math.min(duration || 10000, currentTime + seconds));
       videoRef.current.currentTime = nextTime;
       setCurrentTime(nextTime);
+      triggerSeekFeedback(seconds > 0 ? "forward" : "rewind", seconds);
     }
   };
 
@@ -738,16 +756,26 @@ export function VideoPlayer({
   // Interactive Scrub Bar Logic
   const calcScrubTime = React.useCallback(
     (e: MouseEvent | TouchEvent | React.MouseEvent | React.TouchEvent) => {
-      if (!progressBarRef.current || !duration) return 0;
+      if (!progressBarRef.current || !duration || duration <= 0) return 0;
       const rect = progressBarRef.current.getBoundingClientRect();
-      const clientX =
-        "touches" in e && e.touches.length > 0
-          ? e.touches[0].clientX
-          : (e as MouseEvent).clientX;
+      if (!rect.width || rect.width <= 0) return 0;
+
+      let clientX: number | undefined;
+      if ("changedTouches" in e && e.changedTouches && e.changedTouches.length > 0) {
+        clientX = e.changedTouches[0].clientX;
+      } else if ("touches" in e && e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+      } else if ("clientX" in e) {
+        clientX = (e as MouseEvent).clientX;
+      }
+
+      if (typeof clientX !== "number" || isNaN(clientX)) return currentTime;
+
       const clickX = Math.max(0, Math.min(clientX - rect.left, rect.width));
-      return (clickX / rect.width) * duration;
+      const targetTime = (clickX / rect.width) * duration;
+      return Math.max(0, Math.min(targetTime, duration));
     },
-    [duration]
+    [duration, currentTime]
   );
 
   const handleProgressBarMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -764,11 +792,14 @@ export function VideoPlayer({
   };
 
   const handleScrubStart = (e: React.MouseEvent | React.TouchEvent) => {
+    e.stopPropagation();
     setIsScrubbing(true);
     const newTime = calcScrubTime(e);
-    setCurrentTime(newTime);
-    if (videoRef.current) {
-      videoRef.current.currentTime = newTime;
+    if (isFinite(newTime)) {
+      setCurrentTime(newTime);
+      if (videoRef.current) {
+        videoRef.current.currentTime = newTime;
+      }
     }
   };
 
@@ -776,22 +807,24 @@ export function VideoPlayer({
     if (!isScrubbing) return;
     const handleMove = (e: MouseEvent | TouchEvent) => {
       const newTime = calcScrubTime(e);
-      setCurrentTime(newTime);
-      if (videoRef.current) {
-        videoRef.current.currentTime = newTime;
+      if (isFinite(newTime)) {
+        setCurrentTime(newTime);
+        if (videoRef.current) {
+          videoRef.current.currentTime = newTime;
+        }
       }
     };
     const handleEnd = (e: MouseEvent | TouchEvent) => {
       setIsScrubbing(false);
       const newTime = calcScrubTime(e);
-      if (videoRef.current) {
+      if (isFinite(newTime) && videoRef.current) {
         videoRef.current.currentTime = newTime;
       }
     };
 
     window.addEventListener("mousemove", handleMove);
     window.addEventListener("mouseup", handleEnd);
-    window.addEventListener("touchmove", handleMove);
+    window.addEventListener("touchmove", handleMove, { passive: false });
     window.addEventListener("touchend", handleEnd);
     return () => {
       window.removeEventListener("mousemove", handleMove);
@@ -913,6 +946,32 @@ export function VideoPlayer({
     );
   }
 
+  // Double-tap to seek on mobile (left side: -10s, right side: +10s)
+  const handleContainerTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (e.changedTouches.length !== 1 || isScrubbing) return;
+    const touch = e.changedTouches[0];
+    const now = Date.now();
+    const prev = lastTapRef.current;
+    const container = containerRef.current;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const relativeX = touch.clientX - rect.left;
+    const isLeft = relativeX < rect.width * 0.38;
+    const isRight = relativeX > rect.width * 0.62;
+
+    if (now - prev.time < 320 && Math.abs(touch.clientX - prev.x) < 60) {
+      if (isLeft) {
+        skipTime(-10);
+      } else if (isRight) {
+        skipTime(10);
+      }
+      lastTapRef.current = { time: 0, x: 0 };
+    } else {
+      lastTapRef.current = { time: now, x: touch.clientX };
+    }
+  };
+
   // NATIVE / HLS VIDEO PLAYER
   return (
     <div
@@ -920,6 +979,7 @@ export function VideoPlayer({
       onMouseMove={resetControlsTimeout}
       onMouseEnter={() => setShowControls(true)}
       onClick={resetControlsTimeout}
+      onTouchEnd={handleContainerTouchEnd}
       className={cn(
         "relative w-full max-w-full bg-black overflow-hidden shadow-2xl select-none group border border-cinema-700/80 transition-all duration-300",
         isCssLandscape
@@ -1125,16 +1185,36 @@ export function VideoPlayer({
           </div>
         )}
 
+        {/* Floating Seek Feedback Notification (-10s / +10s) */}
+        {seekFeedback && (
+          <div
+            key={seekFeedback.key}
+            className={cn(
+              "absolute top-1/2 -translate-y-1/2 z-30 pointer-events-none flex flex-col items-center justify-center p-3 sm:p-4 rounded-full bg-black/85 text-white border border-brand/50 shadow-2xl backdrop-blur-md animate-in zoom-in-75 fade-in duration-200",
+              seekFeedback.direction === "rewind" ? "left-8 sm:left-20" : "right-8 sm:right-20"
+            )}
+          >
+            {seekFeedback.direction === "rewind" ? (
+              <RotateCcw className="w-7 h-7 sm:w-8 sm:h-8 text-brand" />
+            ) : (
+              <RotateCw className="w-7 h-7 sm:w-8 sm:h-8 text-brand" />
+            )}
+            <span className="text-[11px] sm:text-xs font-bold mt-1 text-white font-mono">
+              {seekFeedback.direction === "rewind" ? "-10s" : "+10s"}
+            </span>
+          </div>
+        )}
+
         {/* Bottom Controls */}
         <div className="flex flex-col gap-2.5 pointer-events-auto">
-          {/* Interactive Scrub Bar */}
+          {/* Interactive Scrub Bar - 32px touch target with touch-none */}
           <div
             ref={progressBarRef}
             onMouseDown={handleScrubStart}
             onTouchStart={handleScrubStart}
             onMouseMove={handleProgressBarMouseMove}
             onMouseLeave={handleProgressBarMouseLeave}
-            className="relative h-2 hover:h-3 transition-all cursor-pointer group/bar flex items-center rounded-full bg-cinema-800/80"
+            className="relative py-3 -my-2 flex items-center cursor-pointer group/bar touch-none select-none"
           >
             {/* Hover Tooltip Timestamp */}
             {hoverTime !== null && (
@@ -1146,51 +1226,40 @@ export function VideoPlayer({
               </div>
             )}
 
-            {/* Buffer bar */}
-            <div
-              className="absolute left-0 top-0 bottom-0 bg-white/20 rounded-full transition-all"
-              style={{ width: `${bufferedPercent}%` }}
-            />
+            {/* Background track */}
+            <div className="relative w-full h-2 group-hover/bar:h-2.5 rounded-full bg-cinema-800/80 overflow-hidden transition-all">
+              {/* Buffer bar */}
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-white/20 rounded-full transition-all"
+                style={{ width: `${bufferedPercent}%` }}
+              />
 
-            {/* Current progress bar */}
-            <div
-              className="absolute left-0 top-0 bottom-0 bg-brand rounded-full transition-all"
-              style={{ width: `${progressPercent}%` }}
-            />
+              {/* Current progress bar */}
+              <div
+                className="absolute left-0 top-0 bottom-0 bg-brand rounded-full transition-all"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
 
             {/* Scrub thumb */}
             <div
-              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white rounded-full shadow-lg opacity-0 group-hover/bar:opacity-100 transition-opacity pointer-events-none"
+              className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-white rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover/bar:opacity-100 transition-opacity pointer-events-none"
               style={{ left: `${progressPercent}%` }}
             />
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-1 sm:gap-2">
             {/* Left Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Previous Episode */}
-              {onPrevEpisode && (
-                <button
-                  type="button"
-                  onClick={onPrevEpisode}
-                  disabled={!hasPrevEpisode}
-                  aria-label="Tập trước"
-                  className="text-cinema-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-2 rounded-lg hover:bg-white/10"
-                  title="Tập trước"
-                >
-                  <SkipBack className="w-4 h-4 fill-current" />
-                </button>
-              )}
-
+            <div className="flex items-center gap-1 sm:gap-2 min-w-0">
               {/* Seek -10s */}
               <button
                 type="button"
                 onClick={() => skipTime(-10)}
                 aria-label="Tua lại 10 giây"
-                className="text-cinema-200 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                className="text-cinema-200 hover:text-white transition-colors p-1.5 sm:p-2 rounded-lg hover:bg-white/10 shrink-0"
                 title="Tua lùi 10s (Phím ←)"
               >
-                <RotateCcw className="w-4 h-4" />
+                <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
               {/* Play / Pause */}
@@ -1198,7 +1267,7 @@ export function VideoPlayer({
                 type="button"
                 onClick={togglePlay}
                 aria-label={isPlaying ? "Tạm dừng" : "Phát"}
-                className="text-white hover:text-brand transition-colors p-2 rounded-lg hover:bg-white/10"
+                className="text-white hover:text-brand transition-colors p-1.5 sm:p-2 rounded-lg hover:bg-white/10 shrink-0"
               >
                 {isPlaying ? <Pause className="w-5 h-5 fill-current" /> : <Play className="w-5 h-5 fill-current" />}
               </button>
@@ -1208,42 +1277,42 @@ export function VideoPlayer({
                 type="button"
                 onClick={() => skipTime(10)}
                 aria-label="Tua tới 10 giây"
-                className="text-cinema-200 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10"
+                className="text-cinema-200 hover:text-white transition-colors p-1.5 sm:p-2 rounded-lg hover:bg-white/10 shrink-0"
                 title="Tua tới 10s (Phím →)"
               >
-                <RotateCw className="w-4 h-4" />
+                <RotateCw className="w-4 h-4 sm:w-5 sm:h-5" />
               </button>
 
-              {/* Prev Episode (Series only) */}
+              {/* Previous Episode (Desktop only - mobile already has large dedicated buttons below player) */}
               {isSeries && onPrevEpisode && (
                 <button
                   type="button"
                   onClick={onPrevEpisode}
                   disabled={!hasPrevEpisode}
                   aria-label="Tập trước đó"
-                  className="text-cinema-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-2 rounded-lg hover:bg-white/10"
+                  className="hidden md:inline-flex text-cinema-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-2 rounded-lg hover:bg-white/10 shrink-0"
                   title="Tập trước đó"
                 >
                   <SkipBack className="w-4 h-4 fill-current" />
                 </button>
               )}
 
-              {/* Next Episode (Series only) */}
+              {/* Next Episode (Desktop only) */}
               {isSeries && onNextEpisode && (
                 <button
                   type="button"
                   onClick={onNextEpisode}
                   disabled={!hasNextEpisode}
                   aria-label="Tập tiếp theo"
-                  className="text-cinema-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-2 rounded-lg hover:bg-white/10"
+                  className="hidden md:inline-flex text-cinema-300 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors p-2 rounded-lg hover:bg-white/10 shrink-0"
                   title="Tập tiếp theo"
                 >
                   <SkipForward className="w-4 h-4 fill-current" />
                 </button>
               )}
 
-              {/* Volume Slider */}
-              <div className="flex items-center gap-1.5 group/vol ml-1">
+              {/* Volume Slider (Desktop only - mobile uses hardware buttons) */}
+              <div className="hidden sm:flex items-center gap-1.5 group/vol ml-1 shrink-0">
                 <button
                   type="button"
                   onClick={toggleMute}
@@ -1265,20 +1334,20 @@ export function VideoPlayer({
                   value={isMuted ? 0 : volume}
                   onChange={handleVolumeChange}
                   aria-label="Âm lượng"
-                  className="w-14 sm:w-20 h-1 rounded bg-cinema-700 appearance-none cursor-pointer accent-brand hidden sm:block"
+                  className="w-14 sm:w-20 h-1 rounded bg-cinema-700 appearance-none cursor-pointer accent-brand"
                 />
               </div>
 
               {/* Realtime Time Display */}
-              <div className="text-xs text-cinema-200 font-mono ml-1.5 sm:ml-3 flex items-center select-none whitespace-nowrap">
+              <div className="text-[11px] sm:text-xs text-cinema-200 font-mono ml-1 sm:ml-3 flex items-center select-none whitespace-nowrap shrink-0">
                 <span className="font-semibold text-white">{formatTime(currentTime)}</span>
-                <span className="mx-1 text-cinema-500">/</span>
+                <span className="mx-0.5 sm:mx-1 text-cinema-500">/</span>
                 <span className="text-cinema-400">{formatTime(duration)}</span>
               </div>
             </div>
 
             {/* Right Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2 relative">
+            <div className="flex items-center gap-1 sm:gap-2 relative shrink-0">
               {/* Picture-in-Picture */}
               {isPipSupported && (
                 <button
