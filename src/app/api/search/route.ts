@@ -66,7 +66,7 @@ export async function GET(request: NextRequest) {
     // 1. Explicit Actor/Director Search
     if (explicitPersonQuery) {
       const { personService } = await import("@/lib/server/personService");
-      const result = await personService.searchPerson(explicitPersonQuery, explicitRole);
+      const result = await personService.searchPerson(explicitPersonQuery, explicitRole, true);
       if (result && result.movies.length > 0) {
         const meta = {
           totalItems: result.movies.length,
@@ -101,7 +101,7 @@ export async function GET(request: NextRequest) {
     if (/^(diễn viên|dien vien|đạo diễn|dao dien)\s+/i.test(query)) {
       const forcedRole = /^(diễn viên|dien vien)\s+/i.test(query) ? "actor" : "director";
       const { personService } = await import("@/lib/server/personService");
-      const personResult = await personService.searchPerson(query, forcedRole);
+      const personResult = await personService.searchPerson(query, forcedRole, true);
       if (personResult && personResult.movies.length > 0) {
         const meta = {
           totalItems: personResult.movies.length,
@@ -121,10 +121,10 @@ export async function GET(request: NextRequest) {
     const { kkphimService } = await import("@/lib/server/kkphimService");
     const result = await kkphimService.searchMovies(query, page, limit);
 
-    // 4. On page 1: Check if the query is a well-known actor or director (curated only, 0ms)
+    // 4. On page 1: Check if the query is an actor or director
     if (page === 1) {
       const { personService } = await import("@/lib/server/personService");
-      const personResult = await personService.searchPerson(query, undefined, false);
+      const personResult = await personService.searchPerson(query, undefined, true);
       if (personResult && personResult.movies.length > 0) {
         // If title search produced zero items or matches a known celebrity
         if (!result.items || result.items.length <= 2 || personResult.person.movieCount >= 3) {

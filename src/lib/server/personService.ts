@@ -378,6 +378,71 @@ const CURATED_PEOPLE: Record<
       "ran-doc-sicario",
     ],
   },
+  // --- ADDITIONAL ASIAN & INTERNATIONAL STARS ---
+  "trieu le dinh": {
+    name: "Triệu Lệ Dĩnh",
+    avatar: "https://image.tmdb.org/t/p/w300/zhaoLiying.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["so-kieu-truyen", "minh-lan-truyen"],
+    tmdbQuery: "Zhao Liying",
+  },
+  "triệu lệ dĩnh": {
+    name: "Triệu Lệ Dĩnh",
+    avatar: "https://image.tmdb.org/t/p/w300/zhaoLiying.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["so-kieu-truyen", "minh-lan-truyen"],
+    tmdbQuery: "Zhao Liying",
+  },
+  "duong mich": {
+    name: "Dương Mịch",
+    avatar: "https://image.tmdb.org/t/p/w300/yangMi.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["tam-sinh-tam-the-thap-ly-dao-hoa", "hoa-bi-2"],
+    tmdbQuery: "Yang Mi",
+  },
+  "dương mịch": {
+    name: "Dương Mịch",
+    avatar: "https://image.tmdb.org/t/p/w300/yangMi.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["tam-sinh-tam-the-thap-ly-dao-hoa", "hoa-bi-2"],
+    tmdbQuery: "Yang Mi",
+  },
+  "trieu lo tu": {
+    name: "Triệu Lộ Tư",
+    avatar: "https://image.tmdb.org/t/p/w300/zhaoLusi.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["tinh-ha-xan-lan", "vung-trom-khong-the-giau"],
+    tmdbQuery: "Zhao Lusi",
+  },
+  "triệu lộ tư": {
+    name: "Triệu Lộ Tư",
+    avatar: "https://image.tmdb.org/t/p/w300/zhaoLusi.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["tinh-ha-xan-lan", "vung-trom-khong-the-giau"],
+    tmdbQuery: "Zhao Lusi",
+  },
+  "tieu chien": {
+    name: "Tiêu Chiến",
+    avatar: "https://image.tmdb.org/t/p/w300/xiaoZhan.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["tran-tinh-lenh", "ngoc-cot-dao"],
+    tmdbQuery: "Xiao Zhan",
+  },
+  "tiêu chiến": {
+    name: "Tiêu Chiến",
+    avatar: "https://image.tmdb.org/t/p/w300/xiaoZhan.jpg",
+    role: "actor",
+    roleTitle: "Diễn Viên",
+    slugs: ["tran-tinh-lenh", "ngoc-cot-dao"],
+    tmdbQuery: "Xiao Zhan",
+  },
 };
 
 export class PersonService {
@@ -387,7 +452,7 @@ export class PersonService {
   async searchPerson(
     query: string,
     forcedRole?: "actor" | "director",
-    allowExternal: boolean = false
+    allowExternal: boolean = true
   ): Promise<PersonSearchResult | null> {
     const raw = (query || "").trim();
     if (!raw) return null;
@@ -400,31 +465,34 @@ export class PersonService {
 
     if (!normKey) return null;
 
-    // 1. Check Curated Directory (fast single query)
+    const cdnDomain = "https://phimimg.com";
+
+    // 1. Check Curated Directory (fast slug fetching)
     const curated = CURATED_PEOPLE[normKey];
     if (curated) {
-      const cdnDomain = "https://phimimg.com";
-      const searchRes = await movieApiClient
-        .get<any>(
-          `/v1/api/tim-kiem?keyword=${encodeURIComponent(curated.name)}&limit=12`,
-          { revalidate: 3600 }
-        )
-        .catch(() => null);
-
-      const items = Array.isArray(searchRes?.data?.items) ? searchRes.data.items : [];
-      const movies = items.map((item: any) => mapKkphimMovie(item, cdnDomain));
-
-      if (movies.length > 0) {
-        return {
-          person: {
-            name: curated.name,
-            avatar: curated.avatar,
-            role: curated.role,
-            roleTitle: curated.roleTitle,
-            movieCount: movies.length,
-          },
-          movies,
-        };
+      if (Array.isArray(curated.slugs) && curated.slugs.length > 0) {
+        const moviePromises = curated.slugs.map(async (slug) => {
+          try {
+            const res = await movieApiClient.get<any>(`/phim/${slug}`, { revalidate: 3600 });
+            if (res?.movie) {
+              return mapKkphimMovie(res.movie, cdnDomain);
+            }
+          } catch {}
+          return null;
+        });
+        const movies = (await Promise.all(moviePromises)).filter((m): m is Movie => m !== null);
+        if (movies.length > 0) {
+          return {
+            person: {
+              name: curated.name,
+              avatar: curated.avatar,
+              role: curated.role,
+              roleTitle: curated.roleTitle,
+              movieCount: movies.length,
+            },
+            movies,
+          };
+        }
       }
     }
 
@@ -458,30 +526,31 @@ export class PersonService {
         targetCredits = (creditsRes?.crew || [])
           .filter((c: any) => c.department === "Directing" && c.job === "Director")
           .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0))
-          .slice(0, 12);
+          .slice(0, 16);
       } else {
         targetCredits = (creditsRes?.cast || [])
           .sort((a: any, b: any) => (b.vote_count || 0) - (a.vote_count || 0))
-          .slice(0, 12);
+          .slice(0, 16);
       }
 
       if (targetCredits.length === 0) return null;
 
-      // Match each movie in KKPhim
-      const cdnDomain = "https://phimimg.com";
+      // Match each movie in KKPhim by candidate titles
       const moviePromises = targetCredits.map(async (c: any) => {
-        try {
-          const qTitle = c.title || c.name || c.original_title;
-          const searchRes = await movieApiClient.get<any>(
-            `/v1/api/tim-kiem?keyword=${encodeURIComponent(qTitle)}&limit=2`,
-            { revalidate: 3600 }
-          );
-          const items = searchRes?.data?.items || [];
-          if (items.length > 0) {
-            return mapKkphimMovie(items[0], cdnDomain);
-          }
-        } catch {
-          // Ignore
+        const candidateTitles = [c.title, c.name, c.original_title].filter(
+          (t): t is string => Boolean(t && typeof t === "string" && t.trim().length > 0)
+        );
+        for (const qTitle of candidateTitles) {
+          try {
+            const searchRes = await movieApiClient.get<any>(
+              `/v1/api/tim-kiem?keyword=${encodeURIComponent(qTitle)}&limit=1`,
+              { revalidate: 3600 }
+            );
+            const items = searchRes?.data?.items || [];
+            if (items.length > 0) {
+              return mapKkphimMovie(items[0], cdnDomain);
+            }
+          } catch {}
         }
         return null;
       });
@@ -506,10 +575,10 @@ export class PersonService {
 
         return {
           person: {
-            name: person.name,
+            name: curated?.name || person.name,
             avatar: person.profile_path
               ? `https://image.tmdb.org/t/p/w300${person.profile_path}`
-              : undefined,
+              : curated?.avatar || undefined,
             role,
             roleTitle,
             movieCount: uniqueMovies.length,
