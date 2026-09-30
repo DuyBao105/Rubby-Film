@@ -13,6 +13,7 @@ export function useWatchHistory() {
     // Initial fetch from service
     setHistory(watchHistoryService.getHistory());
     setIsLoaded(true);
+    watchHistoryService.syncWithServer();
 
     // Subscribe to cross-component updates
     const unsubscribe = watchHistoryService.subscribe((updated) => {

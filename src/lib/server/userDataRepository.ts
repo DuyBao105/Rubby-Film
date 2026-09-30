@@ -1,131 +1,111 @@
-import fs from "fs";
-import path from "path";
+import { neon } from "@neondatabase/serverless";
 import type { Movie } from "@/types/movie";
 import type { WatchHistoryItem, EpisodeWatchedState } from "@/types/user";
 
-const DATA_DIR = path.join(process.cwd(), "data");
-const HISTORY_FILE = path.join(DATA_DIR, "watch-history.json");
-const FAVORITES_FILE = path.join(DATA_DIR, "favorites.json");
+function getSql() {
+  const rawUrl = process.env.DATABASE_URL?.replace(/^[\uFEFF\s]+|[\uFEFF\s]+$/g, "");
+  if (!rawUrl) return null;
+  return neon(rawUrl);
+}
 
 class UserDataRepository {
   private historyMap: Map<string, WatchHistoryItem[]> = new Map();
   private favoritesMap: Map<string, Movie[]> = new Map();
-  private lastHistoryMtime = 0;
-  private lastFavoritesMtime = 0;
-
-  constructor() {
-    this.loadFromDisk();
-  }
-
-  private ensureDirectory() {
-    try {
-      if (!fs.existsSync(DATA_DIR)) {
-        fs.mkdirSync(DATA_DIR, { recursive: true });
-      }
-    } catch (e) {
-      console.error("[UserDataRepository] Failed to ensure data directory:", e);
-    }
-  }
-
-  private loadHistoryFromDisk() {
-    this.ensureDirectory();
-    try {
-      if (fs.existsSync(HISTORY_FILE)) {
-        const stat = fs.statSync(HISTORY_FILE);
-        if (stat.mtimeMs > this.lastHistoryMtime) {
-          const raw = fs.readFileSync(HISTORY_FILE, "utf-8");
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object") {
-            const nextMap = new Map<string, WatchHistoryItem[]>();
-            for (const [userId, items] of Object.entries(parsed)) {
-              if (Array.isArray(items)) {
-                nextMap.set(userId, items);
-              }
-            }
-            this.historyMap = nextMap;
-          }
-          this.lastHistoryMtime = stat.mtimeMs;
-        }
-      }
-    } catch (e) {
-      console.error("[UserDataRepository] Failed to load watch history:", e);
-    }
-  }
-
-  private loadFavoritesFromDisk() {
-    this.ensureDirectory();
-    try {
-      if (fs.existsSync(FAVORITES_FILE)) {
-        const stat = fs.statSync(FAVORITES_FILE);
-        if (stat.mtimeMs > this.lastFavoritesMtime) {
-          const raw = fs.readFileSync(FAVORITES_FILE, "utf-8");
-          const parsed = JSON.parse(raw);
-          if (parsed && typeof parsed === "object") {
-            const nextMap = new Map<string, Movie[]>();
-            for (const [userId, items] of Object.entries(parsed)) {
-              if (Array.isArray(items)) {
-                nextMap.set(userId, items);
-              }
-            }
-            this.favoritesMap = nextMap;
-          }
-          this.lastFavoritesMtime = stat.mtimeMs;
-        }
-      }
-    } catch (e) {
-      console.error("[UserDataRepository] Failed to load favorites:", e);
-    }
-  }
-
-  private loadFromDisk() {
-    this.loadHistoryFromDisk();
-    this.loadFavoritesFromDisk();
-  }
-
-  private saveHistoryToDisk() {
-    this.ensureDirectory();
-    try {
-      const obj: Record<string, WatchHistoryItem[]> = {};
-      for (const [userId, items] of this.historyMap.entries()) {
-        obj[userId] = items;
-      }
-      fs.writeFileSync(HISTORY_FILE, JSON.stringify(obj, null, 2), "utf-8");
-      this.lastHistoryMtime = fs.statSync(HISTORY_FILE).mtimeMs;
-    } catch (e) {
-      console.error("[UserDataRepository] Failed to save watch history:", e);
-    }
-  }
-
-  private saveFavoritesToDisk() {
-    this.ensureDirectory();
-    try {
-      const obj: Record<string, Movie[]> = {};
-      for (const [userId, items] of this.favoritesMap.entries()) {
-        obj[userId] = items;
-      }
-      fs.writeFileSync(FAVORITES_FILE, JSON.stringify(obj, null, 2), "utf-8");
-      this.lastFavoritesMtime = fs.statSync(FAVORITES_FILE).mtimeMs;
-    } catch (e) {
-      console.error("[UserDataRepository] Failed to save favorites:", e);
-    }
-  }
 
   // --- Watch History ---
 
-  public getWatchHistory(userId: string): WatchHistoryItem[] {
+  public async getWatchHistory(userId: string): Promise<WatchHistoryItem[]> {
     if (!userId) return [];
-    this.loadFromDisk();
-    return this.historyMap.get(userId) || [];
+    const sql = getSql();
+    if (!sql) return this.historyMap.get(userId) || [];
+
+    try {
+      const rows = (await sql.query(
+        `SELECT 
+          movie_id, movie_slug, movie_title, poster_url, backdrop_url,
+          episode_id, episode_number, episode_name, progress_seconds,
+          duration_seconds, progress_percent, completed, watched_episodes,
+          movie_data, watched_at
+         FROM user_watch_history
+         WHERE user_id = $1
+         ORDER BY updated_at DESC
+         LIMIT 50`,
+        [userId]
+      )) as any[];
+
+      const items: WatchHistoryItem[] = rows.map((r) => {
+        let watchedEpisodes: Record<number, EpisodeWatchedState> = {};
+        try {
+          watchedEpisodes =
+            typeof r.watched_episodes === "string"
+              ? JSON.parse(r.watched_episodes)
+              : r.watched_episodes || {};
+        } catch {}
+
+        let movieData: Movie | undefined = undefined;
+        try {
+          movieData =
+            typeof r.movie_data === "string"
+              ? JSON.parse(r.movie_data)
+              : r.movie_data || undefined;
+        } catch {}
+
+        const fallbackMovie: Movie = {
+          id: String(r.movie_id || r.movie_slug || ""),
+          slug: String(r.movie_slug || ""),
+          title: String(r.movie_title || ""),
+          originalTitle: String(r.movie_title || ""),
+          description: "",
+          posterUrl: String(r.poster_url || ""),
+          backdropUrl: String(r.backdrop_url || r.poster_url || ""),
+          year: new Date().getFullYear(),
+          rating: 8.5,
+          duration: "",
+          country: "",
+          countrySlug: "",
+          genres: [],
+          genreSlugs: [],
+          quality: "HD",
+          language: "Vietsub",
+          type: "single",
+        };
+
+        const resolvedMovie: Movie = (movieData && movieData.id) ? movieData : fallbackMovie;
+
+        return {
+          movieId: String(r.movie_id || r.movie_slug || ""),
+          slug: String(r.movie_slug || ""),
+          title: String(r.movie_title || ""),
+          posterUrl: String(r.poster_url || resolvedMovie.posterUrl || ""),
+          backdropUrl: r.backdrop_url || resolvedMovie.backdropUrl || undefined,
+          movie: resolvedMovie,
+          episodeId: r.episode_id || undefined,
+          episodeNumber: r.episode_number ? Number(r.episode_number) : undefined,
+          episodeName: r.episode_name || undefined,
+          progressSeconds: Number(r.progress_seconds || 0),
+          durationSeconds: Number(r.duration_seconds || 0),
+          progressPercent: Number(r.progress_percent || 0),
+          completed: Boolean(r.completed),
+          watchedAt: Number(r.watched_at || 0),
+          watchedEpisodes,
+        };
+      });
+
+      this.historyMap.set(userId, items);
+      return items;
+    } catch (err) {
+      console.error("[userDataRepository] getWatchHistory error:", err);
+      return this.historyMap.get(userId) || [];
+    }
   }
 
-  public saveWatchHistory(userId: string, items: WatchHistoryItem[]): WatchHistoryItem[] {
+  public async saveWatchHistory(userId: string, items: WatchHistoryItem[]): Promise<WatchHistoryItem[]> {
     if (!userId) return [];
-    this.loadFromDisk();
+    const sql = getSql();
 
-    // Deduplicate and cap at 50 items
+    // Deduplicate incoming items
     const seen = new Set<string>();
     const deduplicated: WatchHistoryItem[] = [];
-
     for (const item of items) {
       const key = String(item.movieId || item.movie?.id || item.slug || "").trim();
       if (key && !seen.has(key)) {
@@ -133,28 +113,88 @@ class UserDataRepository {
         deduplicated.push(item);
       }
     }
-
     const capped = deduplicated.slice(0, 50);
     this.historyMap.set(userId, capped);
-    this.saveHistoryToDisk();
+
+    if (sql) {
+      try {
+        for (const item of capped) {
+          const movieId = String(item.movieId || item.movie?.id || item.slug || "").trim();
+          const movieSlug = String(item.slug || item.movie?.slug || movieId).trim();
+          const movieTitle = String(item.title || item.movie?.title || movieSlug).trim();
+          const id = `uwh_${userId}_${movieId}`;
+          const now = Number(item.watchedAt || Date.now());
+
+          await sql.query(
+            `INSERT INTO user_watch_history (
+              id, user_id, movie_id, movie_slug, movie_title, poster_url, backdrop_url,
+              episode_id, episode_number, episode_name, progress_seconds, duration_seconds,
+              progress_percent, completed, watched_episodes, movie_data, watched_at, updated_at
+            ) VALUES (
+              $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+            )
+            ON CONFLICT (user_id, movie_id) DO UPDATE SET
+              movie_slug = EXCLUDED.movie_slug,
+              movie_title = EXCLUDED.movie_title,
+              poster_url = COALESCE(EXCLUDED.poster_url, user_watch_history.poster_url),
+              backdrop_url = COALESCE(EXCLUDED.backdrop_url, user_watch_history.backdrop_url),
+              episode_id = EXCLUDED.episode_id,
+              episode_number = EXCLUDED.episode_number,
+              episode_name = EXCLUDED.episode_name,
+              progress_seconds = EXCLUDED.progress_seconds,
+              duration_seconds = EXCLUDED.duration_seconds,
+              progress_percent = EXCLUDED.progress_percent,
+              completed = EXCLUDED.completed,
+              watched_episodes = EXCLUDED.watched_episodes,
+              movie_data = COALESCE(EXCLUDED.movie_data, user_watch_history.movie_data),
+              watched_at = EXCLUDED.watched_at,
+              updated_at = EXCLUDED.updated_at`,
+            [
+              id,
+              userId,
+              movieId,
+              movieSlug,
+              movieTitle,
+              item.posterUrl || item.movie?.posterUrl || null,
+              item.backdropUrl || item.movie?.backdropUrl || null,
+              item.episodeId || null,
+              item.episodeNumber ? Number(item.episodeNumber) : null,
+              item.episodeName || null,
+              Number(item.progressSeconds || 0),
+              Number(item.durationSeconds || 0),
+              Number(item.progressPercent || 0),
+              Boolean(item.completed),
+              JSON.stringify(item.watchedEpisodes || {}),
+              item.movie ? JSON.stringify(item.movie) : null,
+              now,
+              now,
+            ]
+          );
+        }
+      } catch (err) {
+        console.error("[userDataRepository] saveWatchHistory error:", err);
+      }
+    }
+
     return capped;
   }
 
-  public updateWatchProgress(
+  public async updateWatchProgress(
     userId: string,
     movie: Movie,
     progressSeconds: number,
     durationSeconds: number,
     episode?: { id: string; episodeNumber: number; name: string }
-  ): WatchHistoryItem[] {
+  ): Promise<WatchHistoryItem[]> {
     if (!userId || !movie || !durationSeconds || durationSeconds <= 0) {
       return this.getWatchHistory(userId);
     }
 
-    const currentList = this.getWatchHistory(userId);
+    const currentList = await this.getWatchHistory(userId);
     const progressPercent = Math.min(100, Math.round((progressSeconds / durationSeconds) * 100));
     const epNum = episode?.episodeNumber ?? 1;
     const isCompleted = progressPercent >= 90;
+    const now = Date.now();
 
     const existing = currentList.find(
       (item) => item.movieId === movie.id || item.movie?.id === movie.id || item.slug === movie.slug
@@ -171,7 +211,7 @@ class UserDataRepository {
         durationSeconds: Math.round(durationSeconds),
         progressPercent,
         completed: isCompleted || Boolean(existingWatched[epNum]?.completed),
-        watchedAt: Date.now(),
+        watchedAt: now,
       },
     };
 
@@ -188,21 +228,75 @@ class UserDataRepository {
       progressSeconds: Math.round(progressSeconds),
       durationSeconds: Math.round(durationSeconds),
       progressPercent,
-      watchedAt: Date.now(),
+      watchedAt: now,
       completed: isCompleted,
       watchedEpisodes: updatedWatched,
     };
 
     const updated = [newItem, ...filtered].slice(0, 50);
     this.historyMap.set(userId, updated);
-    this.saveHistoryToDisk();
+
+    const sql = getSql();
+    if (sql) {
+      try {
+        const id = `uwh_${userId}_${movie.id}`;
+        await sql.query(
+          `INSERT INTO user_watch_history (
+            id, user_id, movie_id, movie_slug, movie_title, poster_url, backdrop_url,
+            episode_id, episode_number, episode_name, progress_seconds, duration_seconds,
+            progress_percent, completed, watched_episodes, movie_data, watched_at, updated_at
+          ) VALUES (
+            $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
+          )
+          ON CONFLICT (user_id, movie_id) DO UPDATE SET
+            movie_slug = EXCLUDED.movie_slug,
+            movie_title = EXCLUDED.movie_title,
+            poster_url = COALESCE(EXCLUDED.poster_url, user_watch_history.poster_url),
+            backdrop_url = COALESCE(EXCLUDED.backdrop_url, user_watch_history.backdrop_url),
+            episode_id = EXCLUDED.episode_id,
+            episode_number = EXCLUDED.episode_number,
+            episode_name = EXCLUDED.episode_name,
+            progress_seconds = EXCLUDED.progress_seconds,
+            duration_seconds = EXCLUDED.duration_seconds,
+            progress_percent = EXCLUDED.progress_percent,
+            completed = EXCLUDED.completed,
+            watched_episodes = EXCLUDED.watched_episodes,
+            movie_data = COALESCE(EXCLUDED.movie_data, user_watch_history.movie_data),
+            watched_at = EXCLUDED.watched_at,
+            updated_at = EXCLUDED.updated_at`,
+          [
+            id,
+            userId,
+            movie.id,
+            movie.slug,
+            movie.title,
+            movie.posterUrl || null,
+            movie.backdropUrl || null,
+            episode?.id || null,
+            episode?.episodeNumber ? Number(episode.episodeNumber) : null,
+            episode?.name || null,
+            Math.round(progressSeconds),
+            Math.round(durationSeconds),
+            progressPercent,
+            isCompleted,
+            JSON.stringify(updatedWatched),
+            JSON.stringify(movie),
+            now,
+            now,
+          ]
+        );
+      } catch (err) {
+        console.error("[userDataRepository] updateWatchProgress error:", err);
+      }
+    }
+
     return updated;
   }
 
-  public removeWatchHistory(userId: string, movieIdOrSlug: string): WatchHistoryItem[] {
+  public async removeWatchHistory(userId: string, movieIdOrSlug: string): Promise<WatchHistoryItem[]> {
     if (!userId || !movieIdOrSlug) return this.getWatchHistory(userId);
     const target = String(movieIdOrSlug).trim().toLowerCase();
-    const current = this.getWatchHistory(userId);
+    const current = await this.getWatchHistory(userId);
     const updated = current.filter((item) => {
       const id = String(item.movieId || item.movie?.id || "").trim().toLowerCase();
       const slug = String(item.slug || item.movie?.slug || "").trim().toLowerCase();
@@ -210,28 +304,63 @@ class UserDataRepository {
     });
 
     this.historyMap.set(userId, updated);
-    this.saveHistoryToDisk();
+    const sql = getSql();
+    if (sql) {
+      try {
+        await sql.query(
+          `DELETE FROM user_watch_history WHERE user_id = $1 AND (LOWER(movie_id) = $2 OR LOWER(movie_slug) = $2)`,
+          [userId, target]
+        );
+      } catch (err) {
+        console.error("[userDataRepository] removeWatchHistory error:", err);
+      }
+    }
     return updated;
   }
 
-  public clearWatchHistory(userId: string): void {
+  public async clearWatchHistory(userId: string): Promise<void> {
     if (!userId) return;
     this.historyMap.delete(userId);
-    this.saveHistoryToDisk();
+    const sql = getSql();
+    if (sql) {
+      try {
+        await sql.query(`DELETE FROM user_watch_history WHERE user_id = $1`, [userId]);
+      } catch (err) {
+        console.error("[userDataRepository] clearWatchHistory error:", err);
+      }
+    }
   }
 
   // --- Favorites / My List ---
 
-  public getFavorites(userId: string): Movie[] {
+  public async getFavorites(userId: string): Promise<Movie[]> {
     if (!userId) return [];
-    this.loadFromDisk();
-    return this.favoritesMap.get(userId) || [];
+    const sql = getSql();
+    if (!sql) return this.favoritesMap.get(userId) || [];
+
+    try {
+      const rows = (await sql.query(
+        `SELECT movie_data FROM user_favorites WHERE user_id = $1 ORDER BY created_at DESC LIMIT 100`,
+        [userId]
+      )) as any[];
+
+      const items: Movie[] = [];
+      for (const r of rows) {
+        try {
+          const m = typeof r.movie_data === "string" ? JSON.parse(r.movie_data) : r.movie_data;
+          if (m && m.id) items.push(m);
+        } catch {}
+      }
+      this.favoritesMap.set(userId, items);
+      return items;
+    } catch (err) {
+      console.error("[userDataRepository] getFavorites error:", err);
+      return this.favoritesMap.get(userId) || [];
+    }
   }
 
-  public saveFavorites(userId: string, items: Movie[]): Movie[] {
+  public async saveFavorites(userId: string, items: Movie[]): Promise<Movie[]> {
     if (!userId) return [];
-    this.loadFromDisk();
-
     const seen = new Set<string>();
     const deduplicated: Movie[] = [];
     for (const m of items) {
@@ -241,29 +370,58 @@ class UserDataRepository {
         deduplicated.push(m);
       }
     }
-
     const capped = deduplicated.slice(0, 100);
     this.favoritesMap.set(userId, capped);
-    this.saveFavoritesToDisk();
+
+    const sql = getSql();
+    if (sql) {
+      try {
+        for (const movie of capped) {
+          const id = `fav_${userId}_${movie.id}`;
+          await sql.query(
+            `INSERT INTO user_favorites (id, user_id, movie_id, movie_slug, movie_data, created_at)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (user_id, movie_id) DO NOTHING`,
+            [id, userId, movie.id, movie.slug, JSON.stringify(movie), Date.now()]
+          );
+        }
+      } catch (err) {
+        console.error("[userDataRepository] saveFavorites error:", err);
+      }
+    }
     return capped;
   }
 
-  public addFavorite(userId: string, movie: Movie): Movie[] {
+  public async addFavorite(userId: string, movie: Movie): Promise<Movie[]> {
     if (!userId || !movie) return this.getFavorites(userId);
-    const current = this.getFavorites(userId);
+    const current = await this.getFavorites(userId);
     if (current.some((m) => m.id === movie.id || m.slug === movie.slug)) {
       return current;
     }
     const updated = [movie, ...current].slice(0, 100);
     this.favoritesMap.set(userId, updated);
-    this.saveFavoritesToDisk();
+
+    const sql = getSql();
+    if (sql) {
+      try {
+        const id = `fav_${userId}_${movie.id}`;
+        await sql.query(
+          `INSERT INTO user_favorites (id, user_id, movie_id, movie_slug, movie_data, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6)
+           ON CONFLICT (user_id, movie_id) DO NOTHING`,
+          [id, userId, movie.id, movie.slug, JSON.stringify(movie), Date.now()]
+        );
+      } catch (err) {
+        console.error("[userDataRepository] addFavorite error:", err);
+      }
+    }
     return updated;
   }
 
-  public removeFavorite(userId: string, movieId: string): Movie[] {
+  public async removeFavorite(userId: string, movieId: string): Promise<Movie[]> {
     if (!userId || !movieId) return this.getFavorites(userId);
     const target = String(movieId).trim().toLowerCase();
-    const current = this.getFavorites(userId);
+    const current = await this.getFavorites(userId);
     const updated = current.filter((m) => {
       const id = String(m.id || "").trim().toLowerCase();
       const slug = String(m.slug || "").trim().toLowerCase();
@@ -271,14 +429,31 @@ class UserDataRepository {
     });
 
     this.favoritesMap.set(userId, updated);
-    this.saveFavoritesToDisk();
+    const sql = getSql();
+    if (sql) {
+      try {
+        await sql.query(
+          `DELETE FROM user_favorites WHERE user_id = $1 AND (LOWER(movie_id) = $2 OR LOWER(movie_slug) = $2)`,
+          [userId, target]
+        );
+      } catch (err) {
+        console.error("[userDataRepository] removeFavorite error:", err);
+      }
+    }
     return updated;
   }
 
-  public clearFavorites(userId: string): void {
+  public async clearFavorites(userId: string): Promise<void> {
     if (!userId) return;
     this.favoritesMap.delete(userId);
-    this.saveFavoritesToDisk();
+    const sql = getSql();
+    if (sql) {
+      try {
+        await sql.query(`DELETE FROM user_favorites WHERE user_id = $1`, [userId]);
+      } catch (err) {
+        console.error("[userDataRepository] clearFavorites error:", err);
+      }
+    }
   }
 }
 

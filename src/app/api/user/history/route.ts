@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       return apiError("UNAUTHORIZED", "Vui lòng đăng nhập để xem lịch sử xem phim.", 401, NO_CACHE_HEADERS);
     }
 
-    const history = userDataRepository.getWatchHistory(userId);
+    const history = await userDataRepository.getWatchHistory(userId);
     return apiSuccess({ history }, undefined, NO_CACHE_HEADERS);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Không thể tải lịch sử xem phim.";
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     // Case 1: Batch sync of items
     if (Array.isArray(body.items)) {
-      const existing = userDataRepository.getWatchHistory(userId);
+      const existing = await userDataRepository.getWatchHistory(userId);
       const incoming = body.items;
 
       // Merge incoming with existing by choosing latest watchedAt and merging episodes
@@ -103,13 +103,13 @@ export async function POST(request: NextRequest) {
         .sort((a, b) => (b.watchedAt || 0) - (a.watchedAt || 0))
         .slice(0, 50);
 
-      const saved = userDataRepository.saveWatchHistory(userId, merged);
+      const saved = await userDataRepository.saveWatchHistory(userId, merged);
       return apiSuccess({ history: saved }, undefined, NO_CACHE_HEADERS);
     }
 
     // Case 2: Update individual movie progress
     if (body.movie && typeof body.progressSeconds === "number") {
-      const updated = userDataRepository.updateWatchProgress(
+      const updated = await userDataRepository.updateWatchProgress(
         userId,
         body.movie,
         body.progressSeconds,
@@ -137,18 +137,18 @@ export async function DELETE(request: NextRequest) {
     const idQuery = searchParams.get("id");
 
     if (idQuery) {
-      const updated = userDataRepository.removeWatchHistory(userId, idQuery);
+      const updated = await userDataRepository.removeWatchHistory(userId, idQuery);
       return apiSuccess({ history: updated }, undefined, NO_CACHE_HEADERS);
     }
 
     const body = (await parseRequestBody(request)) as { movieId?: string } | null;
     if (body?.movieId) {
-      const updated = userDataRepository.removeWatchHistory(userId, body.movieId);
+      const updated = await userDataRepository.removeWatchHistory(userId, body.movieId);
       return apiSuccess({ history: updated }, undefined, NO_CACHE_HEADERS);
     }
 
     // Clear all history
-    userDataRepository.clearWatchHistory(userId);
+    await userDataRepository.clearWatchHistory(userId);
     return apiSuccess({ history: [] }, undefined, NO_CACHE_HEADERS);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Không thể xóa lịch sử xem.";

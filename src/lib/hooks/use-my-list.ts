@@ -16,6 +16,7 @@ export function useMyList() {
     // Initial fetch from service
     setList(myListService.getList());
     setIsLoaded(true);
+    myListService.syncWithServer();
 
     // Subscribe to cross-component updates
     const unsubscribe = myListService.subscribe((updated) => {

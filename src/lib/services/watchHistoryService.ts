@@ -99,7 +99,7 @@ class WatchHistoryService implements IWatchHistoryService {
       this.notify();
     }
     if (normalized) {
-      this.syncWithServer();
+      this.syncWithServer(true);
     }
   }
 
@@ -225,21 +225,25 @@ class WatchHistoryService implements IWatchHistoryService {
 
           const serverMatch = map.get(id);
           if (!serverMatch) {
-            // Only add if server was completely empty (initial seed)
-            if (serverItems.length === 0) {
-              map.set(id, l);
-              localHasNewer = true;
-            }
-          } else if ((l.watchedAt || 0) > (serverMatch.watchedAt || 0)) {
+            map.set(id, l);
+            localHasNewer = true;
+          } else {
             const mergedEpisodes = {
               ...(serverMatch.watchedEpisodes || {}),
               ...(l.watchedEpisodes || {}),
             };
-            map.set(id, {
-              ...l,
-              watchedEpisodes: mergedEpisodes,
-            });
-            localHasNewer = true;
+            if ((l.watchedAt || 0) > (serverMatch.watchedAt || 0)) {
+              map.set(id, {
+                ...l,
+                watchedEpisodes: mergedEpisodes,
+              });
+              localHasNewer = true;
+            } else {
+              map.set(id, {
+                ...serverMatch,
+                watchedEpisodes: mergedEpisodes,
+              });
+            }
           }
         }
 

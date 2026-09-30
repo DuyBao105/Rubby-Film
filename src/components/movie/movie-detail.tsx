@@ -30,6 +30,7 @@ import {
   Search,
   Lock,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import { Movie, Episode } from "@/types/movie";
 import { Button } from "@/components/ui/button";
@@ -189,16 +190,54 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
     });
   }, [movie, episodes]);
 
-  // YouTube trailer embed URL parser
-  const trailerEmbedUrl = React.useMemo(() => {
+  // Extract YouTube video ID reliably from any YouTube link format or raw ID
+  const youtubeVideoId = React.useMemo(() => {
     if (!movie.trailerUrl) return null;
     const url = movie.trailerUrl.trim();
-    const watchMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]+)/);
-    if (watchMatch && watchMatch[1]) {
-      return `https://www.youtube-nocookie.com/embed/${watchMatch[1]}?autoplay=1&rel=0`;
-    }
-    return url;
+    if (!url) return null;
+
+    // Direct 11-char ID
+    if (/^[a-zA-Z0-9_-]{11}$/.test(url)) return url;
+
+    // Check ?v= or &v=
+    const vMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
+    if (vMatch && vMatch[1]) return vMatch[1];
+
+    // Check youtu.be/ID
+    const beMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]{11})/);
+    if (beMatch && beMatch[1]) return beMatch[1];
+
+    // Check embed/ID
+    const embedMatch = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+    if (embedMatch && embedMatch[1]) return embedMatch[1];
+
+    // Check shorts/ID
+    const shortsMatch = url.match(/shorts\/([a-zA-Z0-9_-]{11})/);
+    if (shortsMatch && shortsMatch[1]) return shortsMatch[1];
+
+    // General fallback regex
+    const genMatch = url.match(/(?:youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]{11})/);
+    if (genMatch && genMatch[1]) return genMatch[1];
+
+    return null;
   }, [movie.trailerUrl]);
+
+  const trailerEmbedUrl = React.useMemo(() => {
+    if (youtubeVideoId) {
+      return `https://www.youtube.com/embed/${youtubeVideoId}?autoplay=1&playsinline=1&rel=0`;
+    }
+    return null;
+  }, [youtubeVideoId]);
+
+  const youtubeDirectUrl = React.useMemo(() => {
+    if (youtubeVideoId) {
+      return `https://www.youtube.com/watch?v=${youtubeVideoId}`;
+    }
+    if (movie.trailerUrl && (movie.trailerUrl.startsWith("http://") || movie.trailerUrl.startsWith("https://"))) {
+      return movie.trailerUrl;
+    }
+    return `https://www.youtube.com/results?search_query=${encodeURIComponent(movie.title + " trailer vietsub")}`;
+  }, [youtubeVideoId, movie.trailerUrl, movie.title]);
 
   // Format ratings
   const tmdbScore = movie.tmdbVoteAverage || (movie.rating ? Math.round(movie.rating * 10) / 10 : 8.5);
@@ -468,16 +507,20 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 <span>{watchButtonText}</span>
               </Link>
 
-              {/* Trailer Button - Clean without icon as requested */}
-              {movie.trailerUrl && (
-                <button
-                  type="button"
-                  onClick={() => setIsTrailerOpen(true)}
-                  className="inline-flex justify-center items-center px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white text-[14px] md:text-[15px] font-semibold rounded-full transition-colors w-[90%] max-w-[340px] md:max-w-none md:w-auto min-w-[120px] border border-white/10 cursor-pointer active:scale-95"
-                >
-                  Trailer
-                </button>
-              )}
+              {/* Trailer Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (trailerEmbedUrl) {
+                    setIsTrailerOpen(true);
+                  } else {
+                    window.open(youtubeDirectUrl, "_blank", "noopener,noreferrer");
+                  }
+                }}
+                className="inline-flex justify-center items-center px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white text-[14px] md:text-[15px] font-semibold rounded-full transition-colors w-[90%] max-w-[340px] md:max-w-none md:w-auto min-w-[120px] border border-white/10 cursor-pointer active:scale-95"
+              >
+                Trailer
+              </button>
 
               {/* Divider line for desktop */}
               <div className="hidden md:block w-px h-8 bg-white/15 mx-2" />
@@ -869,34 +912,78 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
         )}
       </div>
 
-      {/* 4. YOUTUBE TRAILER MODAL - Clean without extra icon */}
-      {isTrailerOpen && trailerEmbedUrl && (
+      {/* 4. YOUTUBE TRAILER MODAL */}
+      {isTrailerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
           <div className="relative w-full max-w-4xl bg-black rounded-2xl overflow-hidden border border-white/15 shadow-2xl">
             {/* Modal Header */}
             <div className="flex items-center justify-between px-5 py-3.5 bg-[#161824] border-b border-white/10">
-              <h4 className="text-sm font-bold text-white truncate max-w-[280px] sm:max-w-md">
+              <h4 className="text-sm font-bold text-white truncate max-w-[200px] sm:max-w-md">
                 Trailer: {movie.title}
               </h4>
-              <button
-                type="button"
-                onClick={() => setIsTrailerOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
-              >
-                <X className="w-4 h-4" />
-              </button>
+              <div className="flex items-center gap-3">
+                <a
+                  href={youtubeDirectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-medium transition-colors"
+                >
+                  <span className="hidden sm:inline">Mở trên YouTube</span>
+                  <span className="sm:hidden">YouTube</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setIsTrailerOpen(false)}
+                  className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Video Iframe Container */}
             <div className="relative aspect-video w-full bg-black">
-              <iframe
-                src={trailerEmbedUrl}
-                title={`Trailer ${movie.title}`}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="w-full h-full border-0"
-              />
+              {trailerEmbedUrl ? (
+                <iframe
+                  src={trailerEmbedUrl}
+                  title={`Trailer ${movie.title}`}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full p-6 text-center">
+                  <p className="text-cinema-300 text-sm mb-4">
+                    Trailer trực tiếp không khả dụng hoặc bị nhà phát hành giới hạn nhúng.
+                  </p>
+                  <a
+                    href={youtubeDirectUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors"
+                  >
+                    <span>Mở xem Trailer trên YouTube</span>
+                    <ExternalLink className="w-4 h-4" />
+                  </a>
+                </div>
+              )}
             </div>
+
+            {/* Notice if video fails to play due to publisher embed restrictions */}
+            {trailerEmbedUrl && (
+              <div className="px-5 py-2.5 bg-[#161824] flex items-center justify-between text-xs text-cinema-400 border-t border-white/10">
+                <span className="truncate mr-2">Nếu video bị đen hoặc không phát do bản quyền:</span>
+                <a
+                  href={youtubeDirectUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-red-400 hover:text-red-300 font-medium underline flex items-center gap-1 shrink-0"
+                >
+                  Mở trên YouTube <ExternalLink className="w-3 h-3" />
+                </a>
+              </div>
+            )}
           </div>
         </div>
       )}

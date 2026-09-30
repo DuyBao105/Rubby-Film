@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       return apiError("UNAUTHORIZED", "Vui lòng đăng nhập để xem danh sách yêu thích.", 401, NO_CACHE_HEADERS);
     }
 
-    const favorites = userDataRepository.getFavorites(userId);
+    const favorites = await userDataRepository.getFavorites(userId);
     return apiSuccess({ favorites }, undefined, NO_CACHE_HEADERS);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Không thể tải danh sách yêu thích.";
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Case 1: Batch sync of items
     if (Array.isArray(body.items)) {
-      const existing = userDataRepository.getFavorites(userId);
+      const existing = await userDataRepository.getFavorites(userId);
       const incoming = body.items;
 
       const map = new Map<string, Movie>();
@@ -78,13 +78,13 @@ export async function POST(request: NextRequest) {
       }
 
       const merged = Array.from(map.values()).slice(0, 100);
-      const saved = userDataRepository.saveFavorites(userId, merged);
+      const saved = await userDataRepository.saveFavorites(userId, merged);
       return apiSuccess({ favorites: saved }, undefined, NO_CACHE_HEADERS);
     }
 
     // Case 2: Add individual movie
     if (body.movie) {
-      const updated = userDataRepository.addFavorite(userId, body.movie);
+      const updated = await userDataRepository.addFavorite(userId, body.movie);
       return apiSuccess({ favorites: updated }, undefined, NO_CACHE_HEADERS);
     }
 
@@ -106,18 +106,18 @@ export async function DELETE(request: NextRequest) {
     const idQuery = searchParams.get("id");
 
     if (idQuery) {
-      const updated = userDataRepository.removeFavorite(userId, idQuery);
+      const updated = await userDataRepository.removeFavorite(userId, idQuery);
       return apiSuccess({ favorites: updated }, undefined, NO_CACHE_HEADERS);
     }
 
     const body = (await parseRequestBody(request)) as { movieId?: string } | null;
     if (body?.movieId) {
-      const updated = userDataRepository.removeFavorite(userId, body.movieId);
+      const updated = await userDataRepository.removeFavorite(userId, body.movieId);
       return apiSuccess({ favorites: updated }, undefined, NO_CACHE_HEADERS);
     }
 
     // Clear all
-    userDataRepository.clearFavorites(userId);
+    await userDataRepository.clearFavorites(userId);
     return apiSuccess({ favorites: [] }, undefined, NO_CACHE_HEADERS);
   } catch (error: unknown) {
     const msg = error instanceof Error ? error.message : "Không thể xóa danh sách yêu thích.";

@@ -81,7 +81,7 @@ class MyListService implements IMyListService {
       this.notify();
     }
     if (normalized) {
-      this.syncWithServer();
+      this.syncWithServer(true);
     }
   }
 
@@ -180,9 +180,24 @@ class MyListService implements IMyListService {
         const serverItems = body.data.favorites;
         const localItems = this.load();
 
-        let resolved: Movie[];
-        if (serverItems.length === 0 && localItems.length > 0) {
-          resolved = localItems;
+        const map = new Map<string, Movie>();
+        for (const s of serverItems) {
+          const id = String(s.id || s.slug || "").trim();
+          if (id) map.set(id, s);
+        }
+
+        let localHasNewer = false;
+        for (const l of localItems) {
+          const id = String(l.id || l.slug || "").trim();
+          if (!id) continue;
+          if (!map.has(id)) {
+            map.set(id, l);
+            localHasNewer = true;
+          }
+        }
+
+        const resolved = Array.from(map.values());
+        if (localHasNewer || (serverItems.length === 0 && resolved.length > 0)) {
           fetch("/api/user/favorites", {
             method: "POST",
             headers: {
@@ -190,10 +205,8 @@ class MyListService implements IMyListService {
               ...getAuthHeaders(),
             },
             credentials: "include",
-            body: JSON.stringify({ items: localItems }),
+            body: JSON.stringify({ items: resolved }),
           }).catch(() => {});
-        } else {
-          resolved = serverItems;
         }
 
         const currentCached = this.cache || [];
