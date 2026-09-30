@@ -445,13 +445,18 @@ export default function AdminAnalyticsPage() {
                             <div className="font-semibold text-white flex items-center gap-1.5">
                               {s.userName || "Khách Vãng Lai"}
                               {s.userRole === "admin" && (
-                                <span className="text-[9px] bg-red-600 text-white px-1 py-0.2 rounded font-bold">
+                                <span className="text-[9px] bg-red-600 text-white px-1.5 py-0.2 rounded font-bold">
                                   ADMIN
                                 </span>
                               )}
                               {s.userRole === "vip" && (
-                                <span className="text-[9px] bg-[#FECF59] text-black px-1 py-0.2 rounded font-bold">
+                                <span className="text-[9px] bg-[#FECF59] text-black px-1.5 py-0.2 rounded font-bold">
                                   VIP
+                                </span>
+                              )}
+                              {s.userName && s.userRole !== "admin" && s.userRole !== "vip" && (
+                                <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">
+                                  THÀNH VIÊN
                                 </span>
                               )}
                             </div>
@@ -579,6 +584,11 @@ export default function AdminAnalyticsPage() {
                             {log.userRole === "vip" && (
                               <span className="text-[9px] bg-[#FECF59] text-black px-1.5 py-0.2 rounded font-bold">
                                 VIP
+                              </span>
+                            )}
+                            {log.userName && log.userRole !== "admin" && log.userRole !== "vip" && (
+                              <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">
+                                THÀNH VIÊN
                               </span>
                             )}
                           </div>
@@ -710,6 +720,11 @@ export default function AdminAnalyticsPage() {
                             {visitor.userRole === "vip" && (
                               <span className="text-[9px] bg-[#FECF59] text-black px-1.5 py-0.2 rounded font-bold">
                                 VIP
+                              </span>
+                            )}
+                            {visitor.userName && visitor.userRole !== "admin" && visitor.userRole !== "vip" && (
+                              <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">
+                                THÀNH VIÊN
                               </span>
                             )}
                           </div>
@@ -870,6 +885,11 @@ export default function AdminAnalyticsPage() {
                             {v.userRole === "vip" && (
                               <span className="text-[9px] bg-[#FECF59] text-black px-1.5 py-0.2 rounded font-bold">
                                 VIP
+                              </span>
+                            )}
+                            {v.userName && v.userRole !== "admin" && v.userRole !== "vip" && (
+                              <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.2 rounded font-bold">
+                                THÀNH VIÊN
                               </span>
                             )}
                           </div>
