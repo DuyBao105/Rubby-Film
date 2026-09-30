@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     await requireAdmin();
-    const stats = presenceTracker.getActiveStats();
+    const stats = await presenceTracker.getActiveStats();
     return NextResponse.json({ ok: true, data: stats });
   } catch (error) {
     if (error instanceof HttpError) {

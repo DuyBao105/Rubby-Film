@@ -101,10 +101,10 @@ export default function AdminAnalyticsPage() {
     }
   }, [authLoading, user, fetchStats]);
 
-  // Periodic fallback refresh every 10s if autoRefresh is on
+  // Periodic fallback refresh every 5s if autoRefresh is on
   useEffect(() => {
     if (!autoRefresh || user?.role !== "admin") return;
-    const interval = setInterval(fetchStats, 10000);
+    const interval = setInterval(fetchStats, 5000);
     return () => clearInterval(interval);
   }, [autoRefresh, user, fetchStats]);
 

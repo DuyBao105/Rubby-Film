@@ -3,19 +3,29 @@
 import { useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 
-const SESSION_STORAGE_KEY = "rubbyfilm_presence_session";
+const STORAGE_KEY = "rubbyfilm_visitor_id";
+const FALLBACK_SESSION_KEY = "rubbyfilm_presence_session";
 
 function getOrCreateSessionId(): string {
   if (typeof window === "undefined") return "";
   try {
-    let id = sessionStorage.getItem(SESSION_STORAGE_KEY);
+    let id = localStorage.getItem(STORAGE_KEY);
     if (!id) {
       id = `rf_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
-      sessionStorage.setItem(SESSION_STORAGE_KEY, id);
+      localStorage.setItem(STORAGE_KEY, id);
     }
     return id;
   } catch {
-    return `rf_temp_${Date.now()}`;
+    try {
+      let id = sessionStorage.getItem(FALLBACK_SESSION_KEY);
+      if (!id) {
+        id = `rf_${Math.random().toString(36).slice(2, 10)}_${Date.now().toString(36)}`;
+        sessionStorage.setItem(FALLBACK_SESSION_KEY, id);
+      }
+      return id;
+    } catch {
+      return `rf_temp_${Date.now()}`;
+    }
   }
 }
 
@@ -73,7 +83,8 @@ export function AnalyticsHeartbeat() {
     };
     document.addEventListener("visibilitychange", handleVisibilityChange);
 
-    // 4. Send leave signal immediately when closing tab or navigating away
+    // 4. Send leave signal when browser tab/window is closing (beforeunload only)
+    // Note: Do NOT use pagehide on mobile as it fires during in-app page transitions
     const handleLeave = () => {
       const payload = JSON.stringify({ sessionId });
       if (navigator.sendBeacon) {
@@ -89,13 +100,11 @@ export function AnalyticsHeartbeat() {
       }
     };
 
-    window.addEventListener("pagehide", handleLeave);
     window.addEventListener("beforeunload", handleLeave);
 
     return () => {
       clearInterval(interval);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("pagehide", handleLeave);
       window.removeEventListener("beforeunload", handleLeave);
     };
   }, [pathname]);

@@ -18,13 +18,13 @@ export async function POST(req: NextRequest) {
     }
 
     if (action === "leave") {
-      presenceTracker.removeSession(sessionId);
+      await presenceTracker.removeSession(sessionId);
       return NextResponse.json({ ok: true });
     }
 
     const user = await getCurrentUser();
 
-    presenceTracker.recordHeartbeat({
+    await presenceTracker.recordHeartbeat({
       sessionId,
       page: String(body.page || "/").slice(0, 150),
       title: body.title ? String(body.title).slice(0, 100) : undefined,

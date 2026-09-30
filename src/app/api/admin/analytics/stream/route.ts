@@ -23,6 +23,7 @@ export async function GET() {
   const encoder = new TextEncoder();
   let cleanup = () => {};
   let hb: ReturnType<typeof setInterval> | null = null;
+  let pollInterval: ReturnType<typeof setInterval> | null = null;
   let timeout: ReturnType<typeof setTimeout> | null = null;
 
   const stream = new ReadableStream({
@@ -34,22 +35,31 @@ export async function GET() {
       };
 
       // 1. Send initial snapshot immediately
-      const initialStats = presenceTracker.getActiveStats();
+      const initialStats = await presenceTracker.getActiveStats();
       send("presence", initialStats);
 
-      // 2. Subscribe to real-time events
+      // 2. Poll DB every 3 seconds to sync stats from other Vercel Lambdas
+      pollInterval = setInterval(async () => {
+        try {
+          const stats = await presenceTracker.getActiveStats();
+          send("presence", stats);
+        } catch {}
+      }, 3000);
+
+      // 3. Local in-process subscribe
       cleanup = presenceTracker.subscribe((stats) => {
         send("presence", stats);
       });
 
-      // 3. Heartbeat ping every 10 seconds to keep connection alive
+      // 4. Heartbeat ping every 10 seconds to keep connection alive
       hb = setInterval(() => {
         send("ping", { at: Date.now() });
       }, 10000);
 
-      // 4. Auto-refresh connection every 55 seconds (standard for Next.js / Vercel Edge/Serverless)
+      // 5. Auto-refresh connection every 55 seconds (standard for Next.js / Vercel Edge/Serverless)
       timeout = setTimeout(() => {
         if (hb) clearInterval(hb);
+        if (pollInterval) clearInterval(pollInterval);
         send("end", { at: Date.now() });
         try {
           controller.close();
@@ -59,6 +69,7 @@ export async function GET() {
     cancel() {
       if (timeout) clearTimeout(timeout);
       if (hb) clearInterval(hb);
+      if (pollInterval) clearInterval(pollInterval);
       cleanup();
     },
   });
