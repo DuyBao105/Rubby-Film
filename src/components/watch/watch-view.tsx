@@ -237,6 +237,9 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
 
   const handleSwitchServer = () => {
     if (sources.length > 1) {
+      if (currentPlaybackRef.current && currentPlaybackRef.current.currentTime > 5) {
+        setInitialTime(currentPlaybackRef.current.currentTime);
+      }
       const nextIdx = (activeSourceIndex + 1) % sources.length;
       setActiveSourceIndex(nextIdx);
     }
@@ -501,7 +504,12 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
             activeSource={activeSource}
             onSelectSource={(src) => {
               const idx = sources.findIndex((s) => s.serverName === src.serverName);
-              if (idx !== -1) setActiveSourceIndex(idx);
+              if (idx !== -1 && idx !== activeSourceIndex) {
+                if (currentPlaybackRef.current && currentPlaybackRef.current.currentTime > 5) {
+                  setInitialTime(currentPlaybackRef.current.currentTime);
+                }
+                setActiveSourceIndex(idx);
+              }
             }}
             isSeries={isSeries}
             hasPrevEpisode={hasPrevEpisode}
