@@ -27,6 +27,7 @@ import {
   Scan,
   Smartphone,
   ExternalLink,
+  Copy,
 } from "lucide-react";
 import Hls from "hls.js";
 import { VideoSource } from "@/types/movie";
@@ -162,6 +163,7 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   const [isCssLandscape, setIsCssLandscape] = React.useState(false);
   const [isIosStandalone, setIsIosStandalone] = React.useState(false);
   const [iosPipPromptOpen, setIosPipPromptOpen] = React.useState(false);
+  const [copiedToast, setCopiedToast] = React.useState(false);
 
   // Sync fullscreen state & auto unlock screen orientation
   React.useEffect(() => {
@@ -318,13 +320,22 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     }
 
     const video = videoRef.current;
-    if (
-      video &&
-      (video as any).webkitSupportsPresentationMode &&
-      typeof (video as any).webkitSupportsPresentationMode === "function" &&
-      (video as any).webkitSupportsPresentationMode("picture-in-picture")
-    ) {
-      setIsPipSupported(true);
+    if (video) {
+      if (
+        (video as any).webkitSupportsPresentationMode &&
+        typeof (video as any).webkitSupportsPresentationMode === "function" &&
+        (video as any).webkitSupportsPresentationMode("picture-in-picture")
+      ) {
+        setIsPipSupported(true);
+      }
+      const handleBeginFull = () => setIsFullscreen(true);
+      const handleEndFull = () => setIsFullscreen(false);
+      video.addEventListener("webkitbeginfullscreen", handleBeginFull);
+      video.addEventListener("webkitendfullscreen", handleEndFull);
+      return () => {
+        video.removeEventListener("webkitbeginfullscreen", handleBeginFull);
+        video.removeEventListener("webkitendfullscreen", handleEndFull);
+      };
     }
   }, []);
 
@@ -796,42 +807,35 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     const video = videoRef.current;
     if (!video) return;
 
-    if (isIosStandalone) {
-      setIosPipPromptOpen(true);
-      return;
-    }
-
     try {
-      if (document.pictureInPictureElement) {
-        await document.exitPictureInPicture();
-      } else if (video.requestPictureInPicture) {
-        await video.requestPictureInPicture();
-      } else if (
+      // 1. Ưu tiên số 1: WebKit presentation mode trên iOS Safari / iPadOS
+      if (
         (video as any).webkitSupportsPresentationMode &&
-        typeof (video as any).webkitSetPresentationMode === "function"
+        typeof (video as any).webkitSetPresentationMode === "function" &&
+        (video as any).webkitSupportsPresentationMode("picture-in-picture")
       ) {
         const currentMode = (video as any).webkitPresentationMode;
         (video as any).webkitSetPresentationMode(
           currentMode === "picture-in-picture" ? "inline" : "picture-in-picture"
         );
-      } else {
-        const isIOSDevice =
-          typeof navigator !== "undefined" &&
-          (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
-            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-        if (isIOSDevice) {
-          setIosPipPromptOpen(true);
-        }
+        return;
+      }
+
+      // 2. Chuẩn W3C Picture-in-Picture (Desktop Chrome, Edge, Firefox, Desktop Safari)
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+        return;
+      } else if (typeof video.requestPictureInPicture === "function") {
+        await video.requestPictureInPicture();
+        return;
       }
     } catch (err) {
       console.warn("PiP error:", err);
-      const isIOSDevice =
-        typeof navigator !== "undefined" &&
-        (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
-          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
-      if (isIOSDevice) {
-        setIosPipPromptOpen(true);
-      }
+    }
+
+    // 3. Nếu là iOS PWA cài màn hình chính (bị Apple chặn chạy nền PiP)
+    if (isIosStandalone) {
+      setIosPipPromptOpen(true);
     }
   };
 
@@ -1807,39 +1811,79 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
             </div>
 
             <h3 className="text-base font-bold text-white mb-2">Chế độ nổi (PiP) trên iPhone</h3>
-            <p className="text-xs text-cinema-300 leading-relaxed mb-6">
-              Hệ điều hành iOS của Apple chặn chế độ nổi PiP khi mở từ App cài trên màn hình chính. Để vừa xem phim thu nhỏ vừa lướt app khác, bạn hãy chuyển sang trình duyệt Safari!
+            <p className="text-xs text-cinema-300 leading-relaxed mb-5">
+              Apple chặn tính năng PiP chạy nền khi vuốt về Home đối với ứng dụng cài ngoài Màn hình chính. Để vừa xem vừa lướt ứng dụng khác, bạn chỉ cần mở xem trực tiếp trên <strong className="text-brand">Safari</strong>!
             </p>
 
             <div className="space-y-2.5">
               <button
                 type="button"
-                onClick={() => {
+                onClick={async () => {
                   try {
                     const url = new URL(window.location.href);
                     url.searchParams.set("t", String(Math.floor(currentTime)));
-                    const safariUrl = url.toString().replace(/^https?:\/\//i, "x-safari-https://");
-                    window.location.href = safariUrl;
-                    setTimeout(() => {
-                      window.open(url.toString(), "_blank");
-                    }, 400);
+                    const targetUrl = url.toString();
+
+                    if (typeof navigator !== "undefined" && navigator.share) {
+                      try {
+                        await navigator.share({
+                          title: title || "RubbyFilm",
+                          url: targetUrl,
+                        });
+                        setIosPipPromptOpen(false);
+                        return;
+                      } catch {
+                        // User cancelled share dialog
+                      }
+                    }
+
+                    if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(targetUrl);
+                      setCopiedToast(true);
+                      setTimeout(() => setCopiedToast(false), 3500);
+                    }
                   } catch {
-                    window.open(window.location.href, "_blank");
+                    setCopiedToast(true);
+                    setTimeout(() => setCopiedToast(false), 3500);
                   }
-                  setIosPipPromptOpen(false);
                 }}
                 className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand/90 active:scale-95 text-cinema-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand/25 transition-all cursor-pointer"
               >
                 <ExternalLink className="w-4 h-4" />
-                <span>Mở trên Safari để dùng PiP</span>
+                <span>Chia sẻ / Mở trên Safari</span>
               </button>
 
               <button
                 type="button"
-                onClick={() => setIosPipPromptOpen(false)}
-                className="w-full py-2.5 px-4 rounded-xl bg-cinema-900 hover:bg-cinema-800 text-cinema-300 hover:text-white font-medium text-xs transition-colors cursor-pointer border border-cinema-800"
+                onClick={async () => {
+                  try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("t", String(Math.floor(currentTime)));
+                    if (navigator.clipboard) {
+                      await navigator.clipboard.writeText(url.toString());
+                      setCopiedToast(true);
+                      setTimeout(() => setCopiedToast(false), 3500);
+                    }
+                  } catch {}
+                }}
+                className="w-full py-2.5 px-4 rounded-xl bg-cinema-900 hover:bg-cinema-800 text-cinema-200 hover:text-white font-medium text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer border border-cinema-800 active:scale-95"
               >
-                Để sau
+                <Copy className="w-3.5 h-3.5 text-brand" />
+                <span>Sao chép link xem tiếp ({formatTime(currentTime)})</span>
+              </button>
+
+              {copiedToast && (
+                <div className="p-2 rounded-lg bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] leading-tight animate-in fade-in">
+                  ✓ Đã sao chép link! Mở Safari và dán vào thanh tìm kiếm để tiếp tục xem kèm PiP nhé.
+                </div>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIosPipPromptOpen(false)}
+                className="w-full py-2 px-4 rounded-xl text-cinema-400 hover:text-white font-medium text-xs transition-colors cursor-pointer"
+              >
+                Đóng
               </button>
             </div>
           </div>
