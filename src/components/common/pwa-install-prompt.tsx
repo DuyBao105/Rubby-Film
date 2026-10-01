@@ -9,7 +9,6 @@ import {
   X,
   CheckCircle2,
   Smartphone,
-  Laptop,
   MoreVertical,
 } from "lucide-react";
 
@@ -38,8 +37,7 @@ export function triggerPwaInstall() {
 export function PwaInstallPrompt() {
   const [mounted, setMounted] = React.useState(false);
   const [deferredPrompt, setDeferredPrompt] = React.useState<BeforeInstallPromptEvent | null>(null);
-  const [platform, setPlatform] = React.useState<"ios" | "android" | "desktop">("desktop");
-  const [activeTab, setActiveTab] = React.useState<"ios" | "android" | "desktop">("ios");
+  const [activeTab, setActiveTab] = React.useState<"ios" | "android">("ios");
   const [isStandalone, setIsStandalone] = React.useState(false);
   const [isVisible, setIsVisible] = React.useState(false);
   const [showGuideModal, setShowGuideModal] = React.useState(false);
@@ -77,17 +75,8 @@ export function PwaInstallPrompt() {
       (/iPad|iPhone|iPod/.test(ua) && !("MSStream" in window)) ||
       (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
 
-    const isAndroidDevice = /Android/i.test(ua);
-
-    let detectedPlatform: "ios" | "android" | "desktop" = "desktop";
-    if (isIOSDevice) {
-      detectedPlatform = "ios";
-    } else if (isAndroidDevice) {
-      detectedPlatform = "android";
-    }
-
-    setPlatform(detectedPlatform);
-    setActiveTab(detectedPlatform);
+    const initialTab: "ios" | "android" = isIOSDevice ? "ios" : "android";
+    setActiveTab(initialTab);
 
     const dismissedUntil = Number(localStorage.getItem(STORAGE_KEY) || 0);
     const hasDismissed = Date.now() < dismissedUntil;
@@ -228,7 +217,7 @@ export function PwaInstallPrompt() {
 
       {/* Cross-Platform Installation Guide Modal */}
       {showGuideModal && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-[#141414] border border-[#2E2E2E] rounded-3xl p-5 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl relative text-white animate-in zoom-in-95 duration-200">
             {/* Close Button */}
             <button
@@ -260,12 +249,12 @@ export function PwaInstallPrompt() {
               </div>
             </div>
 
-            {/* Platform Selection Tabs */}
-            <div className="flex items-center gap-1 p-1 bg-[#0A0A0A] rounded-xl border border-[#222] mb-4">
+            {/* Platform Selection Tabs (iPhone / Android) */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#0A0A0A] rounded-xl border border-[#222] mb-4">
               <button
                 type="button"
                 onClick={() => setActiveTab("ios")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === "ios"
                     ? "bg-[#E50000] text-white shadow-sm"
                     : "text-[#888] hover:text-white"
@@ -277,7 +266,7 @@ export function PwaInstallPrompt() {
               <button
                 type="button"
                 onClick={() => setActiveTab("android")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   activeTab === "android"
                     ? "bg-[#E50000] text-white shadow-sm"
                     : "text-[#888] hover:text-white"
@@ -285,18 +274,6 @@ export function PwaInstallPrompt() {
               >
                 <Smartphone className="w-3.5 h-3.5" />
                 <span>Android</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("desktop")}
-                className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-                  activeTab === "desktop"
-                    ? "bg-[#E50000] text-white shadow-sm"
-                    : "text-[#888] hover:text-white"
-                }`}
-              >
-                <Laptop className="w-3.5 h-3.5" />
-                <span>Máy tính</span>
               </button>
             </div>
 
@@ -366,37 +343,6 @@ export function PwaInstallPrompt() {
                     </div>
                     <div className="text-xs text-[#D1D5DB] leading-relaxed">
                       Bấm xác nhận <strong className="text-white">&ldquo;Cài đặt&rdquo;</strong> để đưa RubyFilm ra màn hình chính.
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {activeTab === "desktop" && (
-                <>
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[#E50000]/20 text-[#FF4D4D] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                      1
-                    </div>
-                    <div className="text-xs text-[#D1D5DB] leading-relaxed">
-                      Quan sát thanh địa chỉ (URL) ở đầu trình duyệt Chrome / Edge.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[#E50000]/20 text-[#FF4D4D] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                      2
-                    </div>
-                    <div className="text-xs text-[#D1D5DB] leading-relaxed">
-                      Nhấn vào biểu tượng <strong className="text-white">Cài đặt ⊕</strong> hoặc biểu tượng màn hình tải xuống ở bên phải thanh URL.
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <div className="w-6 h-6 rounded-full bg-[#E50000]/20 text-[#FF4D4D] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                      3
-                    </div>
-                    <div className="text-xs text-[#D1D5DB] leading-relaxed">
-                      Nhấp <strong className="text-white">&ldquo;Cài đặt&rdquo;</strong> để thưởng thức giao diện app riêng biệt, không thanh công cụ rườm rà.
                     </div>
                   </div>
                 </>
