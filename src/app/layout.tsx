@@ -100,6 +100,7 @@ import { SwipeBackNavigation } from "@/components/common/swipe-back-navigation";
 import { NavigationProgressBar } from "@/components/common/navigation-progress-bar";
 import { AnalyticsHeartbeat } from "@/components/analytics/analytics-heartbeat";
 import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
+import { AntiDevtools } from "@/components/common/anti-devtools";
 
 export default async function RootLayout({
   children,
@@ -134,6 +135,7 @@ export default async function RootLayout({
         </React.Suspense>
         <ToastProvider>
           <AuthProvider>
+            <AntiDevtools />
             <SwipeBackNavigation />
             <PwaInstallPrompt />
             <React.Suspense fallback={null}>
