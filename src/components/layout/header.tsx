@@ -27,6 +27,7 @@ import {
   Sparkles,
   Shield,
   Activity,
+  Download,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Genre, Country } from "@/types/movie";
@@ -36,6 +37,7 @@ import { useAuth } from "@/lib/hooks/use-auth";
 import { useToast } from "@/components/ui/toast";
 import { checkAndNotifyDueReminders } from "@/lib/utils/airingSchedule";
 import { AdminLivePresenceBadge } from "@/components/admin/admin-live-presence-badge";
+import { triggerPwaInstall } from "@/components/common/pwa-install-prompt";
 
 interface HeaderProps {
   genres?: Genre[];
@@ -395,6 +397,17 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
 
             {/* Right: StreamVibe Action Buttons */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 flex-shrink-0">
+              {/* Install App Quick Action (Desktop) */}
+              <button
+                type="button"
+                onClick={triggerPwaInstall}
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2.5 rounded-xl bg-[#141414] hover:bg-[#1C1C1C] border border-[#2A2A2A] hover:border-[#E50000]/50 text-[#D1D5DB] hover:text-white font-bold text-xs transition-all hover:scale-105 active:scale-95 shadow-sm group cursor-pointer"
+                title="Cài đặt RubyFilm vào máy tính / điện thoại"
+              >
+                <Download className="w-3.5 h-3.5 text-[#E50000] group-hover:translate-y-0.5 transition-transform" />
+                <span>Cài App</span>
+              </button>
+
               {/* Search Trigger */}
               <button
                 type="button"
@@ -519,6 +532,23 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                             </Link>
                           </>
                         )}
+                        {/* PWA Install Action */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserMenuOpen(false);
+                            triggerPwaInstall();
+                          }}
+                          className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium text-[#D1D5DB] hover:text-[#F9FAFB] hover:bg-[#222222] transition-colors cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <Download className="w-4 h-4 text-[#3B82F6]" />
+                            <span>Cài đặt ứng dụng</span>
+                          </div>
+                          <span className="text-[9px] font-bold text-[#3B82F6] bg-[#3B82F6]/10 px-1.5 py-0.5 rounded border border-[#3B82F6]/20">
+                            App
+                          </span>
+                        </button>
                       </div>
 
                       <div className="my-1.5 border-t border-[#262626]" />
@@ -715,6 +745,32 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                 </div>
               </div>
             )}
+
+            {/* PWA Install Action Banner */}
+            <div className="relative z-10 p-3 mb-3 rounded-2xl bg-gradient-to-r from-[#171717] via-[#141414] to-[#121212] border border-[#2A2A2A] flex items-center justify-between gap-3 shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[#E50000]/15 text-[#FF4D4D] flex items-center justify-center shrink-0 border border-[#E50000]/30">
+                  <Download className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-xs font-bold text-white tracking-wide truncate">Cài đặt RubyFilm</p>
+                    <span className="text-[9px] font-bold text-[#FF4D4D] bg-[#E50000]/20 px-1 rounded">App</span>
+                  </div>
+                  <p className="text-[10px] text-[#A3A3A3] mt-0.5 truncate">Xem phim tràn viền, mượt mà hơn</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  triggerPwaInstall();
+                }}
+                className="px-3 py-1.5 rounded-xl bg-[#E50000] hover:bg-[#CC0000] active:scale-95 text-white font-bold text-xs shadow-md shadow-[#E50000]/25 transition-all shrink-0 cursor-pointer"
+              >
+                Cài ngay
+              </button>
+            </div>
 
             <nav className="relative z-10 flex flex-col gap-1.5 pt-1">
               {navLinks.map((link) => {

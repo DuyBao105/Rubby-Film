@@ -75,6 +75,22 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION || undefined,
   },
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" },
+      { url: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "RubyFilm",
+  },
 };
 
 import { ToastProvider } from "@/components/ui/toast";
@@ -83,6 +99,7 @@ import { SwipeBackNavigation } from "@/components/common/swipe-back-navigation";
 
 import { NavigationProgressBar } from "@/components/common/navigation-progress-bar";
 import { AnalyticsHeartbeat } from "@/components/analytics/analytics-heartbeat";
+import { PwaInstallPrompt } from "@/components/common/pwa-install-prompt";
 
 export default async function RootLayout({
   children,
@@ -118,6 +135,7 @@ export default async function RootLayout({
         <ToastProvider>
           <AuthProvider>
             <SwipeBackNavigation />
+            <PwaInstallPrompt />
             <React.Suspense fallback={null}>
               <Header genres={genres} countries={countries} />
             </React.Suspense>

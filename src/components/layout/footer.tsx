@@ -3,7 +3,8 @@
 import * as React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { ArrowUp, MessageCircle, ChevronRight, ShieldCheck, Zap, Sparkles } from "lucide-react";
+import { ArrowUp, MessageCircle, ChevronRight, ShieldCheck, Zap, Sparkles, Download } from "lucide-react";
+import { triggerPwaInstall } from "@/components/common/pwa-install-prompt";
 
 export function Footer() {
   const router = useRouter();
@@ -266,6 +267,29 @@ export function Footer() {
                 Gặp lỗi phát phim, yêu cầu thêm phim mới hoặc đóng góp ý kiến? Hãy nhắn tin trực tiếp qua Telegram.
               </p>
             </a>
+
+            {/* PWA App Install Button */}
+            <button
+              type="button"
+              onClick={() => triggerPwaInstall()}
+              className="w-full flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-[#141414] via-[#161616] to-[#121212] border border-[#262626] hover:border-[#E50000]/60 hover:shadow-[0_10px_25px_rgba(229,0,0,0.15)] text-left transition-all duration-300 group active:scale-[0.99] cursor-pointer"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-[#E50000]/15 text-[#FF4D4D] flex items-center justify-center shrink-0 border border-[#E50000]/30">
+                  <Download className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                </div>
+                <div>
+                  <div className="text-xs font-bold text-white group-hover:text-[#FF4D4D] transition-colors flex items-center gap-1.5">
+                    <span>Cài Đặt RubyFilm App</span>
+                    <span className="text-[9px] font-bold text-[#FF4D4D] bg-[#E50000]/20 px-1 py-0.2 rounded">PWA</span>
+                  </div>
+                  <div className="text-[10px] text-[#8E8E93]">Tối ưu cho iPhone, Android & PC</div>
+                </div>
+              </div>
+              <span className="text-[11px] font-semibold text-[#8E8E93] group-hover:text-white transition-colors">
+                Cài ngay ›
+              </span>
+            </button>
           </div>
 
         </div>
