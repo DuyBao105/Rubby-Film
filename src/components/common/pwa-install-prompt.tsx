@@ -12,8 +12,10 @@ import {
   MoreVertical,
 } from "lucide-react";
 
-const STORAGE_KEY = "rubyfilm_pwa_dismissed_until";
-const DISMISS_DAYS = 5; // Remind after 5 days if dismissed
+// Lưu trạng thái phiên làm việc: chỉ ẩn trong lần duyệt web hiện tại, vào lại web sẽ hiện lại
+const SESSION_DISMISS_KEY = "rubyfilm_pwa_session_dismissed";
+// Lưu trạng thái đã cài đặt vĩnh viễn: nếu đã cài thì không bao giờ nhắc nữa
+const INSTALLED_KEY = "rubyfilm_pwa_installed";
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -45,68 +47,79 @@ export function PwaInstallPrompt() {
   React.useEffect(() => {
     setMounted(true);
 
-    // Register PWA Service Worker
-    if (typeof window !== "undefined" && "serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .then((reg) => {
-            console.log("[PWA] Service worker registered successfully:", reg.scope);
-          })
-          .catch((err) => {
-            console.warn("[PWA] Service worker registration error:", err);
-          });
-      });
-    }
+    // Dọn dẹp key cũ (nếu từng lưu 5 ngày trước đây) để đảm bảo luôn hiển thị lại
+    try {
+      localStorage.removeItem("rubyfilm_pwa_dismissed_until");
+    } catch {}
 
+    // 1. Kiểm tra nếu app ĐÃ CÀI ĐẶT thì KHÔNG BAO GIỜ hiển thị thông báo nữa
     const nav = window.navigator as NavigatorWithStandalone;
     const isStandaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
       nav.standalone === true ||
-      window.matchMedia("(display-mode: window-controls-overlay)").matches;
+      window.matchMedia("(display-mode: window-controls-overlay)").matches ||
+      localStorage.getItem(INSTALLED_KEY) === "true";
 
     if (isStandaloneMode) {
       setIsStandalone(true);
       return;
     }
 
+    // 2. Nhận diện thiết bị để tự động chuyển tab phù hợp
     const ua = window.navigator.userAgent || "";
     const isIOSDevice =
       (/iPad|iPhone|iPod/.test(ua) && !("MSStream" in window)) ||
       (window.navigator.platform === "MacIntel" && window.navigator.maxTouchPoints > 1);
 
-    const initialTab: "ios" | "android" = isIOSDevice ? "ios" : "android";
-    setActiveTab(initialTab);
+    setActiveTab(isIOSDevice ? "ios" : "android");
 
-    const dismissedUntil = Number(localStorage.getItem(STORAGE_KEY) || 0);
-    const hasDismissed = Date.now() < dismissedUntil;
+    // 3. Kiểm tra xem người dùng đã bấm tắt trong phiên truy cập này chưa
+    let hasDismissedInSession = false;
+    try {
+      hasDismissedInSession = sessionStorage.getItem(SESSION_DISMISS_KEY) === "true";
+    } catch {}
 
+    // Nếu chưa tắt trong phiên này, luôn luôn hiển thị thông báo
     let autoShowTimer: number | undefined;
+    if (!hasDismissedInSession) {
+      autoShowTimer = window.setTimeout(() => {
+        setIsVisible(true);
+      }, 1000);
+    }
 
+    // Đăng ký Service Worker
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker
+          .register("/sw.js")
+          .catch((err) => console.warn("[PWA] SW register error:", err));
+      });
+    }
+
+    // Bắt sự kiện cài đặt trên Android / Chrome
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
-      if (!hasDismissed) {
-        autoShowTimer = window.setTimeout(() => setIsVisible(true), 2500);
+      if (!hasDismissedInSession) {
+        setIsVisible(true);
       }
     };
 
+    // Khi người dùng đã cài đặt thành công -> lưu vĩnh viễn không bao giờ thông báo nữa
     const handleAppInstalled = () => {
       setIsVisible(false);
       setShowGuideModal(false);
+      setIsStandalone(true);
       setDeferredPrompt(null);
       try {
-        localStorage.setItem(STORAGE_KEY, String(Date.now() + 365 * 24 * 60 * 60 * 1000));
+        localStorage.setItem(INSTALLED_KEY, "true");
       } catch {}
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);
     window.addEventListener("appinstalled", handleAppInstalled);
 
-    if (isIOSDevice && !hasDismissed) {
-      autoShowTimer = window.setTimeout(() => setIsVisible(true), 3500);
-    }
-
+    // Kích hoạt khi bấm nút "Cài đặt" thủ công ở Header / Mobile drawer
     const handleManualOpen = () => {
       setIsVisible(true);
       if (!deferredPrompt || isIOSDevice) {
@@ -116,6 +129,10 @@ export function PwaInstallPrompt() {
         deferredPrompt.userChoice.then((choiceResult) => {
           if (choiceResult.outcome === "accepted") {
             setIsVisible(false);
+            setIsStandalone(true);
+            try {
+              localStorage.setItem(INSTALLED_KEY, "true");
+            } catch {}
           }
         });
       }
@@ -131,12 +148,12 @@ export function PwaInstallPrompt() {
     };
   }, [deferredPrompt]);
 
+  // Khi người dùng bấm tắt -> chỉ ẩn trong phiên duyệt web này, vào lại web sẽ hiện lại
   const handleDismiss = () => {
     setIsVisible(false);
     setShowGuideModal(false);
     try {
-      const dismissUntil = Date.now() + DISMISS_DAYS * 24 * 60 * 60 * 1000;
-      localStorage.setItem(STORAGE_KEY, String(dismissUntil));
+      sessionStorage.setItem(SESSION_DISMISS_KEY, "true");
     } catch {}
   };
 
@@ -147,8 +164,9 @@ export function PwaInstallPrompt() {
         const choiceResult = await deferredPrompt.userChoice;
         if (choiceResult.outcome === "accepted") {
           setIsVisible(false);
+          setIsStandalone(true);
           try {
-            localStorage.setItem(STORAGE_KEY, String(Date.now() + 365 * 24 * 60 * 60 * 1000));
+            localStorage.setItem(INSTALLED_KEY, "true");
           } catch {}
         }
         setDeferredPrompt(null);
@@ -288,7 +306,7 @@ export function PwaInstallPrompt() {
                     <div className="text-xs text-[#D1D5DB] leading-relaxed">
                       Nhấn vào nút <strong className="text-white">Chia sẻ</strong>{" "}
                       <Share2 className="w-3.5 h-3.5 inline mx-1 text-[#3B82F6]" />{" "}
-                      (ở thanh dưới cùng của Safari, hoặc bên phải thanh địa chỉ / menu 3 chấm của Chrome).
+                      ngay cạnh đường link web (thanh địa chỉ trên cùng của Chrome, hoặc ở thanh dưới cùng của Safari).
                     </div>
                   </div>
 
@@ -297,9 +315,7 @@ export function PwaInstallPrompt() {
                       2
                     </div>
                     <div className="text-xs text-[#D1D5DB] leading-relaxed">
-                      Cuộn xuống danh sách tùy chọn và chọn mục{" "}
-                      <strong className="text-white">&ldquo;Thêm vào MH chính&rdquo;</strong> (Add to Home Screen){" "}
-                      <PlusSquare className="w-3.5 h-3.5 inline mx-1 text-emerald-400" />.
+                      Chọn mục <strong className="text-white">&ldquo;Xem thêm&rdquo;</strong> (nếu có) hoặc cuộn xuống danh sách tùy chọn.
                     </div>
                   </div>
 
@@ -308,7 +324,18 @@ export function PwaInstallPrompt() {
                       3
                     </div>
                     <div className="text-xs text-[#D1D5DB] leading-relaxed">
-                      Nhấn <strong className="text-white">&ldquo;Thêm&rdquo; (Add)</strong> ở góc trên bên phải màn hình để hoàn tất.
+                      Kéo xuống tìm và bấm vào mục{" "}
+                      <strong className="text-white">&ldquo;Thêm vào Màn hình chính&rdquo;</strong> (Add to Home Screen){" "}
+                      <PlusSquare className="w-3.5 h-3.5 inline mx-1 text-emerald-400" />.
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-[#E50000]/20 text-[#FF4D4D] font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                      4
+                    </div>
+                    <div className="text-xs text-[#D1D5DB] leading-relaxed">
+                      Nhấn <strong className="text-white">&ldquo;Thêm&rdquo; (Add)</strong> ở góc trên bên phải để hoàn tất.
                     </div>
                   </div>
                 </>
