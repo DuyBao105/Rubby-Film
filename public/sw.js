@@ -1,14 +1,13 @@
 // RubyFilm Progressive Web App (PWA) Service Worker
-const CACHE_NAME = "rubyfilm-cache-v1";
+const CACHE_NAME = "rubyfilm-cache-v3";
 const PRECACHE_ASSETS = [
-  "/",
-  "/favicon.ico",
+  "/favicon-32x32.png",
   "/apple-touch-icon.png",
   "/icon-192x192.png",
   "/icon-512x512.png",
 ];
 
-// Install: precache critical shell assets
+// Install: precache static icon assets only (NEVER precache dynamic HTML "/")
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches
@@ -21,7 +20,7 @@ self.addEventListener("install", (event) => {
   );
 });
 
-// Activate: clean up old caches
+// Activate: aggressively wipe out old corrupted caches
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -37,17 +36,19 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// Fetch: network first with offline fallback for navigation, cache-first for static icons
+// Fetch: bypass Next.js internal scripts & dynamic APIs entirely to prevent chunk corruption
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
 
   const url = new URL(event.request.url);
 
-  // Skip dynamic API, streaming video, or analytics requests
+  // 1. Bypass Next.js internal chunks, APIs, media streams & third-party CDNs
   if (
+    url.pathname.startsWith("/_next/") ||
     url.pathname.startsWith("/api/") ||
     url.pathname.endsWith(".m3u8") ||
     url.pathname.endsWith(".ts") ||
+    url.pathname.endsWith(".js") ||
     url.hostname.includes("phimimg.com") ||
     url.hostname.includes("tmdb.org") ||
     url.hostname.includes("hcaptcha")
@@ -55,23 +56,26 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Handle navigations and static resources
+  // 2. Navigation requests: always Network-First
+  if (event.request.mode === "navigate") {
+    event.respondWith(
+      fetch(event.request).catch(async () => {
+        return new Response(
+          "<!DOCTYPE html><html lang='vi'><head><meta charset='UTF-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>RubyFilm - Mất kết nối</title><style>body{margin:0;background:#0d0f12;color:#fff;font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:20px}button{background:#e50000;color:#fff;border:none;padding:12px 24px;border-radius:12px;font-weight:bold;cursor:pointer;margin-top:16px}</style></head><body><div><h2>Không có kết nối mạng</h2><p>Vui lòng kiểm tra lại Wifi hoặc 4G/5G của bạn.</p><button onclick='location.reload()'>Thử lại</button></div></body></html>",
+          {
+            status: 200,
+            headers: { "Content-Type": "text/html; charset=utf-8" },
+          }
+        );
+      })
+    );
+    return;
+  }
+
+  // 3. Static icon cache fallback
   event.respondWith(
-    fetch(event.request).catch(async () => {
-      const cache = await caches.open(CACHE_NAME);
-      const cachedResponse = await cache.match(event.request);
-      if (cachedResponse) {
-        return cachedResponse;
-      }
-      if (event.request.mode === "navigate") {
-        const fallBack = await cache.match("/");
-        if (fallBack) return fallBack;
-      }
-      return new Response("Mạng không khả dụng", {
-        status: 503,
-        statusText: "Network Unavailable",
-        headers: { "Content-Type": "text/plain; charset=utf-8" },
-      });
+    caches.match(event.request).then((cachedResponse) => {
+      return cachedResponse || fetch(event.request);
     })
   );
 });

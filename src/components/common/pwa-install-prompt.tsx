@@ -53,12 +53,17 @@ export function PwaInstallPrompt() {
     } catch {}
 
     // 1. Kiểm tra nếu app ĐÃ CÀI ĐẶT thì KHÔNG BAO GIỜ hiển thị thông báo nữa
+    let isAlreadyInstalled = false;
+    try {
+      isAlreadyInstalled = localStorage.getItem(INSTALLED_KEY) === "true";
+    } catch {}
+
     const nav = window.navigator as NavigatorWithStandalone;
     const isStandaloneMode =
       window.matchMedia("(display-mode: standalone)").matches ||
       nav.standalone === true ||
       window.matchMedia("(display-mode: window-controls-overlay)").matches ||
-      localStorage.getItem(INSTALLED_KEY) === "true";
+      isAlreadyInstalled;
 
     if (isStandaloneMode) {
       setIsStandalone(true);

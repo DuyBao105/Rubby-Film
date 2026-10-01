@@ -122,6 +122,29 @@ export default async function RootLayout({
         <link rel="dns-prefetch" href="https://image.tmdb.org" />
         <link rel="preconnect" href="https://images.unsplash.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="https://images.unsplash.com" />
+        {/* Auto-recover from stale Service Worker / deployment chunk mismatches */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.addEventListener('error', function(e) {
+                var msg = (e && e.message) ? e.message.toLowerCase() : '';
+                if (msg.indexOf('loading chunk') !== -1 || msg.indexOf('chunkloaderror') !== -1 || msg.indexOf('unexpected token') !== -1) {
+                  var lastReload = sessionStorage.getItem('rubyfilm_chunk_reload');
+                  var now = Date.now();
+                  if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
+                    sessionStorage.setItem('rubyfilm_chunk_reload', String(now));
+                    if ('caches' in window) {
+                      caches.keys().then(function(keys) {
+                        keys.forEach(function(k) { caches.delete(k); });
+                      });
+                    }
+                    setTimeout(function() { window.location.reload(); }, 200);
+                  }
+                }
+              });
+            `,
+          }}
+        />
       </head>
       <body
         suppressHydrationWarning

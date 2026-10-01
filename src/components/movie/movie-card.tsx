@@ -98,7 +98,7 @@ export function MovieCard({
           <div className="absolute top-2 left-2 z-20 flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-[#E50000] text-white font-black text-[11px] shadow-lg shadow-[#E50000]/50 border border-[#FF3333]/50 select-none">
             #{rank < 10 ? `0${rank}` : rank}
           </div>
-        ) : movie.quality?.includes("4K") ? (
+        ) : typeof movie?.quality === "string" && movie.quality.includes("4K") ? (
           <div className="absolute top-2 left-2 z-10">
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 backdrop-blur-md border border-amber-500/40 text-amber-300 flex items-center gap-1 shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
