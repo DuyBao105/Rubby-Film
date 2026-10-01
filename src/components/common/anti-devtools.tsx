@@ -7,6 +7,20 @@ const TROLL_URL =
 
 export function AntiDevtools() {
   React.useEffect(() => {
+    // Bỏ qua hoàn toàn trên điện thoại / máy tính bảng vì không có phím F12
+    if (typeof window === "undefined") return;
+
+    const isTouchOrMobile =
+      "ontouchstart" in window ||
+      navigator.maxTouchPoints > 0 ||
+      /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(
+        navigator.userAgent || ""
+      );
+
+    if (isTouchOrMobile) {
+      return;
+    }
+
     let isRedirecting = false;
 
     const triggerRedirect = () => {
@@ -19,7 +33,7 @@ export function AntiDevtools() {
       }
     };
 
-    // 1. Chặn phím tắt: F12, Ctrl+Shift+I/J/C, Ctrl+U, Cmd+Option+I/J/C/U
+    // Chỉ chặn các phím tắt bấm F12 / Inspect trên bàn phím máy tính
     const handleKeyDown = (e: KeyboardEvent) => {
       // Phím F12
       if (e.key === "F12" || e.keyCode === 123) {
@@ -32,7 +46,7 @@ export function AntiDevtools() {
       const isCmdOrCtrl = e.ctrlKey || e.metaKey;
       const isShiftOrAlt = e.shiftKey || e.altKey;
 
-      // Ctrl + Shift + I/J/C hoặc Cmd + Alt + I/J/C (Mở Inspect / Console)
+      // Ctrl + Shift + I/J/C hoặc Cmd + Alt + I/J/C (Inspect / Console)
       if (
         isCmdOrCtrl &&
         isShiftOrAlt &&
@@ -44,7 +58,7 @@ export function AntiDevtools() {
         return false;
       }
 
-      // Ctrl + U hoặc Cmd + U (View Source trang web)
+      // Ctrl + U hoặc Cmd + U (View Source)
       if (isCmdOrCtrl && (e.key === "U" || e.key === "u")) {
         e.preventDefault();
         e.stopPropagation();
@@ -53,27 +67,10 @@ export function AntiDevtools() {
       }
     };
 
-    // 2. Phát hiện khi DevTools được mở dạng Docked (qua Menu trình duyệt)
-    const checkDevToolsSize = () => {
-      const threshold = 160;
-      const widthDiff = window.outerWidth - window.innerWidth > threshold;
-      const heightDiff = window.outerHeight - window.innerHeight > threshold;
-
-      if (widthDiff || heightDiff) {
-        triggerRedirect();
-      }
-    };
-
     window.addEventListener("keydown", handleKeyDown, true);
-    window.addEventListener("resize", checkDevToolsSize, { passive: true });
-
-    // Kiểm tra ngay sau khi load
-    const timer = setTimeout(checkDevToolsSize, 1200);
 
     return () => {
       window.removeEventListener("keydown", handleKeyDown, true);
-      window.removeEventListener("resize", checkDevToolsSize);
-      clearTimeout(timer);
     };
   }, []);
 
