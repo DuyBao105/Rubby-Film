@@ -79,32 +79,67 @@ interface ScreenOrientationWithLock extends ScreenOrientation {
 }
 
 
-export function VideoPlayer({
-  source,
-  sources,
-  activeSourceIndex = 0,
-  onSelectSourceIndex,
-  title,
-  subtitle,
-  posterUrl,
-  onTimeUpdate,
-  initialTime = 0,
-  isSeries = false,
-  onPause,
-  onEnded,
-  hasNextEpisode = false,
-  onNextEpisode,
-  hasPrevEpisode = false,
-  onPrevEpisode,
-  autoNextEnabled = true,
-  onSwitchServer,
-  isCinemaMode = false,
-  onToggleCinemaMode,
-}: VideoPlayerProps) {
-  const videoRef = React.useRef<HTMLVideoElement>(null);
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const progressBarRef = React.useRef<HTMLDivElement>(null);
-  const hlsRef = React.useRef<Hls | null>(null);
+export interface VideoPlayerHandle {
+  seekTo: (timeSeconds: number) => void;
+  play: () => void;
+  pause: () => void;
+  togglePip: () => void;
+}
+
+export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>(
+  function VideoPlayer(
+    {
+      source,
+      sources,
+      activeSourceIndex = 0,
+      onSelectSourceIndex,
+      title,
+      subtitle,
+      posterUrl,
+      onTimeUpdate,
+      initialTime = 0,
+      isSeries = false,
+      onPause,
+      onEnded,
+      hasNextEpisode = false,
+      onNextEpisode,
+      hasPrevEpisode = false,
+      onPrevEpisode,
+      autoNextEnabled = true,
+      onSwitchServer,
+      isCinemaMode = false,
+      onToggleCinemaMode,
+    },
+    ref
+  ) {
+    const videoRef = React.useRef<HTMLVideoElement>(null);
+    const containerRef = React.useRef<HTMLDivElement>(null);
+    const progressBarRef = React.useRef<HTMLDivElement>(null);
+    const hlsRef = React.useRef<Hls | null>(null);
+
+    React.useImperativeHandle(ref, () => ({
+      seekTo: (timeSeconds: number) => {
+        if (videoRef.current) {
+          try {
+            videoRef.current.currentTime = timeSeconds;
+            setCurrentTime(timeSeconds);
+          } catch {}
+        }
+      },
+      play: () => {
+        if (videoRef.current) {
+          videoRef.current.play().catch(() => {});
+        }
+      },
+      pause: () => {
+        if (videoRef.current) {
+          videoRef.current.pause();
+        }
+      },
+      togglePip: () => {
+        togglePip();
+      },
+    }));
 
   const [isPlaying, setIsPlaying] = React.useState(false);
   const [hasStarted, setHasStarted] = React.useState(false);
@@ -259,9 +294,44 @@ export function VideoPlayer({
   };
 
   React.useEffect(() => {
-    if (typeof document !== "undefined" && document.pictureInPictureEnabled) {
+    if (typeof document !== "undefined") {
+      if (document.pictureInPictureEnabled) {
+        setIsPipSupported(true);
+      }
+    }
+    const video = videoRef.current;
+    if (
+      video &&
+      (video as any).webkitSupportsPresentationMode &&
+      typeof (video as any).webkitSupportsPresentationMode === "function" &&
+      (video as any).webkitSupportsPresentationMode("picture-in-picture")
+    ) {
       setIsPipSupported(true);
     }
+  }, []);
+
+  // Tự động mở chế độ PiP (hình trong hình) khi vuốt ra màn hình chính trên iOS / trình duyệt hỗ trợ
+  React.useEffect(() => {
+    const handleVisibilityChange = () => {
+      const video = videoRef.current;
+      if (!video) return;
+      if (document.visibilityState === "hidden" && !video.paused) {
+        if (
+          (video as any).webkitSetPresentationMode &&
+          (video as any).webkitSupportsPresentationMode &&
+          (video as any).webkitSupportsPresentationMode("picture-in-picture")
+        ) {
+          try {
+            (video as any).webkitSetPresentationMode("picture-in-picture");
+          } catch {}
+        }
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const resetControlsTimeout = React.useCallback(() => {
@@ -710,8 +780,16 @@ export function VideoPlayer({
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
-      } else {
+      } else if (video.requestPictureInPicture) {
         await video.requestPictureInPicture();
+      } else if (
+        (video as any).webkitSupportsPresentationMode &&
+        typeof (video as any).webkitSetPresentationMode === "function"
+      ) {
+        const currentMode = (video as any).webkitPresentationMode;
+        (video as any).webkitSetPresentationMode(
+          currentMode === "picture-in-picture" ? "inline" : "picture-in-picture"
+        );
       }
     } catch (err) {
       console.warn("PiP error:", err);
@@ -992,6 +1070,11 @@ export function VideoPlayer({
       <video
         ref={videoRef}
         playsInline
+        {...({
+          "webkit-playsinline": "true",
+          autoPictureInPicture: true,
+          "x-webkit-airplay": "allow",
+        } as any)}
         onTimeUpdate={handleTimeUpdate}
         onProgress={updateBuffered}
         onLoadedMetadata={() => {
@@ -999,6 +1082,12 @@ export function VideoPlayer({
             setDuration(videoRef.current.duration);
             setIsLoading(false);
             checkTextTracks();
+            if (
+              (videoRef.current as any).webkitSupportsPresentationMode &&
+              (videoRef.current as any).webkitSupportsPresentationMode("picture-in-picture")
+            ) {
+              setIsPipSupported(true);
+            }
             if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
               attemptSeekToInitialTime();
             }
@@ -1354,10 +1443,10 @@ export function VideoPlayer({
                   type="button"
                   onClick={togglePip}
                   aria-label="Hình trong hình"
-                  className="text-cinema-300 hover:text-white transition-colors p-2 rounded-lg hover:bg-white/10 hidden sm:block"
+                  className="text-cinema-300 hover:text-white transition-colors p-1.5 sm:p-2 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
                   title="Hình trong hình (Picture-in-Picture)"
                 >
-                  <PictureInPicture className="w-4 h-4" />
+                  <PictureInPicture className="w-4 h-4 sm:w-5 sm:h-5" />
                 </button>
               )}
 
@@ -1662,4 +1751,6 @@ export function VideoPlayer({
       </div>
     </div>
   );
-}
+});
+
+VideoPlayer.displayName = "VideoPlayer";

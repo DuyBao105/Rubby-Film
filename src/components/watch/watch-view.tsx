@@ -19,9 +19,11 @@ import {
   AlertCircle,
   X,
   Send,
+  Play,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Movie, Episode, VideoSource } from "@/types/movie";
+import type { VideoPlayerHandle } from "./video-player";
 import { CommentSection } from "@/components/community/comments/comment-section";
 import { EpisodeSelector } from "./episode-selector";
 import { ServerSelector } from "./server-selector";
@@ -68,7 +70,6 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
 
   const [copied, setCopied] = React.useState(false);
   const [autoNextEnabled, setAutoNextEnabled] = React.useState(true);
-  const [resumePromptVisible, setResumePromptVisible] = React.useState(false);
   const [reportModalOpen, setReportModalOpen] = React.useState(false);
   const [reportIssue, setReportIssue] = React.useState("video_not_playing");
   const [reportDescription, setReportDescription] = React.useState("");
@@ -126,19 +127,22 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
 
   // Saved playback progress & cross-device sync
   const [initialTime, setInitialTime] = React.useState(0);
+  const [pendingResumeTime, setPendingResumeTime] = React.useState(0);
+  const [resumePromptVisible, setResumePromptVisible] = React.useState(false);
+  const playerRef = React.useRef<VideoPlayerHandle>(null);
   const currentPlaybackRef = React.useRef<{ currentTime: number; duration: number } | null>(null);
   const appliedResumeKeyRef = React.useRef<string | null>(null);
   const dismissedResumeKeysRef = React.useRef<Set<string>>(new Set());
 
-  // Evaluate saved progress: applies initial progress or cloud-synced progress if not yet actively playing
+  // Evaluate saved progress: prompt user clearly instead of silently auto-seeking
   React.useEffect(() => {
     const epNum = currentEpisode?.episodeNumber ?? 1;
     const evalKey = `${movie.id}:${epNum}`;
 
-    // Already applied resume for this episode -> do not re-apply or re-open prompt on history polls
+    // Already applied resume evaluation for this episode
     if (appliedResumeKeyRef.current === evalKey) return;
 
-    // If user has already actively played past 5s on this page, do not seek back to saved progress
+    // If user has already actively played past 5s on this page, do not show resume banner
     const currentPlayed = currentPlaybackRef.current?.currentTime || 0;
     if (currentPlayed > 5) return;
 
@@ -148,17 +152,15 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
 
     if (
       savedProgress &&
-      savedProgress.progressSeconds > 5 &&
+      savedProgress.progressSeconds > 10 &&
       !savedProgress.completed
     ) {
       appliedResumeKeyRef.current = evalKey;
-      setInitialTime(savedProgress.progressSeconds);
+      setPendingResumeTime(savedProgress.progressSeconds);
 
       // Only show banner if user has not explicitly dismissed it for this episode
       if (!dismissedResumeKeysRef.current.has(evalKey)) {
         setResumePromptVisible(true);
-        const timer = setTimeout(() => setResumePromptVisible(false), 9000);
-        return () => clearTimeout(timer);
       }
     }
   }, [currentEpisode, movie.id, history, getEpisodeProgress, getMovieProgress]);
@@ -382,6 +384,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       <div className="space-y-4">
         <div className="relative">
           <VideoPlayer
+            ref={playerRef}
             key={`${movie.id}-${currentEpisode?.id || 1}-${activeSource.url}`}
             source={activeSource}
             sources={sources}
@@ -410,28 +413,58 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
           />
 
           {/* Resume Playback Prompt Banner */}
-          {resumePromptVisible && initialTime > 0 && (
-            <div className="absolute top-4 left-4 right-4 sm:left-auto sm:right-4 z-20 flex items-center justify-between gap-3 p-3 bg-cinema-900/95 border border-brand/40 rounded-xl shadow-2xl backdrop-blur-md animate-in slide-in-from-top duration-300">
-              <div className="flex items-center gap-2 text-xs">
-                <Clock className="w-4 h-4 text-brand flex-shrink-0" />
-                <span className="text-white">
-                  Đang phát tiếp từ <strong>{formatSeconds(initialTime)}</strong>
-                </span>
+          {resumePromptVisible && pendingResumeTime > 0 && (
+            <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-auto sm:right-4 sm:max-w-md z-30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 bg-cinema-950/95 border border-brand/50 rounded-2xl shadow-2xl shadow-black/80 backdrop-blur-xl animate-in slide-in-from-top duration-300">
+              <div className="flex items-start sm:items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-brand/20 border border-brand/40 text-brand flex items-center justify-center shrink-0 mt-0.5 sm:mt-0">
+                  <Clock className="w-4 h-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs text-white font-medium">
+                    Bạn đã xem đến <strong className="text-brand font-bold">{formatSeconds(pendingResumeTime)}</strong>
+                  </p>
+                  <p className="text-[11px] text-cinema-400 mt-0.5">
+                    Bạn có muốn tiếp tục xem không?
+                  </p>
+                </div>
               </div>
-              <div className="flex items-center gap-1.5">
+
+              <div className="flex items-center gap-2 self-end sm:self-auto shrink-0 pt-1.5 sm:pt-0 border-t border-white/5 sm:border-t-0 w-full sm:w-auto justify-end">
                 <button
                   type="button"
                   onClick={() => {
                     const epNum = currentEpisode?.episodeNumber ?? 1;
                     dismissedResumeKeysRef.current.add(`${movie.id}:${epNum}`);
-                    setInitialTime(0);
+                    if (playerRef.current) {
+                      playerRef.current.seekTo(pendingResumeTime);
+                      playerRef.current.play();
+                    }
                     setResumePromptVisible(false);
                   }}
-                  className="text-[11px] text-cinema-300 hover:text-white flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-cinema-800 hover:bg-cinema-700 transition-colors cursor-pointer"
+                  className="px-3 py-1.5 rounded-xl bg-brand hover:bg-brand/90 active:scale-95 text-cinema-950 font-bold text-xs flex items-center gap-1.5 shadow-md shadow-brand/25 transition-all cursor-pointer"
+                >
+                  <Play className="w-3.5 h-3.5 fill-current" />
+                  <span>Xem tiếp</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const epNum = currentEpisode?.episodeNumber ?? 1;
+                    dismissedResumeKeysRef.current.add(`${movie.id}:${epNum}`);
+                    if (playerRef.current) {
+                      playerRef.current.seekTo(0);
+                      playerRef.current.play();
+                    }
+                    setPendingResumeTime(0);
+                    setResumePromptVisible(false);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-cinema-800 hover:bg-cinema-700 active:scale-95 text-cinema-300 hover:text-white font-medium text-xs flex items-center gap-1 border border-cinema-700 transition-all cursor-pointer"
                 >
                   <RotateCcw className="w-3 h-3" />
                   <span>Xem từ đầu</span>
                 </button>
+
                 <button
                   type="button"
                   onClick={() => {
@@ -440,9 +473,9 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                     setResumePromptVisible(false);
                   }}
                   className="p-1.5 text-cinema-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
-                  aria-label="Đóng thông báo"
+                  title="Đóng thông báo"
                 >
-                  <X className="w-3.5 h-3.5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
             </div>
