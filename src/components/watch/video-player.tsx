@@ -26,6 +26,7 @@ import {
   SlidersHorizontal,
   Scan,
   Smartphone,
+  ExternalLink,
 } from "lucide-react";
 import Hls from "hls.js";
 import { VideoSource } from "@/types/movie";
@@ -159,6 +160,8 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   const [errorMessage, setErrorMessage] = React.useState("");
   const [autoNextCountdown, setAutoNextCountdown] = React.useState<number | null>(null);
   const [isCssLandscape, setIsCssLandscape] = React.useState(false);
+  const [isIosStandalone, setIsIosStandalone] = React.useState(false);
+  const [iosPipPromptOpen, setIosPipPromptOpen] = React.useState(false);
 
   // Sync fullscreen state & auto unlock screen orientation
   React.useEffect(() => {
@@ -299,6 +302,21 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
         setIsPipSupported(true);
       }
     }
+    const isIOSDevice =
+      typeof navigator !== "undefined" &&
+      (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+        (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+
+    if (typeof window !== "undefined" && isIOSDevice) {
+      const isStandalone =
+        Boolean((navigator as any).standalone) ||
+        window.matchMedia("(display-mode: standalone)").matches;
+      if (isStandalone) {
+        setIsIosStandalone(true);
+      }
+      setIsPipSupported(true);
+    }
+
     const video = videoRef.current;
     if (
       video &&
@@ -777,6 +795,12 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   const togglePip = async () => {
     const video = videoRef.current;
     if (!video) return;
+
+    if (isIosStandalone) {
+      setIosPipPromptOpen(true);
+      return;
+    }
+
     try {
       if (document.pictureInPictureElement) {
         await document.exitPictureInPicture();
@@ -790,9 +814,24 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
         (video as any).webkitSetPresentationMode(
           currentMode === "picture-in-picture" ? "inline" : "picture-in-picture"
         );
+      } else {
+        const isIOSDevice =
+          typeof navigator !== "undefined" &&
+          (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+            (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+        if (isIOSDevice) {
+          setIosPipPromptOpen(true);
+        }
       }
     } catch (err) {
       console.warn("PiP error:", err);
+      const isIOSDevice =
+        typeof navigator !== "undefined" &&
+        (/iPad|iPhone|iPod/.test(navigator.userAgent) ||
+          (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1));
+      if (isIOSDevice) {
+        setIosPipPromptOpen(true);
+      }
     }
   };
 
@@ -1749,6 +1788,63 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
           </div>
         </div>
       </div>
+
+      {/* iOS Standalone PWA PiP Helper Modal */}
+      {iosPipPromptOpen && (
+        <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-cinema-950 border border-brand/40 rounded-2xl p-6 max-w-sm w-full text-center shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <button
+              type="button"
+              onClick={() => setIosPipPromptOpen(false)}
+              className="absolute top-4 right-4 text-cinema-400 hover:text-white p-1 rounded-lg hover:bg-white/10 transition-colors"
+              title="Đóng"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="w-14 h-14 rounded-2xl bg-brand/20 border border-brand/40 text-brand flex items-center justify-center mx-auto mb-4 shadow-lg shadow-brand/20">
+              <PictureInPicture className="w-7 h-7" />
+            </div>
+
+            <h3 className="text-base font-bold text-white mb-2">Chế độ nổi (PiP) trên iPhone</h3>
+            <p className="text-xs text-cinema-300 leading-relaxed mb-6">
+              Hệ điều hành iOS của Apple chặn chế độ nổi PiP khi mở từ App cài trên màn hình chính. Để vừa xem phim thu nhỏ vừa lướt app khác, bạn hãy chuyển sang trình duyệt Safari!
+            </p>
+
+            <div className="space-y-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("t", String(Math.floor(currentTime)));
+                    const safariUrl = url.toString().replace(/^https?:\/\//i, "x-safari-https://");
+                    window.location.href = safariUrl;
+                    setTimeout(() => {
+                      window.open(url.toString(), "_blank");
+                    }, 400);
+                  } catch {
+                    window.open(window.location.href, "_blank");
+                  }
+                  setIosPipPromptOpen(false);
+                }}
+                className="w-full py-3 px-4 rounded-xl bg-brand hover:bg-brand/90 active:scale-95 text-cinema-950 font-bold text-sm flex items-center justify-center gap-2 shadow-lg shadow-brand/25 transition-all cursor-pointer"
+              >
+                <ExternalLink className="w-4 h-4" />
+                <span>Mở trên Safari để dùng PiP</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIosPipPromptOpen(false)}
+                className="w-full py-2.5 px-4 rounded-xl bg-cinema-900 hover:bg-cinema-800 text-cinema-300 hover:text-white font-medium text-xs transition-colors cursor-pointer border border-cinema-800"
+              >
+                Để sau
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 });

@@ -103,26 +103,17 @@ class WatchHistoryService implements IWatchHistoryService {
     }
   }
 
-  private getStorageKey(): string | null {
-    if (!this.currentUserId) return null;
+  private getStorageKey(): string {
+    if (!this.currentUserId) return "rubbyfilm_watch_history_guest";
     return `rubbyfilm_watch_history_${this.currentUserId}`;
   }
 
   private load(): WatchHistoryItem[] {
     if (typeof window === "undefined") return [];
-    if (!this.currentUserId) {
-      this.cache = [];
-      return [];
-    }
     if (this.cache !== null) return this.cache;
 
     try {
       const key = this.getStorageKey();
-      if (!key) {
-        this.cache = [];
-        return [];
-      }
-
       const raw = localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -150,12 +141,10 @@ class WatchHistoryService implements IWatchHistoryService {
 
   private save(items: WatchHistoryItem[]): void {
     this.cache = items;
-    if (typeof window !== "undefined" && this.currentUserId) {
+    if (typeof window !== "undefined") {
       try {
         const key = this.getStorageKey();
-        if (key) {
-          localStorage.setItem(key, JSON.stringify(items));
-        }
+        localStorage.setItem(key, JSON.stringify(items));
       } catch (e) {
         console.error("[WatchHistoryService] Failed to write storage:", e);
       }

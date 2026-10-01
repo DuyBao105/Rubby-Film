@@ -146,6 +146,18 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     const currentPlayed = currentPlaybackRef.current?.currentTime || 0;
     if (currentPlayed > 5) return;
 
+    // Check explicit timestamp in URL query (?t= or ?time=)
+    const timeQuery = searchParams.get("t") || searchParams.get("time");
+    if (timeQuery) {
+      const parsedSeconds = parseInt(timeQuery, 10);
+      if (!isNaN(parsedSeconds) && parsedSeconds > 5) {
+        appliedResumeKeyRef.current = evalKey;
+        setPendingResumeTime(parsedSeconds);
+        setResumePromptVisible(true);
+        return;
+      }
+    }
+
     const savedProgress = currentEpisode
       ? getEpisodeProgress(movie.id, epNum)
       : getMovieProgress(movie.id);
@@ -163,7 +175,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
         setResumePromptVisible(true);
       }
     }
-  }, [currentEpisode, movie.id, history, getEpisodeProgress, getMovieProgress]);
+  }, [currentEpisode, movie.id, history, getEpisodeProgress, getMovieProgress, searchParams]);
 
   // Synchronize playback progress immediately when page is hidden or unloaded (e.g. mobile tab switch/close)
   React.useEffect(() => {
