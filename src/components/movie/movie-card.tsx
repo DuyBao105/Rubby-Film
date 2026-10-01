@@ -93,19 +93,19 @@ export function MovieCard({
         {/* Subtle Cinematic Vignette */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F0F]/90 via-transparent to-black/30 opacity-70 group-hover:opacity-90 transition-opacity" />
 
-        {/* StreamVibe Rank Badge */}
+        {/* StreamVibe Rank Badge / 4K Badge */}
         {typeof rank === "number" && rank > 0 ? (
           <div className="absolute top-2 left-2 z-20 flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-[#E50000] text-white font-black text-[11px] shadow-lg shadow-[#E50000]/50 border border-[#FF3333]/50 select-none">
             #{rank < 10 ? `0${rank}` : rank}
           </div>
-        ) : (
+        ) : movie.quality?.includes("4K") ? (
           <div className="absolute top-2 left-2 z-10">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-[#0F0F0F]/80 backdrop-blur-md border border-[#2E2E2E] text-white flex items-center gap-1 shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#E50000]" />
-              <span>{movie.quality?.includes("4K") ? "4K" : "HD"}</span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 backdrop-blur-md border border-amber-500/40 text-amber-300 flex items-center gap-1 shadow-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              <span>4K</span>
             </span>
           </div>
-        )}
+        ) : null}
 
         {/* Episode / Year Pill Top Right */}
         <div className="absolute top-2 right-2 z-10">
