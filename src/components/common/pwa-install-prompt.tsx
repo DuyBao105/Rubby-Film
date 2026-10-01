@@ -311,7 +311,7 @@ export function PwaInstallPrompt() {
                     <div className="text-xs text-[#D1D5DB] leading-relaxed">
                       Nhấn vào nút <strong className="text-white">Chia sẻ</strong>{" "}
                       <Share2 className="w-3.5 h-3.5 inline mx-1 text-[#3B82F6]" />{" "}
-                      ở thanh công cụ của trình duyệt Safari (dưới cùng màn hình).
+                      (ở thanh dưới cùng của Safari, hoặc bên phải thanh địa chỉ / menu 3 chấm của Chrome).
                     </div>
                   </div>
 
