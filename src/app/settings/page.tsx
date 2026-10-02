@@ -59,6 +59,16 @@ export default function SettingsPage() {
     showSaved();
   };
 
+  const handleAutoSkipIntroToggle = () => {
+    updatePreferences({ autoSkipIntro: !preferences.autoSkipIntro });
+    showSaved();
+  };
+
+  const handleSkipIntroDurationChange = (sec: number) => {
+    updatePreferences({ skipIntroDuration: sec });
+    showSaved();
+  };
+
   const handleLanguageChange = (val: "vietsub" | "dub" | "orig") => {
     updatePreferences({ preferredLanguage: val });
     showSaved();
@@ -71,6 +81,7 @@ export default function SettingsPage() {
     try {
       const historyItems = watchHistoryService.getHistory();
       const favoriteItems = myListService.getList();
+      const currentPrefs = preferences;
 
       await Promise.all([
         fetch("/api/user/history", {
@@ -83,9 +94,14 @@ export default function SettingsPage() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ items: favoriteItems }),
         }),
+        fetch("/api/user/preferences", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(currentPrefs),
+        }),
       ]);
 
-      setMigrationNotice("Đã đồng bộ toàn bộ danh sách và lịch sử xem lên đám mây thành công!");
+      setMigrationNotice("Đã đồng bộ toàn bộ danh sách, lịch sử xem và cài đặt lên đám mây thành công!");
     } catch {
       setMigrationNotice("Đồng bộ gặp sự cố kết nối. Vui lòng thử lại!");
     } finally {
@@ -314,6 +330,58 @@ export default function SettingsPage() {
                 }`}
               />
             </button>
+          </div>
+
+          {/* Auto Skip Intro */}
+          <div className="flex items-center justify-between pb-4 border-b border-cinema-750">
+            <div>
+              <p className="text-sm font-semibold text-white">Tự động bỏ qua phần giới thiệu (Skip Intro)</p>
+              <p className="text-xs text-cinema-400 mt-0.5">
+                Tự động nhảy qua đoạn intro mở đầu khi bắt đầu phát phim hoặc chuyển tập
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleAutoSkipIntroToggle}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                preferences.autoSkipIntro ? "bg-brand" : "bg-cinema-700"
+              }`}
+            >
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-cinema-950 font-bold transition-transform ${
+                  preferences.autoSkipIntro ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Skip Intro Duration */}
+          <div className="space-y-2 pb-4 border-b border-cinema-750">
+            <p className="text-sm font-semibold text-white">Thời lượng bỏ qua giới thiệu mặc định</p>
+            <p className="text-xs text-cinema-400">
+              Độ dài phần intro mở đầu khi nhấn nút Bỏ qua giới thiệu hoặc tự động bỏ qua
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+              {[
+                { sec: 60, label: "60 giây (1 phút)" },
+                { sec: 85, label: "85s (Anime / Phim bộ)" },
+                { sec: 90, label: "90 giây (1.5 phút)" },
+                { sec: 120, label: "120 giây (2 phút)" },
+              ].map((item) => (
+                <button
+                  key={item.sec}
+                  type="button"
+                  onClick={() => handleSkipIntroDurationChange(item.sec)}
+                  className={`p-3 rounded-xl border text-xs font-semibold transition-all ${
+                    (preferences.skipIntroDuration ?? 85) === item.sec
+                      ? "bg-brand text-cinema-950 border-brand font-bold shadow-md shadow-brand/20"
+                      : "bg-cinema-800 text-cinema-300 border-cinema-700 hover:text-white"
+                  }`}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Quality Priority */}

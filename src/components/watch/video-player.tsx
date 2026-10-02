@@ -35,6 +35,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { decryptStreamUrl } from "@/lib/utils/streamSecurity";
 
+import { useUserProfile } from "@/lib/hooks/use-user-profile";
+
 interface QualityOption {
   index: number; // -1 for Auto
   label: string;
@@ -59,6 +61,8 @@ interface VideoPlayerProps {
   hasPrevEpisode?: boolean;
   onPrevEpisode?: () => void;
   autoNextEnabled?: boolean;
+  autoSkipIntro?: boolean;
+  skipIntroDuration?: number;
   onSwitchServer?: () => void;
   isCinemaMode?: boolean;
   onToggleCinemaMode?: () => void;
@@ -108,6 +112,8 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
       hasPrevEpisode = false,
       onPrevEpisode,
       autoNextEnabled = true,
+      autoSkipIntro: autoSkipIntroProp,
+      skipIntroDuration: skipIntroDurationProp,
       onSwitchServer,
       isCinemaMode = false,
       onToggleCinemaMode,
@@ -118,6 +124,10 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     const containerRef = React.useRef<HTMLDivElement>(null);
     const progressBarRef = React.useRef<HTMLDivElement>(null);
     const hlsRef = React.useRef<Hls | null>(null);
+
+    const { preferences, updatePreferences } = useUserProfile();
+    const effectiveAutoSkip = autoSkipIntroProp ?? preferences.autoSkipIntro ?? false;
+    const effectiveSkipDuration = skipIntroDurationProp ?? preferences.skipIntroDuration ?? 85;
 
     React.useImperativeHandle(ref, () => ({
       seekTo: (timeSeconds: number) => {
@@ -154,7 +164,7 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   const [showControls, setShowControls] = React.useState(true);
   const [playbackRate, setPlaybackRate] = React.useState(1);
   const [showSettings, setShowSettings] = React.useState(false);
-  const [activeSettingsTab, setActiveSettingsTab] = React.useState<"main" | "speed" | "quality" | "subtitle" | "audio">("main");
+  const [activeSettingsTab, setActiveSettingsTab] = React.useState<"main" | "speed" | "quality" | "subtitle" | "audio" | "intro">("main");
   const [videoFit, setVideoFit] = React.useState<"contain" | "cover" | "fill">("contain");
   const [isLoading, setIsLoading] = React.useState(false);
   const [hasError, setHasError] = React.useState(false);
@@ -164,6 +174,10 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   const [isIosStandalone, setIsIosStandalone] = React.useState(false);
   const [iosPipPromptOpen, setIosPipPromptOpen] = React.useState(false);
   const [copiedToast, setCopiedToast] = React.useState(false);
+  const [introDismissed, setIntroDismissed] = React.useState(false);
+  const [skipIntroToast, setSkipIntroToast] = React.useState<string | null>(null);
+  const [lastSkipPreviousTime, setLastSkipPreviousTime] = React.useState<number | null>(null);
+  const hasAutoSkippedRef = React.useRef(false);
 
   // Sync fullscreen state & auto unlock screen orientation
   React.useEffect(() => {
@@ -276,7 +290,33 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   React.useEffect(() => {
     // When source URL changes, allow seeking once for the new media
     hasAppliedInitialTimeRef.current = false;
+    setIntroDismissed(false);
+    hasAutoSkippedRef.current = false;
+    setLastSkipPreviousTime(null);
   }, [source.url]);
+
+  // Tự động bỏ qua phần giới thiệu (Auto Skip Intro) khi bắt đầu phát từ đầu
+  React.useEffect(() => {
+    if (
+      effectiveAutoSkip &&
+      !hasAutoSkippedRef.current &&
+      hasStarted &&
+      currentTime >= 1 &&
+      currentTime <= 4 &&
+      duration > 180 &&
+      initialTime === 0
+    ) {
+      hasAutoSkippedRef.current = true;
+      if (videoRef.current) {
+        const target = Math.min(effectiveSkipDuration, (videoRef.current.duration || 1000) - 5);
+        setLastSkipPreviousTime(videoRef.current.currentTime);
+        videoRef.current.currentTime = target;
+        setCurrentTime(target);
+        setSkipIntroToast(`Đã tự động bỏ qua phần giới thiệu (${formatTime(target)})`);
+        setTimeout(() => setSkipIntroToast(null), 4000);
+      }
+    }
+  }, [effectiveAutoSkip, effectiveSkipDuration, hasStarted, currentTime, duration, initialTime]);
 
   const hideControlsTimer = React.useRef<NodeJS.Timeout | null>(null);
   const autoNextTimerRef = React.useRef<NodeJS.Timeout | null>(null);
@@ -546,6 +586,16 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
             onToggleCinemaMode();
           }
           break;
+        case "s":
+        case "S":
+          e.preventDefault();
+          if (currentTime < effectiveSkipDuration + 10) {
+            handleSkipIntro(effectiveSkipDuration);
+          } else {
+            handleSkipIntro(currentTime + effectiveSkipDuration);
+          }
+          resetControlsTimeout();
+          break;
       }
     };
 
@@ -623,6 +673,33 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
       videoRef.current.currentTime = nextTime;
       setCurrentTime(nextTime);
       triggerSeekFeedback(seconds > 0 ? "forward" : "rewind", seconds);
+    }
+  };
+
+  const handleSkipIntro = React.useCallback(
+    (targetSeconds?: number) => {
+      const video = videoRef.current;
+      if (!video) return;
+      const dest = targetSeconds ?? Math.max(effectiveSkipDuration, currentTime + 85);
+      const safeTarget = Math.min(dest, (video.duration || dest + 10) - 2);
+      setLastSkipPreviousTime(video.currentTime);
+      video.currentTime = safeTarget;
+      setCurrentTime(safeTarget);
+      triggerSeekFeedback("forward", Math.round(safeTarget - currentTime));
+      setIntroDismissed(true);
+      setSkipIntroToast(`Đã bỏ qua giới thiệu (đến ${formatTime(safeTarget)})`);
+      setTimeout(() => setSkipIntroToast(null), 4000);
+    },
+    [effectiveSkipDuration, currentTime]
+  );
+
+  const handleUndoSkipIntro = () => {
+    if (lastSkipPreviousTime !== null && videoRef.current) {
+      videoRef.current.currentTime = lastSkipPreviousTime;
+      setCurrentTime(lastSkipPreviousTime);
+      setLastSkipPreviousTime(null);
+      setSkipIntroToast(null);
+      setIntroDismissed(false);
     }
   };
 
@@ -1580,6 +1657,21 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
                             </span>
                           </button>
                         )}
+
+                        {/* Skip Intro Entry */}
+                        <button
+                          type="button"
+                          onClick={() => setActiveSettingsTab("intro")}
+                          className="w-full flex items-center justify-between p-2 rounded-xl text-cinema-200 hover:bg-cinema-800 hover:text-white transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <FastForward className="w-3.5 h-3.5 text-brand" />
+                            <span>Bỏ qua giới thiệu</span>
+                          </span>
+                          <span className="text-cinema-400 font-semibold text-xs">
+                            {effectiveAutoSkip ? "Tự động" : `${effectiveSkipDuration}s`} ›
+                          </span>
+                        </button>
                       </div>
                     )}
 
@@ -1744,6 +1836,91 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
                         ))}
                       </div>
                     )}
+
+                    {/* Intro Submenu */}
+                    {activeSettingsTab === "intro" && (
+                      <div className="space-y-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveSettingsTab("main")}
+                          className="w-full text-left px-2 py-1 text-[11px] font-bold text-brand hover:underline flex items-center gap-1 mb-1 border-b border-cinema-800 pb-1.5"
+                        >
+                          ‹ Quay lại
+                        </button>
+
+                        <div className="px-2 py-0.5 text-[10px] font-bold text-cinema-400 uppercase tracking-wider">
+                          Bỏ qua Intro
+                        </div>
+
+                        {/* Quick Skip Now button */}
+                        <button
+                          type="button"
+                          onClick={() => {
+                            handleSkipIntro(effectiveSkipDuration);
+                            setShowSettings(false);
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl bg-brand/10 hover:bg-brand/20 border border-brand/30 text-white font-semibold transition-colors"
+                        >
+                          <span className="flex items-center gap-2">
+                            <FastForward className="w-3.5 h-3.5 text-brand" />
+                            <span>Bỏ qua ngay</span>
+                          </span>
+                          <span className="text-brand text-xs font-mono font-bold">+{effectiveSkipDuration}s</span>
+                        </button>
+
+                        {/* Toggle Auto Skip Intro */}
+                        <div className="flex items-center justify-between p-2 rounded-xl bg-cinema-800/60 border border-cinema-750">
+                          <div>
+                            <p className="text-xs font-semibold text-white">Tự động bỏ qua</p>
+                            <p className="text-[10px] text-cinema-400">Khi phát đầu tập phim</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              updatePreferences({ autoSkipIntro: !effectiveAutoSkip });
+                            }}
+                            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
+                              effectiveAutoSkip ? "bg-brand" : "bg-cinema-700"
+                            }`}
+                          >
+                            <span
+                              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-cinema-950 font-bold transition-transform ${
+                                effectiveAutoSkip ? "translate-x-4.5" : "translate-x-0.5"
+                              }`}
+                            />
+                          </button>
+                        </div>
+
+                        {/* Intro Duration Selection */}
+                        <div className="space-y-1 pt-1">
+                          <div className="text-[10px] text-cinema-400 font-semibold px-2">Thời lượng Intro:</div>
+                          <div className="grid grid-cols-2 gap-1.5">
+                            {[
+                              { sec: 60, label: "60 giây" },
+                              { sec: 85, label: "85s (Anime)" },
+                              { sec: 90, label: "90 giây" },
+                              { sec: 120, label: "2 phút" },
+                            ].map((item) => (
+                              <button
+                                key={item.sec}
+                                type="button"
+                                onClick={() => {
+                                  updatePreferences({ skipIntroDuration: item.sec });
+                                }}
+                                className={`px-2 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center justify-between ${
+                                  effectiveSkipDuration === item.sec
+                                    ? "bg-brand text-cinema-950 font-bold"
+                                    : "bg-cinema-800 text-cinema-300 hover:text-white"
+                                }`}
+                              >
+                                <span>{item.label}</span>
+                                {effectiveSkipDuration === item.sec && <Check className="w-3 h-3 stroke-[3]" />}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1792,6 +1969,60 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
           </div>
         </div>
       </div>
+
+      {/* Nút Bỏ qua phần giới thiệu (Skip Intro Button) */}
+      {hasStarted && !introDismissed && duration > 180 && currentTime >= 2 && currentTime < effectiveSkipDuration && (
+        <div
+          className={cn(
+            "absolute right-4 sm:right-6 z-30 transition-all duration-300 pointer-events-auto animate-in fade-in slide-in-from-right-4",
+            showControls ? "bottom-20 sm:bottom-24" : "bottom-6"
+          )}
+        >
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-black/85 hover:bg-black/95 border border-white/20 hover:border-brand/70 shadow-2xl backdrop-blur-md transition-all group/skip">
+            <button
+              type="button"
+              onClick={() => handleSkipIntro(effectiveSkipDuration)}
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg bg-brand hover:bg-brand/90 text-cinema-950 font-bold text-xs sm:text-sm transition-all active:scale-95 shadow-lg shadow-brand/30 cursor-pointer"
+              title="Bỏ qua phần giới thiệu (Phím S)"
+            >
+              <FastForward className="w-4 h-4 fill-current shrink-0" />
+              <span>Bỏ qua giới thiệu</span>
+              <span className="hidden sm:inline-block px-1.5 py-0.5 rounded bg-black/20 text-[10px] font-mono tracking-tighter text-cinema-950 font-extrabold border border-black/10">
+                S
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setIntroDismissed(true)}
+              className="p-2 text-cinema-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors cursor-pointer"
+              title="Đóng nút bỏ qua intro"
+              aria-label="Đóng nút bỏ qua"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Toast thông báo Bỏ qua intro kèm nút Hoàn tác */}
+      {skipIntroToast && (
+        <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 bg-cinema-950/95 text-white border border-brand/50 px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-top-2 pointer-events-auto">
+          <div className="flex items-center gap-1.5 text-brand">
+            <FastForward className="w-4 h-4 shrink-0" />
+            <span>{skipIntroToast}</span>
+          </div>
+          {lastSkipPreviousTime !== null && (
+            <button
+              type="button"
+              onClick={handleUndoSkipIntro}
+              className="px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold text-[11px] underline flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />
+              <span>Hoàn tác</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* iOS Standalone PWA PiP Helper Modal */}
       {iosPipPromptOpen && (

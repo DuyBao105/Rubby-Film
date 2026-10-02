@@ -6,6 +6,8 @@ export interface IUserPreferenceService {
   getPreferences(): UserPreferences;
   updatePreferences(updates: Partial<UserPreferences>): void;
   subscribe(callback: (prefs: UserPreferences, user: User) => void): () => void;
+  setUser(userId: string | null): void;
+  syncWithServer(): Promise<void>;
 }
 
 const USER_KEY = "rubbyfilm_user_profile";
@@ -26,15 +28,84 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   autoNext: true,
   preferredLanguage: "vietsub",
   volume: 1,
+  autoSkipIntro: false,
+  skipIntroDuration: 85,
 };
+
+function getAuthHeaders(): HeadersInit {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Cache-Control": "no-cache",
+  };
+  if (typeof window !== "undefined") {
+    try {
+      const token = localStorage.getItem("rubbyfilm_token");
+      if (token) {
+        headers["Authorization"] = `Bearer ${token}`;
+      }
+    } catch {}
+  }
+  return headers;
+}
 
 class UserPreferenceService implements IUserPreferenceService {
   private userCache: User | null = null;
   private prefsCache: UserPreferences | null = null;
   private listeners: Set<(prefs: UserPreferences, user: User) => void> = new Set();
+  private currentUserId: string | null = null;
+  private lastAutoSyncTime = 0;
+
+  constructor() {
+    if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("rubbyfilm_cached_user");
+        if (cached) {
+          const parsed = JSON.parse(cached) as { id?: string } | null;
+          if (parsed?.id) {
+            this.currentUserId = String(parsed.id).trim();
+            this.syncWithServer().catch(() => {});
+          }
+        }
+      } catch {}
+
+      // Cross-device sync: auto re-sync when switching back to tab/browser window or PWA app
+      const triggerAutoSync = () => {
+        const now = Date.now();
+        if (now - this.lastAutoSyncTime > 3000 && this.currentUserId) {
+          this.lastAutoSyncTime = now;
+          this.syncWithServer().catch(() => {});
+        }
+      };
+
+      window.addEventListener("focus", triggerAutoSync);
+      document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") {
+          triggerAutoSync();
+        }
+      });
+    }
+  }
 
   private isClient(): boolean {
     return typeof window !== "undefined";
+  }
+
+  public setUser(userId: string | null): void {
+    const normalized = userId ? String(userId).trim() : null;
+    const changed = this.currentUserId !== normalized;
+    this.currentUserId = normalized;
+    if (changed) {
+      this.prefsCache = null;
+      this.notify();
+    }
+    if (normalized) {
+      this.syncWithServer().catch(() => {});
+    }
+  }
+
+  private getStorageKey(): string {
+    if (!this.currentUserId) return PREFS_KEY;
+    return `${PREFS_KEY}_${this.currentUserId}`;
   }
 
   public getUser(): User {
@@ -75,7 +146,12 @@ class UserPreferenceService implements IUserPreferenceService {
     if (this.prefsCache !== null) return this.prefsCache;
 
     try {
-      const raw = localStorage.getItem(PREFS_KEY);
+      const key = this.getStorageKey();
+      let raw = localStorage.getItem(key);
+      if (!raw && this.currentUserId) {
+        // Fallback to general guest preferences if user key not yet set
+        raw = localStorage.getItem(PREFS_KEY);
+      }
       if (raw) {
         this.prefsCache = { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) };
         return this.prefsCache!;
@@ -95,12 +171,52 @@ class UserPreferenceService implements IUserPreferenceService {
 
     if (this.isClient()) {
       try {
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(updated));
         localStorage.setItem(PREFS_KEY, JSON.stringify(updated));
       } catch (e) {
         console.error("[UserPreferenceService] Failed to save preferences:", e);
       }
+
+      // Synchronize to cloud database when logged in
+      if (this.currentUserId) {
+        fetch("/api/user/preferences", {
+          method: "POST",
+          headers: getAuthHeaders(),
+          credentials: "include",
+          body: JSON.stringify(updates),
+        }).catch((err) => {
+          console.warn("[UserPreferenceService] Cloud save failed:", err);
+        });
+      }
     }
     this.notify();
+  }
+
+  public async syncWithServer(): Promise<void> {
+    if (!this.isClient() || !this.currentUserId) return;
+    try {
+      const res = await fetch(`/api/user/preferences?_t=${Date.now()}`, {
+        method: "GET",
+        headers: getAuthHeaders(),
+        credentials: "include",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json.success && json.data?.preferences) {
+          const serverPrefs = json.data.preferences as UserPreferences;
+          const current = this.getPreferences();
+          const merged: UserPreferences = { ...current, ...serverPrefs };
+          this.prefsCache = merged;
+          try {
+            localStorage.setItem(this.getStorageKey(), JSON.stringify(merged));
+            localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+          } catch {}
+          this.notify();
+        }
+      }
+    } catch (err) {
+      console.warn("[UserPreferenceService] syncWithServer failed:", err);
+    }
   }
 
   private notify(): void {

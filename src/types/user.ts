@@ -15,6 +15,8 @@ export interface UserPreferences {
   autoNext: boolean;
   preferredLanguage: "vietsub" | "dub" | "orig";
   volume: number;
+  autoSkipIntro?: boolean;
+  skipIntroDuration?: number;
 }
 
 export interface EpisodeWatchedState {

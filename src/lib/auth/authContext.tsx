@@ -8,6 +8,7 @@ import { LogoutConfirmModal } from "@/components/auth/logout-confirm-modal";
 import { watchHistoryService } from "@/lib/services/watchHistoryService";
 import { myListService } from "@/lib/services/myListService";
 import { searchHistoryService } from "@/lib/services/searchHistoryService";
+import { userPreferenceService } from "@/lib/services/userPreferenceService";
 import { useToast } from "@/components/ui/toast";
 
 interface AuthContextValue {
@@ -306,12 +307,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  // Keep watchHistoryService, myListService, and searchHistoryService strictly synchronized with active user
+  // Keep watchHistoryService, myListService, searchHistoryService, and userPreferenceService strictly synchronized with active user
   React.useEffect(() => {
     const userId = user?.id ?? null;
     watchHistoryService.setUser(userId);
     myListService.setUser(userId);
     searchHistoryService.setUser(userId);
+    userPreferenceService.setUser(userId);
   }, [user]);
 
   const logout = React.useCallback(async () => {
@@ -332,6 +334,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     watchHistoryService.setUser(null);
     myListService.setUser(null);
     searchHistoryService.setUser(null);
+    userPreferenceService.setUser(null);
     toast.success("Đăng xuất thành công", "Hẹn gặp lại bạn sớm tại RubyFilm!");
     if (typeof window !== "undefined") {
       window.location.href = "/";

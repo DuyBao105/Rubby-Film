@@ -1,6 +1,15 @@
 import { neon } from "@neondatabase/serverless";
 import type { Movie } from "@/types/movie";
-import type { WatchHistoryItem, EpisodeWatchedState } from "@/types/user";
+import type { WatchHistoryItem, EpisodeWatchedState, UserPreferences } from "@/types/user";
+
+const DEFAULT_PREFERENCES: UserPreferences = {
+  defaultQuality: "4k",
+  autoNext: true,
+  preferredLanguage: "vietsub",
+  volume: 1,
+  autoSkipIntro: false,
+  skipIntroDuration: 85,
+};
 
 function getSql() {
   const rawUrl = (process.env.DATABASE_URL || process.env.POSTGRES_URL || process.env.NEON_DATABASE_URL)
@@ -549,6 +558,79 @@ class UserDataRepository {
         console.error("[userDataRepository] clearSearchHistory error:", err);
       }
     }
+  }
+
+  // --- User Preferences (Cloud Sync across Desktop, Mobile, PWA) ---
+  private preferencesMap: Map<string, UserPreferences> = new Map();
+
+  public async getPreferences(userId: string): Promise<UserPreferences> {
+    if (!userId) return DEFAULT_PREFERENCES;
+    const sql = getSql();
+    if (!sql) return this.preferencesMap.get(userId) || DEFAULT_PREFERENCES;
+
+    try {
+      await sql.query(`
+        CREATE TABLE IF NOT EXISTS user_preferences (
+          user_id text PRIMARY KEY,
+          preferences jsonb NOT NULL,
+          updated_at bigint NOT NULL
+        )
+      `);
+
+      const rows = (await sql.query(
+        `SELECT preferences FROM user_preferences WHERE user_id = $1`,
+        [userId]
+      )) as any[];
+
+      if (rows && rows.length > 0) {
+        let parsed: any = rows[0].preferences;
+        if (typeof parsed === "string") {
+          try {
+            parsed = JSON.parse(parsed);
+          } catch {}
+        }
+        const merged: UserPreferences = { ...DEFAULT_PREFERENCES, ...(parsed || {}) };
+        this.preferencesMap.set(userId, merged);
+        return merged;
+      }
+      return this.preferencesMap.get(userId) || DEFAULT_PREFERENCES;
+    } catch (err) {
+      console.error("[userDataRepository] getPreferences error:", err);
+      return this.preferencesMap.get(userId) || DEFAULT_PREFERENCES;
+    }
+  }
+
+  public async savePreferences(userId: string, updates: Partial<UserPreferences>): Promise<UserPreferences> {
+    if (!userId) return DEFAULT_PREFERENCES;
+    const current = await this.getPreferences(userId);
+    const updated: UserPreferences = { ...current, ...updates };
+    this.preferencesMap.set(userId, updated);
+
+    const sql = getSql();
+    if (sql) {
+      try {
+        await sql.query(`
+          CREATE TABLE IF NOT EXISTS user_preferences (
+            user_id text PRIMARY KEY,
+            preferences jsonb NOT NULL,
+            updated_at bigint NOT NULL
+          )
+        `);
+
+        const now = Date.now();
+        await sql.query(
+          `INSERT INTO user_preferences (user_id, preferences, updated_at)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (user_id) DO UPDATE SET
+             preferences = EXCLUDED.preferences,
+             updated_at = EXCLUDED.updated_at`,
+          [userId, JSON.stringify(updated), now]
+        );
+      } catch (err) {
+        console.error("[userDataRepository] savePreferences error:", err);
+      }
+    }
+    return updated;
   }
 }
 
