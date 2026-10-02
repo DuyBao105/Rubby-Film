@@ -214,6 +214,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   const handleSelectEpisode = (ep: Episode) => {
     setResumePromptVisible(false);
     appliedResumeKeyRef.current = null;
+    setInitialTime(0);
     router.push(`/watch/${movie.slug}?episode=${ep.episodeNumber}`);
   };
 
@@ -222,6 +223,10 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
   const currentEpIndex = episodes.findIndex((e) => e.id === currentEpisode?.id);
   const hasPrevEpisode = isSeries && currentEpIndex > 0;
   const hasNextEpisode = isSeries && currentEpIndex >= 0 && currentEpIndex < episodes.length - 1;
+  const nextEpisode = hasNextEpisode ? episodes[currentEpIndex + 1] : undefined;
+  const nextEpisodeTitle = nextEpisode
+    ? `Tập ${nextEpisode.episodeNumber}${nextEpisode.name ? `: ${nextEpisode.name}` : ""}`
+    : undefined;
 
   const handlePrevEpisode = () => {
     if (hasPrevEpisode) {
@@ -400,7 +405,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
         <div className="relative">
           <VideoPlayer
             ref={playerRef}
-            key={`${movie.id}-${currentEpisode?.id || 1}-${activeSource.url}`}
+            key={movie.id}
             source={activeSource}
             sources={sources}
             activeSourceIndex={activeSourceIndex}
@@ -422,6 +427,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
             hasPrevEpisode={hasPrevEpisode}
             onPrevEpisode={isSeries ? handlePrevEpisode : undefined}
             autoNextEnabled={autoNextEnabled}
+            nextEpisodeTitle={nextEpisodeTitle}
             onSwitchServer={sources.length > 1 ? handleSwitchServer : undefined}
             isCinemaMode={isCinemaMode}
             onToggleCinemaMode={() => setIsCinemaMode(!isCinemaMode)}

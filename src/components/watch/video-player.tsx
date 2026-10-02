@@ -63,6 +63,7 @@ interface VideoPlayerProps {
   autoNextEnabled?: boolean;
   autoSkipIntro?: boolean;
   skipIntroDuration?: number;
+  nextEpisodeTitle?: string;
   onSwitchServer?: () => void;
   isCinemaMode?: boolean;
   onToggleCinemaMode?: () => void;
@@ -114,6 +115,7 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
       autoNextEnabled = true,
       autoSkipIntro: autoSkipIntroProp,
       skipIntroDuration: skipIntroDurationProp,
+      nextEpisodeTitle,
       onSwitchServer,
       isCinemaMode = false,
       onToggleCinemaMode,
@@ -175,9 +177,12 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
   const [iosPipPromptOpen, setIosPipPromptOpen] = React.useState(false);
   const [copiedToast, setCopiedToast] = React.useState(false);
   const [introDismissed, setIntroDismissed] = React.useState(false);
+  const [nextEpisodeDismissed, setNextEpisodeDismissed] = React.useState(false);
   const [skipIntroToast, setSkipIntroToast] = React.useState<string | null>(null);
   const [lastSkipPreviousTime, setLastSkipPreviousTime] = React.useState<number | null>(null);
   const hasAutoSkippedRef = React.useRef(false);
+  const hasTriggeredAutoNextRef = React.useRef(false);
+  const isPipActiveRef = React.useRef(false);
 
   // Sync fullscreen state & auto unlock screen orientation
   React.useEffect(() => {
@@ -291,8 +296,11 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     // When source URL changes, allow seeking once for the new media
     hasAppliedInitialTimeRef.current = false;
     setIntroDismissed(false);
+    setNextEpisodeDismissed(false);
     hasAutoSkippedRef.current = false;
+    hasTriggeredAutoNextRef.current = false;
     setLastSkipPreviousTime(null);
+    setAutoNextCountdown(null);
   }, [source.url]);
 
   // Tự động bỏ qua phần giới thiệu (Auto Skip Intro) khi bắt đầu phát từ đầu
@@ -368,16 +376,42 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
       ) {
         setIsPipSupported(true);
       }
+
+      const handleEnterPip = () => {
+        isPipActiveRef.current = true;
+      };
+      const handleLeavePip = () => {
+        if (!hasTriggeredAutoNextRef.current) {
+          isPipActiveRef.current = false;
+        }
+      };
+      const handlePresentationModeChange = () => {
+        if ((video as any).webkitPresentationMode) {
+          const inPip = (video as any).webkitPresentationMode === "picture-in-picture";
+          if (inPip || !hasTriggeredAutoNextRef.current) {
+            isPipActiveRef.current = inPip;
+          }
+        }
+      };
+
+      video.addEventListener("enterpictureinpicture", handleEnterPip);
+      video.addEventListener("leavepictureinpicture", handleLeavePip);
+      video.addEventListener("webkitpresentationmodechanged", handlePresentationModeChange);
+
       const handleBeginFull = () => setIsFullscreen(true);
       const handleEndFull = () => setIsFullscreen(false);
       video.addEventListener("webkitbeginfullscreen", handleBeginFull);
       video.addEventListener("webkitendfullscreen", handleEndFull);
       return () => {
+        video.removeEventListener("enterpictureinpicture", handleEnterPip);
+        video.removeEventListener("leavepictureinpicture", handleLeavePip);
+        video.removeEventListener("webkitpresentationmodechanged", handlePresentationModeChange);
         video.removeEventListener("webkitbeginfullscreen", handleBeginFull);
         video.removeEventListener("webkitendfullscreen", handleEndFull);
       };
     }
   }, []);
+
 
   // Tự động mở chế độ PiP (hình trong hình) khi vuốt ra màn hình chính trên iOS / trình duyệt hỗ trợ
   React.useEffect(() => {
@@ -512,6 +546,9 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
         if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
           attemptSeekToInitialTime();
         }
+        if (hasStartedRef.current) {
+          video.play().catch(() => {});
+        }
       } else {
         setHasError(true);
         setErrorMessage("Trình duyệt không hỗ trợ giải mã định dạng video HLS.");
@@ -522,6 +559,9 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
       video.src = rawStreamUrl;
       if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
         attemptSeekToInitialTime();
+      }
+      if (hasStartedRef.current) {
+        video.play().catch(() => {});
       }
     }
   }, [source.url, source.type, attemptSeekToInitialTime]);
@@ -639,6 +679,20 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     if (onTimeUpdate) {
       onTimeUpdate(cur, dur);
     }
+
+    // Auto chuyển tập trước khi video kết thúc (1.2s trước khi kết thúc) để giữ cửa sổ PiP không bị trình duyệt tắt
+    if (
+      isSeries &&
+      hasNextEpisode &&
+      autoNextEnabled &&
+      onNextEpisode &&
+      dur > 30 &&
+      cur >= dur - 1.2 &&
+      !hasTriggeredAutoNextRef.current
+    ) {
+      hasTriggeredAutoNextRef.current = true;
+      onNextEpisode();
+    }
   };
 
   const updateBuffered = () => {
@@ -667,14 +721,73 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     }
   };
 
-  const skipTime = (seconds: number) => {
+  const skipTime = React.useCallback((seconds: number) => {
     if (videoRef.current) {
-      const nextTime = Math.max(0, Math.min(duration || 10000, currentTime + seconds));
+      const cur = videoRef.current.currentTime || 0;
+      const dur = videoRef.current.duration || 10000;
+      const nextTime = Math.max(0, Math.min(dur, cur + seconds));
       videoRef.current.currentTime = nextTime;
       setCurrentTime(nextTime);
       triggerSeekFeedback(seconds > 0 ? "forward" : "rewind", seconds);
     }
-  };
+  }, []);
+
+  // MediaSession API: Cung cấp nút Chuyển tập (Next Track), Phát/Dừng trực tiếp trên cửa sổ PiP & OS Media Controls
+  React.useEffect(() => {
+    if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+
+    try {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: title || "RubyFilm",
+        artist: subtitle || "RubyFilm",
+        album: isSeries ? "Phim bộ" : "Phim lẻ",
+        artwork: posterUrl
+          ? [
+              { src: posterUrl, sizes: "96x96", type: "image/jpeg" },
+              { src: posterUrl, sizes: "128x128", type: "image/jpeg" },
+              { src: posterUrl, sizes: "192x192", type: "image/jpeg" },
+              { src: posterUrl, sizes: "256x256", type: "image/jpeg" },
+              { src: posterUrl, sizes: "384x384", type: "image/jpeg" },
+              { src: posterUrl, sizes: "512x512", type: "image/jpeg" },
+            ]
+          : undefined,
+      });
+
+      navigator.mediaSession.setActionHandler("play", () => {
+        videoRef.current?.play().catch(() => {});
+      });
+
+      navigator.mediaSession.setActionHandler("pause", () => {
+        videoRef.current?.pause();
+      });
+
+      navigator.mediaSession.setActionHandler("seekbackward", (details) => {
+        skipTime(-(details.seekOffset || 10));
+      });
+
+      navigator.mediaSession.setActionHandler("seekforward", (details) => {
+        skipTime(details.seekOffset || 10);
+      });
+
+      if (hasNextEpisode && onNextEpisode) {
+        navigator.mediaSession.setActionHandler("nexttrack", () => {
+          onNextEpisode();
+        });
+      } else {
+        navigator.mediaSession.setActionHandler("nexttrack", null);
+      }
+
+      if (hasPrevEpisode && onPrevEpisode) {
+        navigator.mediaSession.setActionHandler("previoustrack", () => {
+          onPrevEpisode();
+        });
+      } else {
+        navigator.mediaSession.setActionHandler("previoustrack", null);
+      }
+    } catch (err) {
+      console.warn("MediaSession error:", err);
+    }
+  }, [title, subtitle, posterUrl, isSeries, hasNextEpisode, onNextEpisode, hasPrevEpisode, onPrevEpisode, skipTime]);
 
   const handleSkipIntro = React.useCallback(
     (targetSeconds?: number) => {
@@ -1038,18 +1151,10 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
     if (onEnded) onEnded();
 
     if (hasNextEpisode && autoNextEnabled && onNextEpisode) {
-      setAutoNextCountdown(5);
-      let count = 5;
-      autoNextTimerRef.current = setInterval(() => {
-        count -= 1;
-        if (count <= 0) {
-          if (autoNextTimerRef.current) clearInterval(autoNextTimerRef.current);
-          setAutoNextCountdown(null);
-          onNextEpisode();
-        } else {
-          setAutoNextCountdown(count);
-        }
-      }, 1000);
+      if (!hasTriggeredAutoNextRef.current) {
+        hasTriggeredAutoNextRef.current = true;
+        onNextEpisode();
+      }
     }
   };
 
@@ -1217,6 +1322,15 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
           setIsLoading(false);
           if (!hasAppliedInitialTimeRef.current && initialTimeRef.current > 0) {
             attemptSeekToInitialTime();
+          }
+          if (isPipActiveRef.current && videoRef.current) {
+            if (
+              document.pictureInPictureEnabled &&
+              !document.pictureInPictureElement &&
+              typeof videoRef.current.requestPictureInPicture === "function"
+            ) {
+              videoRef.current.requestPictureInPicture().catch(() => {});
+            }
           }
         }}
         onWaiting={() => setIsLoading(true)}
@@ -1969,6 +2083,73 @@ export const VideoPlayer = React.forwardRef<VideoPlayerHandle, VideoPlayerProps>
           </div>
         </div>
       </div>
+
+      {/* Nút Chuyển tập kế tiếp hiển thị trên màn hình khi gần hết tập phim */}
+      {isSeries &&
+        hasNextEpisode &&
+        Boolean(onNextEpisode) &&
+        hasStarted &&
+        duration > 60 &&
+        duration - currentTime > 0 &&
+        duration - currentTime <= 55 &&
+        !nextEpisodeDismissed && (
+          <div
+            className={cn(
+              "absolute right-4 sm:right-6 z-30 transition-all duration-300 pointer-events-auto animate-in fade-in slide-in-from-right-4",
+              showControls ? "bottom-20 sm:bottom-24" : "bottom-6"
+            )}
+          >
+            <div className="flex flex-col gap-2.5 p-3 sm:p-3.5 rounded-2xl bg-black/90 hover:bg-black/95 border border-brand/50 shadow-2xl backdrop-blur-md max-w-[280px] sm:max-w-[320px] transition-all">
+              {/* Header info */}
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-1.5 text-brand">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-brand"></span>
+                  </span>
+                  <span className="text-[10px] font-extrabold tracking-wider uppercase">
+                    Tập tiếp theo
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNextEpisodeDismissed(true)}
+                  className="text-cinema-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors cursor-pointer"
+                  title="Đóng nút (tiếp tục xem hết credit)"
+                  aria-label="Đóng nút chuyển tập"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Episode title & remaining notice */}
+              <div>
+                <p className="text-xs sm:text-sm font-bold text-white line-clamp-1">
+                  {nextEpisodeTitle || "Chuyển sang tập kế tiếp"}
+                </p>
+                {autoNextEnabled && (
+                  <p className="text-[11px] text-cinema-400 mt-0.5">
+                    Tự động phát sau <strong className="text-brand font-bold font-mono">{Math.max(1, Math.ceil(duration - currentTime))}s</strong>
+                  </p>
+                )}
+              </div>
+
+              {/* Action button */}
+              <button
+                type="button"
+                onClick={() => {
+                  cancelAutoNext();
+                  hasTriggeredAutoNextRef.current = true;
+                  if (onNextEpisode) onNextEpisode();
+                }}
+                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-brand hover:bg-brand/90 active:scale-95 text-cinema-950 font-bold text-xs sm:text-sm shadow-lg shadow-brand/30 transition-all cursor-pointer"
+              >
+                <FastForward className="w-4 h-4 fill-current shrink-0" />
+                <span>Chuyển tập ngay</span>
+              </button>
+            </div>
+          </div>
+        )}
 
       {/* Nút Bỏ qua phần giới thiệu (Skip Intro Button) */}
       {hasStarted && !introDismissed && duration > 180 && currentTime >= 2 && currentTime < effectiveSkipDuration && (
