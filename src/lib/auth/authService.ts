@@ -14,40 +14,55 @@ export const OAUTH_STATE_COOKIE_NAME = "rubbyfilm_oauth_state";
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000;
 
 const DATA_DIR = path.join(process.cwd(), "data");
-const USERS_FILE = path.join(DATA_DIR, "users.json");
-const SESSIONS_FILE = path.join(DATA_DIR, "sessions.json");
+const TMP_DIR = path.join(process.env.TEMP || process.env.TMP || "/tmp", "rubbyfilm_data");
+const USERS_FILENAME = "users.json";
+const SESSIONS_FILENAME = "sessions.json";
+const USERS_FILE = path.join(DATA_DIR, USERS_FILENAME);
+const SESSIONS_FILE = path.join(DATA_DIR, SESSIONS_FILENAME);
+
+function getCandidatePaths(filePath: string): string[] {
+  const filename = path.basename(filePath);
+  return [
+    path.join(TMP_DIR, filename),
+    path.join(DATA_DIR, filename),
+  ];
+}
 
 function readJsonFile<T>(filePath: string, fallback: T): T {
-  try {
-    if (!fs.existsSync(filePath)) {
-      if (filePath === USERS_FILE) {
-        const files = fs.existsSync(DATA_DIR) ? fs.readdirSync(DATA_DIR) : [];
-        const migrated = files.find((f) => f.startsWith("users.json.migrated-"));
-        if (migrated) {
-          const content = fs.readFileSync(path.join(DATA_DIR, migrated), "utf-8");
-          const parsed = JSON.parse(content);
-          if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
-          fs.writeFileSync(USERS_FILE, JSON.stringify(parsed, null, 2), "utf-8");
-          return parsed as T;
-        }
+  for (const candidate of getCandidatePaths(filePath)) {
+    try {
+      if (fs.existsSync(candidate)) {
+        const content = fs.readFileSync(candidate, "utf-8");
+        return JSON.parse(content) as T;
       }
-      return fallback;
-    }
-    const content = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(content) as T;
-  } catch {
-    return fallback;
+    } catch {}
   }
+  try {
+    if (filePath.includes(USERS_FILENAME) && fs.existsSync(DATA_DIR)) {
+      const files = fs.readdirSync(DATA_DIR);
+      const migrated = files.find((f) => f.startsWith("users.json.migrated-"));
+      if (migrated) {
+        const content = fs.readFileSync(path.join(DATA_DIR, migrated), "utf-8");
+        const parsed = JSON.parse(content);
+        writeJsonFile(filePath, parsed);
+        return parsed as T;
+      }
+    }
+  } catch {}
+  return fallback;
 }
 
 function writeJsonFile(filePath: string, data: any): void {
-  try {
-    if (!fs.existsSync(DATA_DIR)) {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
+  for (const candidate of getCandidatePaths(filePath)) {
+    try {
+      const dir = path.dirname(candidate);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      fs.writeFileSync(candidate, JSON.stringify(data, null, 2), "utf-8");
+    } catch {
+      // In read-only serverless environment, DATA_DIR may fail, but TMP_DIR will succeed
     }
-    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
-  } catch (err) {
-    console.error(`[authService] Failed to write ${filePath}:`, err);
   }
 }
 
