@@ -4,6 +4,7 @@ import { userDataRepository } from "@/lib/server/userDataRepository";
 import { apiSuccess, apiError } from "@/lib/server/apiResponse";
 import type { WatchHistoryItem } from "@/types/user";
 import type { Movie } from "@/types/movie";
+import { mergeWatchedEpisodes } from "@/lib/services/watchHistoryService";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -65,6 +66,7 @@ export async function POST(request: NextRequest) {
       progressSeconds?: number;
       durationSeconds?: number;
       episode?: { id: string; episodeNumber: number; name: string };
+      watchedAt?: number;
     };
 
     // Case 1: Batch sync of items
@@ -80,22 +82,24 @@ export async function POST(request: NextRequest) {
         const current = map.get(id);
         if (!current) {
           map.set(id, item);
-        } else if ((item.watchedAt || 0) >= (current.watchedAt || 0)) {
-          map.set(id, {
-            ...item,
-            watchedEpisodes: {
-              ...(current.watchedEpisodes || {}),
-              ...(item.watchedEpisodes || {}),
-            },
-          });
         } else {
-          map.set(id, {
-            ...current,
-            watchedEpisodes: {
-              ...(item.watchedEpisodes || {}),
-              ...(current.watchedEpisodes || {}),
-            },
-          });
+          const mergedEpisodes = mergeWatchedEpisodes(
+            current.watchedEpisodes,
+            item.watchedEpisodes
+          );
+          const currentTime = current.watchedAt || 0;
+          const itemTime = item.watchedAt || 0;
+          if (itemTime >= currentTime) {
+            map.set(id, {
+              ...item,
+              watchedEpisodes: mergedEpisodes,
+            });
+          } else {
+            map.set(id, {
+              ...current,
+              watchedEpisodes: mergedEpisodes,
+            });
+          }
         }
       }
 
@@ -114,7 +118,8 @@ export async function POST(request: NextRequest) {
         body.movie,
         body.progressSeconds,
         body.durationSeconds || body.progressSeconds,
-        body.episode
+        body.episode,
+        body.watchedAt
       );
       return apiSuccess({ history: updated }, undefined, NO_CACHE_HEADERS);
     }

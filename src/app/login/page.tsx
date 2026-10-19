@@ -49,6 +49,8 @@ function LoginForm() {
       setError("Phiên xác thực bảo mật không hợp lệ (State mismatch). Vui lòng thử lại.");
     } else if (oauthError === "OAUTH_EXCHANGE_ERROR" || oauthError === "OAUTH_FAILED") {
       setError(`Không thể kết nối và xác thực tài khoản ${providerName}. Vui lòng thử lại sau.`);
+    } else if (oauthError === "SERVER_ERROR") {
+      setError("Máy chủ hoặc cơ sở dữ liệu tạm thời bận. Vui lòng thử lại sau.");
     }
   }, [searchParams]);
 

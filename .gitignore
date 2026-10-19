@@ -44,3 +44,11 @@ Thumbs.db
 
 .vercel
 .env*
+
+data/users.json
+data/sessions.json
+data/favorites.json
+data/watch-history.json
+data/user-preferences.json
+data/search-history.json
+data/*.migrated-*

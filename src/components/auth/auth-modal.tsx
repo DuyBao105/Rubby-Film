@@ -90,6 +90,8 @@ export function AuthModal() {
           msg = "Phiên xác thực bảo mật không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.";
         } else if (oauthError === "OAUTH_EXCHANGE_ERROR" || oauthError === "OAUTH_FAILED") {
           msg = `Không thể kết nối và trao đổi xác thực với ${providerName}. Vui lòng thử lại.`;
+        } else if (oauthError === "SERVER_ERROR") {
+          msg = "Máy chủ hoặc cơ sở dữ liệu tạm thời bận. Vui lòng thử lại sau.";
         }
         setLoginError(msg);
         setRegError(msg);

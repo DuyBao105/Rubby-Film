@@ -96,7 +96,15 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       notify: movie.notify,
     });
   }, [movie, episodes]);
-  const currentEpNumber = episodeQuery ? parseInt(episodeQuery, 10) : 1;
+  const movieSavedProgress = React.useMemo(
+    () => getMovieProgress(movie.id),
+    [getMovieProgress, movie.id]
+  );
+  const currentEpNumber = episodeQuery
+    ? parseInt(episodeQuery, 10)
+    : movie.type === "series" && movieSavedProgress?.episodeNumber
+    ? movieSavedProgress.episodeNumber
+    : 1;
   const currentEpisode: Episode | undefined =
     episodes.find((e) => e.episodeNumber === currentEpNumber) ||
     episodes.find((e) => e.episodeNumber === 1) ||
@@ -139,9 +147,6 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     const epNum = currentEpisode?.episodeNumber ?? 1;
     const evalKey = `${movie.id}:${epNum}`;
 
-    // Already applied resume evaluation for this episode
-    if (appliedResumeKeyRef.current === evalKey) return;
-
     // If user has already actively played past 5s on this page, do not show resume banner
     const currentPlayed = currentPlaybackRef.current?.currentTime || 0;
     if (currentPlayed > 5) return;
@@ -167,20 +172,25 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       savedProgress.progressSeconds > 10 &&
       !savedProgress.completed
     ) {
-      appliedResumeKeyRef.current = evalKey;
-      setPendingResumeTime(savedProgress.progressSeconds);
+      if (savedProgress.progressSeconds !== pendingResumeTime) {
+        appliedResumeKeyRef.current = evalKey;
+        setPendingResumeTime(savedProgress.progressSeconds);
 
-      // Only show banner if user has not explicitly dismissed it for this episode
-      if (!dismissedResumeKeysRef.current.has(evalKey)) {
-        setResumePromptVisible(true);
+        // Only show banner if user has not explicitly dismissed it for this episode
+        if (!dismissedResumeKeysRef.current.has(evalKey)) {
+          setResumePromptVisible(true);
+        }
       }
     }
-  }, [currentEpisode, movie.id, history, getEpisodeProgress, getMovieProgress, searchParams]);
+  }, [currentEpisode, movie.id, history, getEpisodeProgress, getMovieProgress, searchParams, pendingResumeTime]);
 
   // Synchronize playback progress immediately when page is hidden or unloaded (e.g. mobile tab switch/close)
   React.useEffect(() => {
     const flushCurrentProgress = () => {
       if (currentPlaybackRef.current && currentPlaybackRef.current.duration > 0) {
+        if (resumePromptVisible && pendingResumeTime > 30 && currentPlaybackRef.current.currentTime < 15) {
+          return;
+        }
         updateProgress(
           movie,
           currentPlaybackRef.current.currentTime,
@@ -209,7 +219,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
       document.removeEventListener("visibilitychange", handleVisibilityChange);
       window.removeEventListener("pagehide", flushCurrentProgress);
     };
-  }, [movie, currentEpisode, updateProgress]);
+  }, [movie, currentEpisode, updateProgress, resumePromptVisible, pendingResumeTime]);
   // Handle episode change
   const handleSelectEpisode = (ep: Episode) => {
     setResumePromptVisible(false);
@@ -250,11 +260,16 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     }
   };
 
-  // Save progress throttle
   // Save progress throttle & tracking
   const lastSaveTimeRef = React.useRef(0);
   const handleTimeUpdate = (currentTime: number, duration: number) => {
     currentPlaybackRef.current = { currentTime, duration };
+
+    // Prevent beginning playback from overriding higher cloud progress while resume prompt is active
+    if (resumePromptVisible && pendingResumeTime > 30 && currentTime < 15) {
+      return;
+    }
+
     const now = Date.now();
     if (now - lastSaveTimeRef.current > 4000) {
       lastSaveTimeRef.current = now;
@@ -275,6 +290,9 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
 
   const handleVideoPause = () => {
     if (currentPlaybackRef.current && currentPlaybackRef.current.duration > 0) {
+      if (resumePromptVisible && pendingResumeTime > 30 && currentPlaybackRef.current.currentTime < 15) {
+        return;
+      }
       updateProgress(
         movie,
         currentPlaybackRef.current.currentTime,

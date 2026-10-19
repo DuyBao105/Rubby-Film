@@ -46,7 +46,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const protocol = request.headers.get("x-forwarded-proto") || (host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https");
   // Prioritize actual request host on localhost/LAN, use NEXT_PUBLIC_SITE_URL in production if set
   const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
-  const origin = isLocal ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`);
+  const normalizedHost = host.replace("127.0.0.1", "localhost");
+  const origin = isLocal ? `${protocol}://${normalizedHost}` : (process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`);
   const redirectUri = `${origin}/api/auth/oauth/${provider}/callback`;
 
   // Generate cryptographically secure signed state

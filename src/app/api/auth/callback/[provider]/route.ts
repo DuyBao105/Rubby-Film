@@ -98,7 +98,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";
   const protocol = request.headers.get("x-forwarded-proto") || (host.includes("localhost") || host.includes("127.0.0.1") ? "http" : "https");
   const isLocal = host.includes("localhost") || host.includes("127.0.0.1");
-  const origin = isLocal ? `${protocol}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`);
+  const normalizedHost = host.replace("127.0.0.1", "localhost");
+  const origin = isLocal ? `${protocol}://${normalizedHost}` : (process.env.NEXT_PUBLIC_SITE_URL || `${protocol}://${host}`);
   const redirectUri = verifiedState?.redirectUri || `${origin}${request.nextUrl.pathname}`;
 
   let profile: OAuthProfile;
@@ -119,8 +120,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       });
 
       if (!tokenRes.ok) {
-        console.error("Google token exchange error:", await tokenRes.text());
-        throw new Error("Không thể trao đổi mã xác thực với Google.");
+        const errorText = await tokenRes.text();
+        console.error("Google token exchange error:", errorText);
+        const errorUrl = new URL(
+          `/?auth=login&error=OAUTH_EXCHANGE_ERROR&provider=${provider}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          request.url
+        );
+        const response = NextResponse.redirect(errorUrl);
+        response.cookies.delete(OAUTH_STATE_COOKIE_NAME);
+        return response;
       }
 
       const tokenData = await tokenRes.json();
@@ -132,7 +140,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       });
 
       if (!userInfoRes.ok) {
-        throw new Error("Không thể lấy thông tin tài khoản từ Google.");
+        console.error("Google userinfo fetch error:", await userInfoRes.text());
+        const errorUrl = new URL(
+          `/?auth=login&error=OAUTH_EXCHANGE_ERROR&provider=${provider}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          request.url
+        );
+        const response = NextResponse.redirect(errorUrl);
+        response.cookies.delete(OAUTH_STATE_COOKIE_NAME);
+        return response;
       }
 
       const userInfo = await userInfoRes.json();
@@ -154,8 +169,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       const tokenRes = await fetch(fbTokenUrl.toString());
       if (!tokenRes.ok) {
-        console.error("Facebook token exchange error:", await tokenRes.text());
-        throw new Error("Không thể trao đổi mã xác thực với Facebook.");
+        const errorText = await tokenRes.text();
+        console.error("Facebook token exchange error:", errorText);
+        const errorUrl = new URL(
+          `/?auth=login&error=OAUTH_EXCHANGE_ERROR&provider=${provider}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          request.url
+        );
+        const response = NextResponse.redirect(errorUrl);
+        response.cookies.delete(OAUTH_STATE_COOKIE_NAME);
+        return response;
       }
 
       const tokenData = await tokenRes.json();
@@ -168,7 +190,14 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
       const userInfoRes = await fetch(fbUserUrl.toString());
       if (!userInfoRes.ok) {
-        throw new Error("Không thể lấy thông tin tài khoản từ Facebook.");
+        console.error("Facebook userinfo fetch error:", await userInfoRes.text());
+        const errorUrl = new URL(
+          `/?auth=login&error=OAUTH_EXCHANGE_ERROR&provider=${provider}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+          request.url
+        );
+        const response = NextResponse.redirect(errorUrl);
+        response.cookies.delete(OAUTH_STATE_COOKIE_NAME);
+        return response;
       }
 
       const fbInfo = await userInfoRes.json();
@@ -225,7 +254,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
   } catch (error: any) {
     console.error(`OAuth callback error [${provider}]:`, error?.message || error);
     const errorUrl = new URL(
-      `/?auth=login&error=OAUTH_EXCHANGE_ERROR&provider=${provider}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
+      `/?auth=login&error=SERVER_ERROR&provider=${provider}&callbackUrl=${encodeURIComponent(callbackUrl)}`,
       request.url
     );
     const response = NextResponse.redirect(errorUrl);

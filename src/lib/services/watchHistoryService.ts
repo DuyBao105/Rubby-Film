@@ -25,6 +25,7 @@ export interface IWatchHistoryService {
 
 const PRIMARY_KEY = "rubbyfilm_watch_history";
 const LEGACY_KEY = "bfilm_watch_history";
+const GUEST_KEY = "rubbyfilm_watch_history_guest";
 
 function getAuthHeaders(): HeadersInit {
   const headers: Record<string, string> = {
@@ -41,6 +42,40 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
+export function mergeWatchedEpisodes(
+  serverEpisodes?: Record<number, EpisodeWatchedState>,
+  localEpisodes?: Record<number, EpisodeWatchedState>
+): Record<number, EpisodeWatchedState> {
+  const result: Record<number, EpisodeWatchedState> = {};
+  const s = serverEpisodes || {};
+  const l = localEpisodes || {};
+  const allKeys = new Set([...Object.keys(s), ...Object.keys(l)]);
+
+  for (const key of allKeys) {
+    const epNum = Number(key);
+    const itemS = s[epNum];
+    const itemL = l[epNum];
+
+    if (itemS && !itemL) {
+      result[epNum] = itemS;
+    } else if (!itemS && itemL) {
+      result[epNum] = itemL;
+    } else if (itemS && itemL) {
+      const timeS = itemS.watchedAt || 0;
+      const timeL = itemL.watchedAt || 0;
+      if (timeL > timeS) {
+        result[epNum] = itemL;
+      } else if (timeS > timeL) {
+        result[epNum] = itemS;
+      } else {
+        result[epNum] = (itemL.progressSeconds || 0) >= (itemS.progressSeconds || 0) ? itemL : itemS;
+      }
+    }
+  }
+
+  return result;
+}
+
 class WatchHistoryService implements IWatchHistoryService {
   private cache: WatchHistoryItem[] | null = null;
   private listeners: Set<(history: WatchHistoryItem[]) => void> = new Set();
@@ -54,6 +89,7 @@ class WatchHistoryService implements IWatchHistoryService {
     progressSeconds: number;
     durationSeconds: number;
     episode?: { id: string; episodeNumber: number; name: string };
+    watchedAt?: number;
   } | null = null;
 
   constructor() {
@@ -75,9 +111,9 @@ class WatchHistoryService implements IWatchHistoryService {
       // Cross-device sync: auto re-sync when switching back to tab/browser window
       const triggerAutoSync = () => {
         const now = Date.now();
-        if (now - this.lastAutoSyncTime > 2500 && this.currentUserId) {
+        if (now - this.lastAutoSyncTime > 4000 && this.currentUserId) {
           this.lastAutoSyncTime = now;
-          this.syncWithServer();
+          this.syncWithServer(true);
         }
       };
 
@@ -99,12 +135,45 @@ class WatchHistoryService implements IWatchHistoryService {
       this.notify();
     }
     if (normalized) {
+      this.migrateGuestHistory(normalized);
       this.syncWithServer(true);
     }
   }
 
+  private migrateGuestHistory(userId: string): void {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(GUEST_KEY);
+      if (raw) {
+        const guestItems = JSON.parse(raw) as WatchHistoryItem[];
+        if (Array.isArray(guestItems) && guestItems.length > 0) {
+          localStorage.removeItem(GUEST_KEY);
+          const current = this.load();
+          const map = new Map<string, WatchHistoryItem>();
+          for (const item of [...current, ...guestItems]) {
+            const id = String(item.movieId || item.movie?.id || item.slug || "").trim();
+            if (id && !map.has(id)) {
+              map.set(id, item);
+            }
+          }
+          const merged = Array.from(map.values()).slice(0, 50);
+          this.save(merged);
+          fetch("/api/user/history", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            credentials: "include",
+            body: JSON.stringify({ items: merged }),
+          }).catch(() => {});
+        }
+      }
+    } catch {}
+  }
+
   private getStorageKey(): string {
-    if (!this.currentUserId) return "rubbyfilm_watch_history_guest";
+    if (!this.currentUserId) return GUEST_KEY;
     return `rubbyfilm_watch_history_${this.currentUserId}`;
   }
 
@@ -171,7 +240,7 @@ class WatchHistoryService implements IWatchHistoryService {
     if (this.syncPromise) return this.syncPromise;
 
     const now = Date.now();
-    if (!force && now - this.lastSyncTime < 4000) {
+    if (!force && now - this.lastSyncTime < 3000) {
       return;
     }
     this.lastSyncTime = now;
@@ -196,7 +265,7 @@ class WatchHistoryService implements IWatchHistoryService {
         const serverItems = body.data.history;
         const localItems = this.load();
 
-        // Merge server items and local items
+        // Merge server items and local items with timestamp precision
         const map = new Map<string, WatchHistoryItem>();
 
         // Put server items first
@@ -207,7 +276,7 @@ class WatchHistoryService implements IWatchHistoryService {
 
         let localHasNewer = false;
 
-        // Merge local items only if local has newer watch timestamp than server
+        // Merge local items
         for (const l of localItems) {
           const id = String(l.movieId || l.movie?.id || l.slug || "").trim();
           if (!id) continue;
@@ -217,11 +286,14 @@ class WatchHistoryService implements IWatchHistoryService {
             map.set(id, l);
             localHasNewer = true;
           } else {
-            const mergedEpisodes = {
-              ...(serverMatch.watchedEpisodes || {}),
-              ...(l.watchedEpisodes || {}),
-            };
-            if ((l.watchedAt || 0) > (serverMatch.watchedAt || 0)) {
+            const mergedEpisodes = mergeWatchedEpisodes(
+              serverMatch.watchedEpisodes,
+              l.watchedEpisodes
+            );
+            const serverTime = serverMatch.watchedAt || 0;
+            const localTime = l.watchedAt || 0;
+
+            if (localTime > serverTime) {
               map.set(id, {
                 ...l,
                 watchedEpisodes: mergedEpisodes,
@@ -232,6 +304,16 @@ class WatchHistoryService implements IWatchHistoryService {
                 ...serverMatch,
                 watchedEpisodes: mergedEpisodes,
               });
+              // Check if any episode in local has a newer watchedAt than server
+              const hasNewerEp = Object.entries(l.watchedEpisodes || {}).some(
+                ([epNumStr, epState]) => {
+                  const sEp = serverMatch.watchedEpisodes?.[Number(epNumStr)];
+                  return !sEp || (epState.watchedAt || 0) > (sEp.watchedAt || 0);
+                }
+              );
+              if (hasNewerEp) {
+                localHasNewer = true;
+              }
             }
           }
         }
@@ -260,7 +342,7 @@ class WatchHistoryService implements IWatchHistoryService {
           this.notify();
         }
 
-        // If local had items not yet on server or newer, push merged to server
+        // If local had items not yet on server or newer episodes, push merged to server
         if (localHasNewer || (serverItems.length === 0 && merged.length > 0)) {
           fetch("/api/user/history", {
             method: "POST",
@@ -289,7 +371,10 @@ class WatchHistoryService implements IWatchHistoryService {
     }
 
     if (this.pendingSyncItem && this.currentUserId && typeof window !== "undefined") {
-      const payload = { ...this.pendingSyncItem };
+      const payload = {
+        ...this.pendingSyncItem,
+        watchedAt: this.pendingSyncItem.watchedAt || Date.now(),
+      };
       this.pendingSyncItem = null;
 
       try {
@@ -339,6 +424,7 @@ class WatchHistoryService implements IWatchHistoryService {
     const progressPercent = Math.min(100, Math.round((progressSeconds / durationSeconds) * 100));
     const epNum = episode?.episodeNumber ?? 1;
     const isCompleted = progressPercent >= 90;
+    const now = Date.now();
 
     const currentList = this.load();
     const existing = currentList.find(
@@ -356,7 +442,7 @@ class WatchHistoryService implements IWatchHistoryService {
         durationSeconds: Math.round(durationSeconds),
         progressPercent,
         completed: isCompleted || Boolean(existingWatched[epNum]?.completed),
-        watchedAt: Date.now(),
+        watchedAt: now,
       },
     };
 
@@ -373,7 +459,7 @@ class WatchHistoryService implements IWatchHistoryService {
       progressSeconds: Math.round(progressSeconds),
       durationSeconds: Math.round(durationSeconds),
       progressPercent,
-      watchedAt: Date.now(),
+      watchedAt: now,
       completed: isCompleted,
       watchedEpisodes: updatedWatched,
     };
@@ -388,6 +474,7 @@ class WatchHistoryService implements IWatchHistoryService {
         progressSeconds,
         durationSeconds,
         episode,
+        watchedAt: now,
       };
 
       if (immediate) {

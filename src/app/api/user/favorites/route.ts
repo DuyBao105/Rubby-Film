@@ -66,19 +66,7 @@ export async function POST(request: NextRequest) {
 
     // Case 1: Batch sync of items
     if (Array.isArray(body.items)) {
-      const existing = await userDataRepository.getFavorites(userId);
-      const incoming = body.items;
-
-      const map = new Map<string, Movie>();
-      for (const m of [...existing, ...incoming]) {
-        const id = String(m.id || m.slug || "").trim();
-        if (id && !map.has(id)) {
-          map.set(id, m);
-        }
-      }
-
-      const merged = Array.from(map.values()).slice(0, 100);
-      const saved = await userDataRepository.saveFavorites(userId, merged);
+      const saved = await userDataRepository.saveFavorites(userId, body.items);
       return apiSuccess({ favorites: saved }, undefined, NO_CACHE_HEADERS);
     }
 

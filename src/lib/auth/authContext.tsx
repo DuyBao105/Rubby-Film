@@ -198,6 +198,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           msg = "Phiên xác thực bảo mật không hợp lệ hoặc đã hết hạn. Vui lòng thử lại.";
         } else if (authError === "OAUTH_EXCHANGE_ERROR" || authError === "OAUTH_FAILED") {
           msg = `Không thể trao đổi xác thực với ${pName}. Vui lòng thử lại.`;
+        } else if (authError === "SERVER_ERROR") {
+          msg = "Máy chủ hoặc cơ sở dữ liệu tạm thời bận. Vui lòng thử lại sau.";
         }
         toast.error("Lỗi đăng nhập", msg);
         url.searchParams.delete("error");
