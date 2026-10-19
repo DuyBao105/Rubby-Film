@@ -16,7 +16,9 @@ export function useMyList() {
     // Initial fetch from service
     setList(myListService.getList());
     setIsLoaded(true);
-    myListService.syncWithServer();
+    if (user?.id) {
+      myListService.syncWithServer(true);
+    }
 
     // Subscribe to cross-component updates
     const unsubscribe = myListService.subscribe((updated) => {
@@ -24,39 +26,50 @@ export function useMyList() {
     });
 
     return unsubscribe;
-  }, []);
+  }, [user]);
 
-  const addMovie = useCallback((movie: Movie) => {
-    if (!user) {
-      toast.info("Oop!", "Bạn hãy đăng nhập để thêm vào danh sách yêu thích nha!");
-      return;
-    }
-    myListService.add(movie);
-    toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
-  }, [user, toast]);
+  const addMovie = useCallback(
+    (movie: Movie) => {
+      myListService.add(movie);
+      if (user) {
+        toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
+      } else {
+        toast.success(
+          "Đã thêm vào yêu thích",
+          `"${movie.title}" đã lưu trên máy. Đăng nhập để đồng bộ qua điện thoại!`
+        );
+      }
+    },
+    [user, toast]
+  );
 
-  const removeMovie = useCallback((id: string) => {
-    if (!user) {
-      toast.info("Oop!", "Bạn hãy đăng nhập để thêm vào danh sách yêu thích nha!");
-      return;
-    }
-    myListService.remove(id);
-    toast.info("Đã xóa khỏi yêu thích", "Phim đã được gỡ khỏi danh sách yêu thích.");
-  }, [user, toast]);
+  const removeMovie = useCallback(
+    (id: string) => {
+      myListService.remove(id);
+      toast.info("Đã xóa khỏi yêu thích", "Phim đã được gỡ khỏi danh sách yêu thích.");
+    },
+    [toast]
+  );
 
-  const toggleMovie = useCallback((movie: Movie) => {
-    if (!user) {
-      toast.info("Oop!", "Bạn hãy đăng nhập để thêm vào danh sách yêu thích nha!");
-      return false;
-    }
-    const added = myListService.toggle(movie);
-    if (added) {
-      toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
-    } else {
-      toast.info("Đã xóa khỏi yêu thích", `"${movie.title}" đã được gỡ khỏi danh sách.`);
-    }
-    return added;
-  }, [user, toast]);
+  const toggleMovie = useCallback(
+    (movie: Movie) => {
+      const added = myListService.toggle(movie);
+      if (added) {
+        if (user) {
+          toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
+        } else {
+          toast.success(
+            "Đã thêm vào yêu thích",
+            `"${movie.title}" đã lưu trên máy. Đăng nhập để đồng bộ qua điện thoại!`
+          );
+        }
+      } else {
+        toast.info("Đã xóa khỏi yêu thích", `"${movie.title}" đã được gỡ khỏi danh sách.`);
+      }
+      return added;
+    },
+    [user, toast]
+  );
 
   const isInList = useCallback(
     (id: string): boolean => {
@@ -80,3 +93,4 @@ export function useMyList() {
     clearList,
   };
 }
+

@@ -9,7 +9,7 @@ export interface IMyListService {
   clear(): void;
   subscribe(callback: (list: Movie[]) => void): () => void;
   setUser(userId: string | null): void;
-  syncWithServer(): Promise<void>;
+  syncWithServer(force?: boolean): Promise<void>;
 }
 
 const PRIMARY_KEY = "rubbyfilm_my_list";
@@ -42,15 +42,29 @@ class MyListService implements IMyListService {
   constructor() {
     if (typeof window !== "undefined") {
       try {
-        localStorage.removeItem(PRIMARY_KEY);
-        localStorage.removeItem(LEGACY_KEY);
+        // Migrate legacy shared storage if present
+        const legacyPrimary = localStorage.getItem(PRIMARY_KEY);
+        const legacyOld = localStorage.getItem(LEGACY_KEY);
+        const legacyRaw = legacyPrimary || legacyOld;
+        if (legacyRaw) {
+          const parsed = JSON.parse(legacyRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const guestRaw = localStorage.getItem(GUEST_KEY);
+            if (!guestRaw) {
+              localStorage.setItem(GUEST_KEY, legacyRaw);
+            }
+          }
+          localStorage.removeItem(PRIMARY_KEY);
+          localStorage.removeItem(LEGACY_KEY);
+        }
 
         const cached = localStorage.getItem("rubbyfilm_cached_user");
         if (cached) {
           const parsed = JSON.parse(cached) as { id?: string } | null;
           if (parsed?.id) {
             this.currentUserId = String(parsed.id).trim();
-            this.syncWithServer();
+            this.migrateGuestFavorites(this.currentUserId);
+            this.syncWithServer(true);
           }
         }
       } catch {}
@@ -58,7 +72,7 @@ class MyListService implements IMyListService {
       // Cross-device sync: auto re-sync when switching back to tab/browser window
       const triggerAutoSync = () => {
         const now = Date.now();
-        if (now - this.lastAutoSyncTime > 5000 && this.currentUserId) {
+        if (now - this.lastAutoSyncTime > 4000 && this.currentUserId) {
           this.lastAutoSyncTime = now;
           this.syncWithServer(true);
         }
@@ -82,26 +96,24 @@ class MyListService implements IMyListService {
       this.notify();
     }
     if (normalized) {
-      // Check and migrate any guest favorites once
       this.migrateGuestFavorites(normalized);
       this.syncWithServer(true);
     }
   }
 
-  private getStorageKey(): string | null {
+  private getStorageKey(): string {
     if (!this.currentUserId) return GUEST_KEY;
     return `rubbyfilm_my_list_${this.currentUserId}`;
   }
 
-  private getTombstoneKey(): string | null {
-    if (!this.currentUserId) return null;
+  private getTombstoneKey(): string {
+    if (!this.currentUserId) return "rubbyfilm_my_list_tombstones_guest";
     return `rubbyfilm_my_list_tombstones_${this.currentUserId}`;
   }
 
   private getTombstones(): Set<string> {
     if (typeof window === "undefined") return new Set();
     const key = this.getTombstoneKey();
-    if (!key) return new Set();
     try {
       const raw = localStorage.getItem(key);
       if (raw) {
@@ -117,7 +129,6 @@ class MyListService implements IMyListService {
   private addTombstone(id: string): void {
     if (typeof window === "undefined" || !id) return;
     const key = this.getTombstoneKey();
-    if (!key) return;
     try {
       const set = this.getTombstones();
       set.add(String(id).toLowerCase().trim());
@@ -128,7 +139,6 @@ class MyListService implements IMyListService {
   private removeTombstone(id: string): void {
     if (typeof window === "undefined" || !id) return;
     const key = this.getTombstoneKey();
-    if (!key) return;
     try {
       const set = this.getTombstones();
       set.delete(String(id).toLowerCase().trim());
@@ -139,21 +149,43 @@ class MyListService implements IMyListService {
   private clearTombstones(): void {
     if (typeof window === "undefined") return;
     const key = this.getTombstoneKey();
-    if (key) {
-      try {
-        localStorage.removeItem(key);
-      } catch {}
-    }
+    try {
+      localStorage.removeItem(key);
+    } catch {}
   }
 
   private migrateGuestFavorites(userId: string): void {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined" || !userId) return;
     try {
       const raw = localStorage.getItem(GUEST_KEY);
       if (raw) {
         const guestItems = JSON.parse(raw) as Movie[];
         if (Array.isArray(guestItems) && guestItems.length > 0) {
+          const userKey = `rubbyfilm_my_list_${userId}`;
+          let userItems: Movie[] = [];
+          try {
+            const userRaw = localStorage.getItem(userKey);
+            if (userRaw) {
+              const p = JSON.parse(userRaw);
+              if (Array.isArray(p)) userItems = p;
+            }
+          } catch {}
+
+          const seen = new Set<string>();
+          const merged: Movie[] = [];
+          for (const m of [...guestItems, ...userItems]) {
+            const key = String(m?.id || m?.slug || "").trim().toLowerCase();
+            if (key && !seen.has(key)) {
+              seen.add(key);
+              merged.push(m);
+            }
+          }
+
+          localStorage.setItem(userKey, JSON.stringify(merged));
           localStorage.removeItem(GUEST_KEY);
+          this.cache = merged;
+          this.notify();
+
           fetch("/api/user/favorites", {
             method: "POST",
             headers: {
@@ -161,40 +193,45 @@ class MyListService implements IMyListService {
               ...getAuthHeaders(),
             },
             credentials: "include",
-            body: JSON.stringify({ items: guestItems }),
+            body: JSON.stringify({ items: merged }),
           }).catch(() => {});
         }
       }
-    } catch {}
+    } catch (e) {
+      console.warn("[MyListService] Failed to migrate guest favorites:", e);
+    }
   }
 
   private load(): Movie[] {
     if (typeof window === "undefined") return [];
-    if (!this.currentUserId) {
-      this.cache = [];
-      return [];
-    }
     if (this.cache !== null) return this.cache;
 
     try {
       const key = this.getStorageKey();
-      if (!key) {
-        this.cache = [];
-        return [];
-      }
-
       const raw = localStorage.getItem(key);
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
           const tombstones = this.getTombstones();
           const filtered = parsed.filter((m) => {
-            const id = String(m.id || "").toLowerCase().trim();
-            const slug = String(m.slug || "").toLowerCase().trim();
-            return !tombstones.has(id) && !tombstones.has(slug);
+            const id = String(m?.id || "").toLowerCase().trim();
+            const slug = String(m?.slug || "").toLowerCase().trim();
+            return (!id || !tombstones.has(id)) && (!slug || !tombstones.has(slug));
           });
           this.cache = filtered;
           return this.cache;
+        }
+      }
+
+      // If user storage is empty, fallback to guest storage if any
+      if (this.currentUserId) {
+        const guestRaw = localStorage.getItem(GUEST_KEY);
+        if (guestRaw) {
+          const parsed = JSON.parse(guestRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.cache = parsed;
+            return this.cache;
+          }
         }
       }
     } catch (e) {
@@ -207,12 +244,10 @@ class MyListService implements IMyListService {
 
   private save(items: Movie[]): void {
     this.cache = items;
-    if (typeof window !== "undefined" && this.currentUserId) {
+    if (typeof window !== "undefined") {
       try {
         const key = this.getStorageKey();
-        if (key) {
-          localStorage.setItem(key, JSON.stringify(items));
-        }
+        localStorage.setItem(key, JSON.stringify(items));
       } catch (e) {
         console.error("[MyListService] Failed to write storage:", e);
       }
@@ -236,7 +271,7 @@ class MyListService implements IMyListService {
   public async syncWithServer(force: boolean = false): Promise<void> {
     if (typeof window === "undefined" || !this.currentUserId) return;
 
-    if (this.syncPromise) return this.syncPromise;
+    if (this.syncPromise && !force) return this.syncPromise;
 
     const now = Date.now();
     if (!force && now - this.lastSyncTime < 3000) {
@@ -262,15 +297,18 @@ class MyListService implements IMyListService {
         if (!body.success || !Array.isArray(body.data?.favorites)) return;
 
         const serverItems = body.data.favorites;
+        const localItems = this.load();
         const tombstones = this.getTombstones();
 
         // 1. Process server items: filter out any deleted items (tombstones)
         const resolved: Movie[] = [];
+        const seenKeys = new Set<string>();
+
         for (const s of serverItems) {
           const id = String(s.id || "").toLowerCase().trim();
           const slug = String(s.slug || "").toLowerCase().trim();
 
-          if (tombstones.has(id) || tombstones.has(slug)) {
+          if ((id && tombstones.has(id)) || (slug && tombstones.has(slug))) {
             // Server still has this deleted item, send DELETE again to ensure server cleans it
             fetch(`/api/user/favorites?id=${encodeURIComponent(s.id || s.slug)}`, {
               method: "DELETE",
@@ -278,23 +316,46 @@ class MyListService implements IMyListService {
               credentials: "include",
             }).catch(() => {});
           } else {
-            resolved.push(s);
+            const key = id || slug;
+            if (key && !seenKeys.has(key)) {
+              seenKeys.add(key);
+              resolved.push(s);
+            }
           }
         }
 
-        // 2. Clear tombstones that are no longer present on the server (deletion confirmed)
-        for (const tombstoneId of Array.from(tombstones)) {
-          const stillOnServer = serverItems.some((s) => {
-            const id = String(s.id || "").toLowerCase().trim();
-            const slug = String(s.slug || "").toLowerCase().trim();
-            return id === tombstoneId || slug === tombstoneId;
-          });
-          if (!stillOnServer) {
-            this.removeTombstone(tombstoneId);
+        // 2. Clear tombstones ONLY IF server returned items (confirming server is reachable and returned data)
+        if (serverItems.length > 0) {
+          for (const tombstoneId of Array.from(tombstones)) {
+            const stillOnServer = serverItems.some((s) => {
+              const id = String(s.id || "").toLowerCase().trim();
+              const slug = String(s.slug || "").toLowerCase().trim();
+              return id === tombstoneId || slug === tombstoneId;
+            });
+            if (!stillOnServer) {
+              this.removeTombstone(tombstoneId);
+            }
           }
         }
 
-        // 3. Update local cache and localStorage directly to match the authoritative server list
+        // 3. MERGE LOCAL ITEMS THAT ARE NOT TOMBSTONED
+        // Critical safeguard: Never let an empty or partial server response wipe local additions!
+        let localHasUnsynced = false;
+        for (const loc of localItems) {
+          const id = String(loc.id || "").toLowerCase().trim();
+          const slug = String(loc.slug || "").toLowerCase().trim();
+
+          if ((!id || !tombstones.has(id)) && (!slug || !tombstones.has(slug))) {
+            const key = id || slug;
+            if (key && !seenKeys.has(key)) {
+              seenKeys.add(key);
+              resolved.push(loc);
+              localHasUnsynced = true;
+            }
+          }
+        }
+
+        // 4. Update local cache and localStorage directly
         const currentCached = this.cache || [];
         const changed =
           currentCached.length !== resolved.length ||
@@ -303,12 +364,23 @@ class MyListService implements IMyListService {
         this.cache = resolved;
         if (this.currentUserId) {
           const key = this.getStorageKey();
-          if (key) {
-            localStorage.setItem(key, JSON.stringify(resolved));
-          }
+          localStorage.setItem(key, JSON.stringify(resolved));
         }
         if (changed) {
           this.notify();
+        }
+
+        // 5. If local had items missing from server, push merged list to server
+        if (localHasUnsynced || (serverItems.length === 0 && resolved.length > 0)) {
+          fetch("/api/user/favorites", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            credentials: "include",
+            body: JSON.stringify({ items: resolved }),
+          }).catch(() => {});
         }
       } catch (e) {
         console.warn("[MyListService] syncWithServer error:", e);
@@ -327,6 +399,7 @@ class MyListService implements IMyListService {
   }
 
   public has(movieId: string): boolean {
+    if (!movieId) return false;
     const target = String(movieId).trim().toLowerCase();
     const tombstones = this.getTombstones();
     if (tombstones.has(target)) return false;
@@ -334,21 +407,23 @@ class MyListService implements IMyListService {
     return this.load().some((m) => {
       const id = String(m.id || "").trim().toLowerCase();
       const slug = String(m.slug || "").trim().toLowerCase();
-      return id === target || slug === target;
+      return (id && id === target) || (slug && slug === target);
     });
   }
 
   public add(movie: Movie): void {
-    if (!this.currentUserId || !movie) return;
+    if (!movie) return;
     const targetId = String(movie.id || "").trim().toLowerCase();
     const targetSlug = String(movie.slug || "").trim().toLowerCase();
 
-    // Clear from tombstones since user re-added it
+    // Clear from tombstones since user explicitly added it
     if (targetId) this.removeTombstone(targetId);
     if (targetSlug) this.removeTombstone(targetSlug);
 
     const current = this.load();
-    if (current.some((m) => m.id === movie.id || m.slug === movie.slug)) return;
+    if (current.some((m) => (m.id && m.id === movie.id) || (m.slug && m.slug === movie.slug))) {
+      return;
+    }
     const updated = [movie, ...current];
     this.save(updated);
 
@@ -366,7 +441,7 @@ class MyListService implements IMyListService {
   }
 
   public remove(movieId: string): void {
-    if (!this.currentUserId || !movieId) return;
+    if (!movieId) return;
     const target = String(movieId).trim().toLowerCase();
 
     // Mark as deleted in tombstones immediately so sync will never resurrect it
@@ -396,9 +471,10 @@ class MyListService implements IMyListService {
   }
 
   public toggle(movie: Movie): boolean {
-    if (!this.currentUserId || !movie) return false;
-    if (this.has(movie.id)) {
-      this.remove(movie.id);
+    if (!movie) return false;
+    const targetId = movie.id || movie.slug;
+    if (this.has(targetId)) {
+      this.remove(targetId);
       return false;
     } else {
       this.add(movie);
@@ -410,17 +486,19 @@ class MyListService implements IMyListService {
     this.save([]);
     this.clearTombstones();
 
-    if (typeof window !== "undefined" && this.currentUserId) {
+    if (typeof window !== "undefined") {
       try {
         const key = this.getStorageKey();
-        if (key) localStorage.removeItem(key);
+        localStorage.removeItem(key);
       } catch {}
 
-      fetch("/api/user/favorites", {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      }).catch(() => {});
+      if (this.currentUserId) {
+        fetch("/api/user/favorites", {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        }).catch(() => {});
+      }
     }
   }
 
@@ -433,3 +511,4 @@ class MyListService implements IMyListService {
 }
 
 export const myListService = new MyListService();
+

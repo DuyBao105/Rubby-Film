@@ -8,7 +8,8 @@ export interface ISearchHistoryService {
   subscribe(callback: (searches: string[]) => void): () => void;
 }
 
-const LEGACY_PRIMARY_KEY = "rubbyfilm_recent_searches";
+const PRIMARY_KEY = "rubbyfilm_recent_searches";
+const GUEST_KEY = "rubbyfilm_recent_searches_guest";
 const LEGACY_OLD_KEY = "bfilm_recent_searches";
 
 function getAuthHeaders(): HeadersInit {
@@ -36,15 +37,28 @@ class SearchHistoryService implements ISearchHistoryService {
   constructor() {
     if (typeof window !== "undefined") {
       try {
-        // Clean up legacy non-user-isolated keys so old shared searches never leak
-        localStorage.removeItem(LEGACY_PRIMARY_KEY);
-        localStorage.removeItem(LEGACY_OLD_KEY);
+        // Migrate legacy shared searches if present
+        const legacyPrimary = localStorage.getItem(PRIMARY_KEY);
+        const legacyOld = localStorage.getItem(LEGACY_OLD_KEY);
+        const raw = legacyPrimary || legacyOld;
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const guestRaw = localStorage.getItem(GUEST_KEY);
+            if (!guestRaw) {
+              localStorage.setItem(GUEST_KEY, raw);
+            }
+          }
+          localStorage.removeItem(PRIMARY_KEY);
+          localStorage.removeItem(LEGACY_OLD_KEY);
+        }
 
         const cached = localStorage.getItem("rubbyfilm_cached_user");
         if (cached) {
           const parsed = JSON.parse(cached);
           if (parsed?.id) {
             this.currentUserId = String(parsed.id).trim();
+            this.migrateGuestSearches(this.currentUserId);
             this.syncWithServer(true);
           }
         }
@@ -81,7 +95,50 @@ class SearchHistoryService implements ISearchHistoryService {
       this.notify();
     }
     if (normalized) {
+      this.migrateGuestSearches(normalized);
       this.syncWithServer(true);
+    }
+  }
+
+  private migrateGuestSearches(userId: string): void {
+    if (!this.isClient() || !userId) return;
+    try {
+      const guestRaw = localStorage.getItem(GUEST_KEY);
+      if (guestRaw) {
+        const guestItems = JSON.parse(guestRaw);
+        if (Array.isArray(guestItems) && guestItems.length > 0) {
+          const userKey = `rubbyfilm_recent_searches_${userId}`;
+          let userItems: string[] = [];
+          try {
+            const uRaw = localStorage.getItem(userKey);
+            if (uRaw) {
+              const parsed = JSON.parse(uRaw);
+              if (Array.isArray(parsed)) userItems = parsed;
+            }
+          } catch {}
+
+          const merged = Array.from(
+            new Set([...guestItems, ...userItems].map((s) => String(s || "").trim()).filter(Boolean))
+          ).slice(0, 20);
+
+          localStorage.setItem(userKey, JSON.stringify(merged));
+          localStorage.removeItem(GUEST_KEY);
+          this.cache = merged;
+          this.notify();
+
+          fetch("/api/user/searches", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              ...getAuthHeaders(),
+            },
+            credentials: "include",
+            body: JSON.stringify({ searches: merged }),
+          }).catch(() => {});
+        }
+      }
+    } catch (e) {
+      console.warn("[SearchHistoryService] Failed to migrate guest searches:", e);
     }
   }
 
@@ -89,7 +146,7 @@ class SearchHistoryService implements ISearchHistoryService {
     if (this.currentUserId) {
       return `rubbyfilm_recent_searches_${this.currentUserId}`;
     }
-    return `rubbyfilm_recent_searches_guest`;
+    return GUEST_KEY;
   }
 
   private load(): string[] {
@@ -104,6 +161,18 @@ class SearchHistoryService implements ISearchHistoryService {
         if (Array.isArray(parsed)) {
           this.cache = parsed.filter((item) => typeof item === "string" && item.trim().length > 0);
           return this.cache;
+        }
+      }
+
+      // If user storage is empty, fallback to guest storage if any
+      if (this.currentUserId) {
+        const guestRaw = localStorage.getItem(GUEST_KEY);
+        if (guestRaw) {
+          const parsed = JSON.parse(guestRaw);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            this.cache = parsed.filter((item) => typeof item === "string" && item.trim().length > 0);
+            return this.cache;
+          }
         }
       }
     } catch (e) {
@@ -162,14 +231,12 @@ class SearchHistoryService implements ISearchHistoryService {
 
         // Merge without duplicates, preserving order
         const mergedSet = new Set<string>();
-        // Add server searches first
         for (const s of serverSearches) {
           const clean = (s || "").trim();
           if (clean) mergedSet.add(clean);
         }
 
         let localHasNewer = false;
-        // Merge local searches
         for (const l of localSearches) {
           const clean = (l || "").trim();
           if (clean && !mergedSet.has(clean)) {
@@ -262,12 +329,18 @@ class SearchHistoryService implements ISearchHistoryService {
   public clear(): void {
     this.save([]);
 
-    if (this.currentUserId && this.isClient()) {
-      fetch("/api/user/searches", {
-        method: "DELETE",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      }).catch(() => {});
+    if (this.isClient()) {
+      try {
+        localStorage.removeItem(this.getStorageKey());
+      } catch {}
+
+      if (this.currentUserId) {
+        fetch("/api/user/searches", {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        }).catch(() => {});
+      }
     }
   }
 
@@ -281,3 +354,4 @@ class SearchHistoryService implements ISearchHistoryService {
 }
 
 export const searchHistoryService = new SearchHistoryService();
+

@@ -244,8 +244,12 @@ export function SearchPageView() {
 
   // Handle Tag click
   const handleSelectTerm = (term: string) => {
-    setInputVal(term);
-    router.push(`/search?q=${encodeURIComponent(term)}&page=1`);
+    const clean = term.trim();
+    if (!clean) return;
+    addRecentSearch(clean);
+    setInputVal(clean);
+    router.push(`/search?q=${encodeURIComponent(clean)}&page=1`);
+    performSearch(clean, 1);
   };
 
   // Handle Page Change
@@ -299,6 +303,15 @@ export function SearchPageView() {
         <SearchBar
           value={inputVal}
           onChange={setInputVal}
+          onSubmit={(term) => {
+            const clean = term.trim();
+            if (clean) {
+              addRecentSearch(clean);
+              setInputVal(clean);
+              router.push(`/search?q=${encodeURIComponent(clean)}&page=1`);
+              performSearch(clean, 1);
+            }
+          }}
           isLoading={isLoading}
           autoFocus={!queryParam}
           className="max-w-xl mx-auto shadow-2xl"
@@ -307,14 +320,14 @@ export function SearchPageView() {
         {/* Recent & Trending Tags */}
         <div className="mt-4 flex flex-col items-center gap-2.5">
           {/* Recent Searches */}
-          {recentSearches.length > 0 && !inputVal && (
+          {recentSearches.length > 0 && (
             <div className="flex flex-wrap items-center justify-center gap-1.5 text-xs text-cinema-400">
               <span className="flex items-center gap-1 mr-1 text-cinema-300 font-medium">
                 <Clock className="w-3.5 h-3.5 text-brand" />
                 <span>Tìm kiếm gần đây:</span>
               </span>
 
-              {recentSearches.slice(0, 5).map((term) => (
+              {recentSearches.slice(0, 8).map((term) => (
                 <div
                   key={term}
                   onClick={() => handleSelectTerm(term)}
@@ -335,7 +348,7 @@ export function SearchPageView() {
               <button
                 type="button"
                 onClick={clearRecentSearches}
-                className="text-[11px] text-cinema-400 hover:text-red-400 transition-colors ml-1 underline decoration-dotted"
+                className="text-[11px] text-cinema-400 hover:text-red-400 transition-colors ml-1 underline decoration-dotted cursor-pointer"
               >
                 Xóa tất cả
               </button>

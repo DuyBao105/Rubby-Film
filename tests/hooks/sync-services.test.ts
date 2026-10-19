@@ -149,5 +149,57 @@ describe("Cross-Device Sync Logic", () => {
       expect(myListService.has("movie_b")).toBe(false);
       expect(myListService.getList()).toHaveLength(0);
     });
+
+    it("retains locally added favorites when server returns empty list (prevents disappearing bug)", async () => {
+      myListService.add(mockMovieA);
+      expect(myListService.has("movie_a")).toBe(true);
+
+      // Server returns empty list (e.g. fresh container or DB quota error)
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { favorites: [] },
+        }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await myListService.syncWithServer(true);
+
+      // Local addition must be retained, NOT erased!
+      expect(myListService.has("movie_a")).toBe(true);
+      expect(myListService.getList()).toHaveLength(1);
+      expect(myListService.getList()[0].id).toBe("movie_a");
+    });
+
+    it("supports guest favorites and migrates them upon login", () => {
+      myListService.setUser(null);
+      expect(myListService.getList()).toHaveLength(0);
+
+      // Guest adds movie A
+      myListService.add(mockMovieA);
+      expect(myListService.has("movie_a")).toBe(true);
+
+      // User logs in
+      myListService.setUser("user_logged_in_456");
+      expect(myListService.has("movie_a")).toBe(true);
+      expect(myListService.getList()).toHaveLength(1);
+    });
+  });
+
+  describe("searchHistoryService Guest and Retention", () => {
+    it("allows adding searches and migrates guest searches on login", async () => {
+      const { searchHistoryService } = await import("@/lib/services/searchHistoryService");
+      localStorage.clear();
+      searchHistoryService.setUser(null);
+
+      searchHistoryService.addSearch("dune 2");
+      expect(searchHistoryService.getSearches()).toContain("dune 2");
+
+      // User logs in
+      searchHistoryService.setUser("user_search_789");
+      expect(searchHistoryService.getSearches()).toContain("dune 2");
+    });
   });
 });
+
