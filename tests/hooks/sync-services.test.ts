@@ -200,6 +200,76 @@ describe("Cross-Device Sync Logic", () => {
       searchHistoryService.setUser("user_search_789");
       expect(searchHistoryService.getSearches()).toContain("dune 2");
     });
+
+    it("prevents deleted search terms from resurrecting during server sync", async () => {
+      const { searchHistoryService } = await import("@/lib/services/searchHistoryService");
+      localStorage.clear();
+      searchHistoryService.setUser("user_search_789");
+
+      searchHistoryService.addSearch("avatar");
+      expect(searchHistoryService.getSearches()).toContain("avatar");
+
+      // User removes "avatar"
+      searchHistoryService.removeSearch("avatar");
+      expect(searchHistoryService.getSearches()).not.toContain("avatar");
+
+      // Server returns stale "avatar" due to lag/out-of-order sync
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: { searches: ["avatar"] },
+        }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await searchHistoryService.syncWithServer(true);
+
+      // "avatar" must NOT be resurrected
+      expect(searchHistoryService.getSearches()).not.toContain("avatar");
+    });
+  });
+
+  describe("watchHistoryService Deletion and Anti-Resurrection", () => {
+    it("prevents deleted watch history item from resurrecting during server sync", async () => {
+      localStorage.clear();
+      watchHistoryService.setUser("user_history_123");
+
+      watchHistoryService.updateProgress(mockMovieA, 600, 3600, undefined, true);
+      expect(watchHistoryService.getHistory()).toHaveLength(1);
+
+      // User removes movie A from history
+      watchHistoryService.removeFromHistory("movie_a");
+      expect(watchHistoryService.getHistory()).toHaveLength(0);
+
+      // Server still returns stale movie A
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          success: true,
+          data: {
+            history: [
+              {
+                movieId: "movie_a",
+                slug: "movie-a",
+                title: "Movie A",
+                progressSeconds: 600,
+                durationSeconds: 3600,
+                progressPercent: 17,
+                watchedAt: Date.now() - 5000,
+              },
+            ],
+          },
+        }),
+      });
+      vi.stubGlobal("fetch", fetchMock);
+
+      await watchHistoryService.syncWithServer(true);
+
+      // movie A must NOT be resurrected
+      expect(watchHistoryService.getHistory()).toHaveLength(0);
+    });
   });
 });
+
 

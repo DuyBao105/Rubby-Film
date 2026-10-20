@@ -149,9 +149,56 @@ class SearchHistoryService implements ISearchHistoryService {
     return GUEST_KEY;
   }
 
+  private getTombstoneKey(): string {
+    if (this.currentUserId) {
+      return `rubbyfilm_recent_searches_tombstones_${this.currentUserId}`;
+    }
+    return "rubbyfilm_recent_searches_tombstones_guest";
+  }
+
+  private getTombstones(): Set<string> {
+    if (!this.isClient()) return new Set();
+    const key = this.getTombstoneKey();
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.map((s) => String(s).toLowerCase().trim()));
+        }
+      }
+    } catch {}
+    return new Set();
+  }
+
+  private addTombstone(term: string): void {
+    if (!this.isClient() || !term) return;
+    const key = this.getTombstoneKey();
+    try {
+      const set = this.getTombstones();
+      set.add(String(term).toLowerCase().trim());
+      localStorage.setItem(key, JSON.stringify(Array.from(set)));
+    } catch {}
+  }
+
+  private removeTombstone(term: string): void {
+    if (!this.isClient() || !term) return;
+    const key = this.getTombstoneKey();
+    try {
+      const set = this.getTombstones();
+      const target = String(term).toLowerCase().trim();
+      if (set.has(target)) {
+        set.delete(target);
+        localStorage.setItem(key, JSON.stringify(Array.from(set)));
+      }
+    } catch {}
+  }
+
   private load(): string[] {
     if (!this.isClient()) return [];
     if (this.cache !== null) return this.cache;
+
+    const tombstones = this.getTombstones();
 
     try {
       const key = this.getStorageKey();
@@ -159,7 +206,9 @@ class SearchHistoryService implements ISearchHistoryService {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
-          this.cache = parsed.filter((item) => typeof item === "string" && item.trim().length > 0);
+          this.cache = parsed
+            .filter((item) => typeof item === "string" && item.trim().length > 0)
+            .filter((item) => !tombstones.has(item.toLowerCase().trim()));
           return this.cache;
         }
       }
@@ -170,7 +219,9 @@ class SearchHistoryService implements ISearchHistoryService {
         if (guestRaw) {
           const parsed = JSON.parse(guestRaw);
           if (Array.isArray(parsed) && parsed.length > 0) {
-            this.cache = parsed.filter((item) => typeof item === "string" && item.trim().length > 0);
+            this.cache = parsed
+              .filter((item) => typeof item === "string" && item.trim().length > 0)
+              .filter((item) => !tombstones.has(item.toLowerCase().trim()));
             return this.cache;
           }
         }
@@ -228,18 +279,30 @@ class SearchHistoryService implements ISearchHistoryService {
 
         const serverSearches = body.data.searches;
         const localSearches = this.load();
+        const tombstones = this.getTombstones();
 
-        // Merge without duplicates, preserving order
+        // Merge without duplicates, preserving order and honoring tombstones
         const mergedSet = new Set<string>();
         for (const s of serverSearches) {
           const clean = (s || "").trim();
-          if (clean) mergedSet.add(clean);
+          if (!clean) continue;
+          if (tombstones.has(clean.toLowerCase())) {
+            // Delete lingering removed search from server
+            fetch(`/api/user/searches?term=${encodeURIComponent(clean)}`, {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+              credentials: "include",
+            }).catch(() => {});
+            continue;
+          }
+          mergedSet.add(clean);
         }
 
         let localHasNewer = false;
         for (const l of localSearches) {
           const clean = (l || "").trim();
-          if (clean && !mergedSet.has(clean)) {
+          if (!clean || tombstones.has(clean.toLowerCase())) continue;
+          if (!mergedSet.has(clean)) {
             mergedSet.add(clean);
             localHasNewer = true;
           }
@@ -292,6 +355,8 @@ class SearchHistoryService implements ISearchHistoryService {
     const clean = term.trim();
     if (!clean || clean.length < 2) return;
 
+    this.removeTombstone(clean);
+
     const current = this.load();
     const filtered = current.filter((s) => s.toLowerCase() !== clean.toLowerCase());
     const updated = [clean, ...filtered].slice(0, 15);
@@ -313,6 +378,8 @@ class SearchHistoryService implements ISearchHistoryService {
 
   public removeSearch(term: string): void {
     const clean = term.trim();
+    this.addTombstone(clean);
+
     const current = this.load();
     const updated = current.filter((s) => s.toLowerCase() !== clean.toLowerCase());
     this.save(updated);
@@ -327,6 +394,10 @@ class SearchHistoryService implements ISearchHistoryService {
   }
 
   public clear(): void {
+    const current = this.load();
+    for (const s of current) {
+      if (s) this.addTombstone(s);
+    }
     this.save([]);
 
     if (this.isClient()) {

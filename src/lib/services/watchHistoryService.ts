@@ -177,6 +177,49 @@ class WatchHistoryService implements IWatchHistoryService {
     return `rubbyfilm_watch_history_${this.currentUserId}`;
   }
 
+  private getTombstoneKey(): string {
+    if (!this.currentUserId) return "rubbyfilm_watch_history_tombstones_guest";
+    return `rubbyfilm_watch_history_tombstones_${this.currentUserId}`;
+  }
+
+  private getTombstones(): Set<string> {
+    if (typeof window === "undefined") return new Set();
+    const key = this.getTombstoneKey();
+    try {
+      const raw = localStorage.getItem(key);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) {
+          return new Set(parsed.map((s) => String(s).toLowerCase().trim()));
+        }
+      }
+    } catch {}
+    return new Set();
+  }
+
+  private addTombstone(id: string): void {
+    if (typeof window === "undefined" || !id) return;
+    const key = this.getTombstoneKey();
+    try {
+      const set = this.getTombstones();
+      set.add(String(id).toLowerCase().trim());
+      localStorage.setItem(key, JSON.stringify(Array.from(set)));
+    } catch {}
+  }
+
+  private removeTombstone(id: string): void {
+    if (typeof window === "undefined" || !id) return;
+    const key = this.getTombstoneKey();
+    try {
+      const set = this.getTombstones();
+      const target = String(id).toLowerCase().trim();
+      if (set.has(target)) {
+        set.delete(target);
+        localStorage.setItem(key, JSON.stringify(Array.from(set)));
+      }
+    } catch {}
+  }
+
   private load(): WatchHistoryItem[] {
     if (typeof window === "undefined") return [];
     if (this.cache !== null) return this.cache;
@@ -187,12 +230,18 @@ class WatchHistoryService implements IWatchHistoryService {
       if (raw) {
         const parsed = JSON.parse(raw);
         if (Array.isArray(parsed)) {
+          const tombstones = this.getTombstones();
           const seen = new Set<string>();
           const deduplicated: WatchHistoryItem[] = [];
           for (const item of parsed) {
-            const id = item?.movieId || item?.movie?.id || item?.slug;
-            if (id && !seen.has(String(id))) {
-              seen.add(String(id));
+            const id = String(item?.movieId || item?.movie?.id || "").toLowerCase().trim();
+            const slug = String(item?.slug || item?.movie?.slug || "").toLowerCase().trim();
+            if ((id && tombstones.has(id)) || (slug && tombstones.has(slug))) {
+              continue;
+            }
+            const keyId = id || slug;
+            if (keyId && !seen.has(keyId)) {
+              seen.add(keyId);
               deduplicated.push(item);
             }
           }
@@ -264,26 +313,45 @@ class WatchHistoryService implements IWatchHistoryService {
 
         const serverItems = body.data.history;
         const localItems = this.load();
+        const tombstones = this.getTombstones();
 
         // Merge server items and local items with timestamp precision
         const map = new Map<string, WatchHistoryItem>();
 
-        // Put server items first
+        // Put server items first, filtering out any deleted items (tombstones)
         for (const s of serverItems) {
-          const id = String(s.movieId || s.movie?.id || s.slug || "").trim();
-          if (id) map.set(id, s);
+          const id = String(s.movieId || s.movie?.id || "").toLowerCase().trim();
+          const slug = String(s.slug || s.movie?.slug || "").toLowerCase().trim();
+
+          if ((id && tombstones.has(id)) || (slug && tombstones.has(slug))) {
+            // Server still has this deleted item, send DELETE again to ensure server cleans it
+            fetch(`/api/user/history?id=${encodeURIComponent(s.movieId || s.slug || "")}`, {
+              method: "DELETE",
+              headers: getAuthHeaders(),
+              credentials: "include",
+            }).catch(() => {});
+          } else {
+            const primaryId = String(s.movieId || s.movie?.id || s.slug || "").trim();
+            if (primaryId) map.set(primaryId, s);
+          }
         }
 
         let localHasNewer = false;
 
         // Merge local items
         for (const l of localItems) {
-          const id = String(l.movieId || l.movie?.id || l.slug || "").trim();
-          if (!id) continue;
+          const id = String(l.movieId || l.movie?.id || "").toLowerCase().trim();
+          const slug = String(l.slug || l.movie?.slug || "").toLowerCase().trim();
+          if ((id && tombstones.has(id)) || (slug && tombstones.has(slug))) {
+            continue;
+          }
 
-          const serverMatch = map.get(id);
+          const primaryId = String(l.movieId || l.movie?.id || l.slug || "").trim();
+          if (!primaryId) continue;
+
+          const serverMatch = map.get(primaryId);
           if (!serverMatch) {
-            map.set(id, l);
+            map.set(primaryId, l);
             localHasNewer = true;
           } else {
             const mergedEpisodes = mergeWatchedEpisodes(
@@ -294,13 +362,13 @@ class WatchHistoryService implements IWatchHistoryService {
             const localTime = l.watchedAt || 0;
 
             if (localTime > serverTime) {
-              map.set(id, {
+              map.set(primaryId, {
                 ...l,
                 watchedEpisodes: mergedEpisodes,
               });
               localHasNewer = true;
             } else {
-              map.set(id, {
+              map.set(primaryId, {
                 ...serverMatch,
                 watchedEpisodes: mergedEpisodes,
               });
@@ -464,6 +532,9 @@ class WatchHistoryService implements IWatchHistoryService {
       watchedEpisodes: updatedWatched,
     };
 
+    if (movie.id) this.removeTombstone(movie.id);
+    if (movie.slug) this.removeTombstone(movie.slug);
+
     const updated = [newItem, ...filtered].slice(0, 50);
     this.save(updated);
 
@@ -491,6 +562,8 @@ class WatchHistoryService implements IWatchHistoryService {
   public removeFromHistory(movieIdOrSlug: string): void {
     if (!movieIdOrSlug) return;
     const target = String(movieIdOrSlug).trim().toLowerCase();
+    this.addTombstone(target);
+
     const current = this.load();
     const updated = current.filter((item) => {
       const id = String(item.movieId || item.movie?.id || "").trim().toLowerCase();
@@ -510,6 +583,12 @@ class WatchHistoryService implements IWatchHistoryService {
   }
 
   public clear(): void {
+    const current = this.load();
+    for (const item of current) {
+      if (item.movieId) this.addTombstone(item.movieId);
+      if (item.slug) this.addTombstone(item.slug);
+      if (item.movie?.id) this.addTombstone(item.movie.id);
+    }
     this.save([]);
     if (typeof window !== "undefined" && this.currentUserId) {
       try {
