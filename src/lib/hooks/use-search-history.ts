@@ -21,7 +21,7 @@ export function useSearchHistory() {
     });
 
     return unsubscribe;
-  }, [user]);
+  }, [user?.id]);
 
   const addRecentSearch = useCallback((term: string) => {
     searchHistoryService.addSearch(term);

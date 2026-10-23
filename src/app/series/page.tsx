@@ -1,5 +1,6 @@
 import { movieProvider } from "@/lib/providers";
 import { MovieGrid } from "@/components/movie/movie-grid";
+import { MovieFilterPanel } from "@/components/movie/movie-filter-panel";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Pagination } from "@/components/ui/pagination";
 import { Metadata } from "next";
@@ -12,9 +13,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 300;
-
-import { MovieFilterPanel } from "@/components/movie/movie-filter-panel";
+export const dynamic = "force-dynamic";
 
 interface SeriesPageProps {
   searchParams: Promise<{

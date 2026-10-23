@@ -23,6 +23,7 @@ interface MovieHeroProps {
 export function MovieHero({ movies }: MovieHeroProps) {
   const [mounted, setMounted] = React.useState(false);
   const [currentIndex, setCurrentIndex] = React.useState(0);
+  const [isPaused, setIsPaused] = React.useState(false);
   const touchStartXRef = React.useRef<number | null>(null);
   const { isInList, toggleMovie } = useMyList();
 
@@ -44,14 +45,14 @@ export function MovieHero({ movies }: MovieHeroProps) {
     setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
   }, [totalSlides]);
 
-  // Autoplay (5 seconds per slide, continuous without pause on hover)
+  // Autoplay (7 seconds per slide, paused when user hovers or interacts to ensure clicks work reliably)
   React.useEffect(() => {
-    if (totalSlides <= 1) return;
+    if (totalSlides <= 1 || isPaused) return;
     const timer = setInterval(() => {
       nextSlide();
-    }, 5000);
+    }, 7000);
     return () => clearInterval(timer);
-  }, [totalSlides, nextSlide, currentIndex]);
+  }, [totalSlides, nextSlide, isPaused]);
 
   // Keyboard navigation
   React.useEffect(() => {
@@ -107,8 +108,16 @@ export function MovieHero({ movies }: MovieHeroProps) {
       suppressHydrationWarning
       aria-label="Phim đề cử đặc sắc"
       className="relative w-full h-[100svh] min-h-[640px] sm:h-[100vh] sm:min-h-[720px] lg:h-[100vh] lg:min-h-[780px] overflow-hidden bg-[#0F0F0F] select-none group/hero"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={(e) => {
+        setIsPaused(true);
+        handleTouchStart(e);
+      }}
+      onTouchEnd={(e) => {
+        setIsPaused(false);
+        handleTouchEnd(e);
+      }}
     >
       {/* TopHim Style Cinematic Multi-Plane Parallax Slides */}
       {heroMovies.map((m, idx) => {
@@ -317,12 +326,13 @@ export function MovieHero({ movies }: MovieHeroProps) {
                   {/* Primary Button: Watch Movie */}
                   <Link
                     href={`/watch/${m.slug}`}
+                    prefetch={true}
                     aria-label={`Xem phim ${m.title}`}
                     className="relative group/btn inline-flex items-center gap-2.5 px-6 sm:px-8 py-3 sm:py-3.5 rounded-full bg-gradient-to-r from-[#E50000] via-[#FF1A1A] to-[#B30000] text-white font-bold text-sm sm:text-base shadow-[0_4px_25px_rgba(229,0,0,0.5)] hover:shadow-[0_6px_35px_rgba(229,0,0,0.8)] hover:scale-105 active:scale-95 transition-all duration-300 overflow-hidden cursor-pointer"
                   >
-                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 ease-out" />
-                    <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white text-white translate-x-0.5 group-hover/btn:scale-110 transition-transform" />
-                    <span className="tracking-wide">Xem Phim</span>
+                    <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover/btn:translate-x-full transition-transform duration-1000 ease-out pointer-events-none" />
+                    <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-white text-white translate-x-0.5 group-hover/btn:scale-110 transition-transform pointer-events-none" />
+                    <span className="tracking-wide pointer-events-none">Xem Phim</span>
                   </Link>
 
                   {/* Secondary Button 1: Liquid Glass Circular Favorite */}
@@ -375,20 +385,24 @@ export function MovieHero({ movies }: MovieHeroProps) {
       {totalSlides > 1 && (
         <>
           {/* Mobile Indicator Dots */}
-          <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 pointer-events-auto">
+          <div className="sm:hidden absolute bottom-7 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 pointer-events-auto">
             {heroMovies.map((_, idx) => (
               <button
                 key={idx}
                 type="button"
                 onClick={() => setCurrentIndex(idx)}
                 aria-label={`Chuyển đến slide ${idx + 1}`}
-                className={cn(
-                  "h-1.5 rounded-full transition-all duration-300",
-                  idx === currentIndex
-                    ? "w-6 bg-[#E50000]"
-                    : "w-1.5 bg-white/40"
-                )}
-              />
+                className="p-1.5 flex items-center justify-center cursor-pointer"
+              >
+                <span
+                  className={cn(
+                    "h-1.5 rounded-full transition-all duration-300 block",
+                    idx === currentIndex
+                      ? "w-6 bg-[#E50000] shadow-[0_0_8px_#E50000]"
+                      : "w-1.5 bg-white/40"
+                  )}
+                />
+              </button>
             ))}
           </div>
 

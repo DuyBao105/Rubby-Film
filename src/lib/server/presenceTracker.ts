@@ -90,6 +90,43 @@ function getSql() {
   }
 }
 
+let hasCheckedTables = false;
+async function ensureTables(sql: any) {
+  if (hasCheckedTables) return;
+  try {
+    await sql.query(`
+      CREATE TABLE IF NOT EXISTS analytics_active_sessions (
+        session_id VARCHAR(64) PRIMARY KEY,
+        user_id TEXT,
+        user_name TEXT,
+        user_role TEXT,
+        device VARCHAR(20) DEFAULT 'desktop',
+        page VARCHAR(150) NOT NULL,
+        title VARCHAR(150),
+        first_seen BIGINT NOT NULL,
+        last_seen BIGINT NOT NULL,
+        page_views INT DEFAULT 1
+      );
+    `);
+    await sql.query(`
+      CREATE TABLE IF NOT EXISTS analytics_pageviews (
+        id VARCHAR(64) PRIMARY KEY,
+        session_id VARCHAR(64) NOT NULL,
+        user_id TEXT,
+        user_name TEXT,
+        user_role TEXT,
+        device VARCHAR(20) DEFAULT 'desktop',
+        page VARCHAR(150) NOT NULL,
+        title VARCHAR(150),
+        created_at BIGINT NOT NULL
+      );
+    `);
+    hasCheckedTables = true;
+  } catch (err) {
+    console.warn("[presenceTracker] ensureTables notice:", (err as any)?.message || err);
+  }
+}
+
 // Inactivity timeout: considered offline if no heartbeat for 45 seconds (client sends every 12s)
 const INACTIVITY_TIMEOUT_MS = 45 * 1000;
 
@@ -181,6 +218,7 @@ export const presenceTracker = {
     try {
       const sql = getSql();
       if (!sql) return;
+      await ensureTables(sql);
 
       // 1. Check previous active session to detect page change / navigation
       const existing = (await sql.query(

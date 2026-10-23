@@ -80,6 +80,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
   const [selectedServer, setSelectedServer] = React.useState<number>(0);
   const [selectedUpcomingEp, setSelectedUpcomingEp] = React.useState<number | null>(null);
   const [isMounted, setIsMounted] = React.useState(false);
+  const [isTabPending, startTabTransition] = React.useTransition();
 
   React.useEffect(() => {
     setIsMounted(true);
@@ -324,8 +325,14 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
           
           {/* LEFT COLUMN: Poster + Synopsis (Desktop) */}
           <div className="shrink-0 w-44 sm:w-56 md:w-64 max-w-[280px] mx-auto md:mx-0 flex flex-col gap-6">
-            {/* Poster Card */}
-            <div className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80 ring-1 ring-white/15 bg-[#16161E] w-full aspect-[2/3] flex items-center justify-center group">
+            {/* Poster Card - Clickable to Watch */}
+            <Link
+              href={watchUrl}
+              prefetch={true}
+              title={`Xem ngay ${movie.title}`}
+              aria-label={`Xem ngay ${movie.title}`}
+              className="relative rounded-2xl overflow-hidden shadow-2xl shadow-black/80 ring-1 ring-white/15 bg-[#16161E] w-full aspect-[2/3] flex items-center justify-center group cursor-pointer block"
+            >
               {/* Film icon placeholder background */}
               <Film className="absolute w-14 h-14 text-white/10" />
               <Image
@@ -338,6 +345,16 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 sizes="(max-width: 768px) 240px, 320px"
                 onError={() => setPosterSrc(FALLBACK_POSTER)}
               />
+
+              {/* Glowing Hover Play Overlay */}
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 backdrop-blur-[2px]">
+                <div className="w-14 h-14 rounded-full bg-[#E50000] text-white flex items-center justify-center shadow-[0_0_35px_rgba(229,0,0,0.8)] ring-4 ring-white/20 group-hover:scale-110 active:scale-95 transition-transform">
+                  <Play className="w-6 h-6 fill-current ml-0.5" />
+                </div>
+                <span className="mt-3 text-xs font-bold text-white tracking-wide bg-black/60 px-3 py-1 rounded-full border border-white/10">
+                  Xem ngay
+                </span>
+              </div>
 
               {/* Star Rating Badge */}
               <div className="absolute top-2.5 left-2.5 z-20">
@@ -355,7 +372,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                   </span>
                 </div>
               )}
-            </div>
+            </Link>
 
             {/* Synopsis under Poster (Desktop View) */}
             <div className="hidden md:block bg-[#161824]/80 border border-white/[0.08] rounded-2xl p-4 shadow-lg">
@@ -397,9 +414,11 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 {movie.quality || "FHD"}
               </span>
 
-              {/* Vietsub / Voice glass badge */}
+              {/* Language / Exclusive brand badge */}
               <span className="px-2.5 py-[3px] rounded-[4px] border border-white/20 bg-black/40 backdrop-blur-sm font-semibold text-white/90">
-                {movie.language || "Vietsub"}
+                {movie.language && !movie.language.toLowerCase().includes("vietsub")
+                  ? movie.language
+                  : "Ruby Exclusive"}
               </span>
 
               {/* Episode count status badge */}
@@ -528,8 +547,9 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 <button
                   type="button"
                   onClick={() => toggleMovie(movie)}
-                  className="group flex flex-col items-center justify-center gap-1 transition-all hover:-translate-y-0.5 active:scale-95 px-2 cursor-pointer"
+                  className="group flex flex-col items-center justify-center gap-1 transition-all hover:-translate-y-0.5 active:scale-95 px-2 min-h-[44px] min-w-[48px] cursor-pointer"
                   title="Yêu thích"
+                  aria-label={inList ? "Đã thích" : "Yêu thích"}
                 >
                   <Heart
                     className={`w-6 h-6 transition-all duration-300 ${
@@ -547,8 +567,9 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 <button
                   type="button"
                   onClick={handleShare}
-                  className="group flex flex-col items-center justify-center gap-1 transition-all hover:-translate-y-0.5 active:scale-95 px-2 cursor-pointer"
+                  className="group flex flex-col items-center justify-center gap-1 transition-all hover:-translate-y-0.5 active:scale-95 px-2 min-h-[44px] min-w-[48px] cursor-pointer"
                   title="Chia sẻ phim"
+                  aria-label="Chia sẻ phim"
                 >
                   <Share2 className="w-6 h-6 text-white/80 group-hover:text-red-400 group-hover:scale-110 transition-all duration-300" />
                   <span className="text-[12px] font-medium text-white/80 group-hover:text-white transition-colors">
@@ -563,8 +584,9 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                     const el = document.getElementById("comment-section");
                     if (el) el.scrollIntoView({ behavior: "smooth" });
                   }}
-                  className="group flex flex-col items-center justify-center gap-1 transition-all hover:-translate-y-0.5 active:scale-95 px-2 cursor-pointer"
+                  className="group flex flex-col items-center justify-center gap-1 transition-all hover:-translate-y-0.5 active:scale-95 px-2 min-h-[44px] min-w-[48px] cursor-pointer"
                   title="Bình luận"
+                  aria-label="Bình luận"
                 >
                   <MessageCircle className="w-6 h-6 text-white/80 group-hover:text-red-400 group-hover:scale-110 transition-all duration-300" />
                   <span className="text-[12px] font-medium text-white/80 group-hover:text-white transition-colors">
@@ -654,7 +676,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                 {episodes.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setActiveTab("episodes")}
+                    onClick={() => startTabTransition(() => setActiveTab("episodes"))}
                     className={`pb-3 text-sm md:text-base font-bold transition-all relative whitespace-nowrap cursor-pointer ${
                       activeTab === "episodes"
                         ? "text-red-500"
@@ -673,7 +695,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
 
                 <button
                   type="button"
-                  onClick={() => setActiveTab("cast")}
+                  onClick={() => startTabTransition(() => setActiveTab("cast"))}
                   className={`pb-3 text-sm md:text-base font-bold transition-all relative whitespace-nowrap cursor-pointer ${
                     activeTab === "cast" || episodes.length === 0
                       ? "text-red-500"
@@ -689,7 +711,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
 
               {/* TAB 1: EPISODES */}
               {(activeTab === "episodes" || episodes.length === 0) && episodes.length > 0 && (
-                <div className="animate-in fade-in duration-300 space-y-5 pb-6">
+                <div className={`animate-in fade-in duration-200 space-y-5 pb-6 transition-opacity ${isTabPending ? "opacity-50" : "opacity-100"}`}>
                   {/* Server selector + Season Filter + Search */}
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     {/* Server Pills */}
@@ -707,7 +729,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                             : "bg-white/5 text-zinc-300 border-white/10 hover:border-white/30"
                         }`}
                       >
-                        <span>VIP Fast</span>
+                        <span>Máy chủ Ruby #1</span>
                         <span className="w-4 h-4 rounded-full bg-black/30 flex items-center justify-center text-[10px]">
                           1
                         </span>
@@ -721,7 +743,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                             : "bg-white/5 text-zinc-400 border-white/10 hover:text-white"
                         }`}
                       >
-                        <span>Backup HD</span>
+                        <span>Máy chủ Ruby #2</span>
                         <span className="w-4 h-4 rounded-full bg-white/10 flex items-center justify-center text-[10px]">
                           2
                         </span>
@@ -759,7 +781,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                         <Link
                           key={ep.id}
                           href={`/watch/${movie.slug}?episode=${ep.episodeNumber}`}
-                          className={`group flex items-center justify-center gap-1.5 rounded-xl transition-all py-2.5 px-2 text-xs sm:text-sm font-semibold shadow-sm select-none border ${
+                          className={`group flex items-center justify-center gap-1.5 rounded-xl transition-all py-2.5 px-2 min-h-[44px] text-xs sm:text-sm font-semibold shadow-sm select-none border ${
                             isCurrent
                               ? "bg-brand text-white border-brand font-black shadow-md shadow-brand/20 scale-[1.02]"
                               : isWatched
@@ -778,7 +800,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                             {ep.name && ep.name.toLowerCase() === "full"
                               ? "Bản Full"
                               : movie.type === "single"
-                              ? `Bản Full (${ep.name})`
+                              ? "Bản Full"
                               : `Tập ${ep.episodeNumber}`}
                           </span>
                           {isWatched && !isCurrent && (
@@ -800,7 +822,7 @@ export function MovieDetail({ movie, relatedMovies }: MovieDetailProps) {
                               key={`upcoming-${epNum}`}
                               type="button"
                               onClick={() => setSelectedUpcomingEp(epNum)}
-                              className={`group flex items-center justify-center gap-1.5 rounded-xl transition-all py-2.5 px-2 text-xs sm:text-sm font-medium border cursor-pointer ${
+                              className={`group flex items-center justify-center gap-1.5 rounded-xl transition-all py-2.5 px-2 min-h-[44px] text-xs sm:text-sm font-medium border cursor-pointer ${
                                 isNext
                                   ? "bg-red-500/10 border-red-500/40 text-red-300 hover:bg-red-500/20 hover:border-brand"
                                   : "bg-[#161824]/40 border-white/[0.04] text-zinc-500 hover:text-zinc-400 hover:border-white/10"

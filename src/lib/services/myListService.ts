@@ -72,9 +72,9 @@ class MyListService implements IMyListService {
       // Cross-device sync: auto re-sync when switching back to tab/browser window
       const triggerAutoSync = () => {
         const now = Date.now();
-        if (now - this.lastAutoSyncTime > 4000 && this.currentUserId) {
+        if (now - this.lastAutoSyncTime > 15000 && this.currentUserId) {
           this.lastAutoSyncTime = now;
-          this.syncWithServer(true);
+          this.syncWithServer(false);
         }
       };
 
@@ -90,14 +90,13 @@ class MyListService implements IMyListService {
   public setUser(userId: string | null): void {
     const normalized = userId ? String(userId).trim() : null;
     const changed = this.currentUserId !== normalized;
+    if (!changed) return;
     this.currentUserId = normalized;
-    if (changed) {
-      this.cache = null;
-      this.notify();
-    }
+    this.cache = null;
+    this.notify();
     if (normalized) {
       this.migrateGuestFavorites(normalized);
-      this.syncWithServer(true);
+      this.syncWithServer(false);
     }
   }
 
@@ -222,18 +221,6 @@ class MyListService implements IMyListService {
           return this.cache;
         }
       }
-
-      // If user storage is empty, fallback to guest storage if any
-      if (this.currentUserId) {
-        const guestRaw = localStorage.getItem(GUEST_KEY);
-        if (guestRaw) {
-          const parsed = JSON.parse(guestRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            this.cache = parsed;
-            return this.cache;
-          }
-        }
-      }
     } catch (e) {
       console.error("[MyListService] Failed to parse storage:", e);
     }
@@ -271,10 +258,10 @@ class MyListService implements IMyListService {
   public async syncWithServer(force: boolean = false): Promise<void> {
     if (typeof window === "undefined" || !this.currentUserId) return;
 
-    if (this.syncPromise && !force) return this.syncPromise;
+    if (this.syncPromise) return this.syncPromise;
 
     const now = Date.now();
-    if (!force && now - this.lastSyncTime < 3000) {
+    if (!force && now - this.lastSyncTime < 8000) {
       return;
     }
     this.lastSyncTime = now;

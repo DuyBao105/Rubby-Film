@@ -388,7 +388,7 @@ export default function SettingsPage() {
           <div className="space-y-2 pb-4 border-b border-cinema-750">
             <p className="text-sm font-semibold text-white">Chất lượng phát ưu tiên</p>
             <p className="text-xs text-cinema-400">
-              Trình phát sẽ cố gắng chọn mức phân giải này trước nếu nguồn phát hỗ trợ
+              Trình phát sẽ cố gắng chọn mức phân giải này trước nếu máy chủ hỗ trợ
             </p>
             <div className="grid grid-cols-3 gap-2.5 pt-1">
               {[

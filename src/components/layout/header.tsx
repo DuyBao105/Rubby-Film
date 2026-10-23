@@ -241,12 +241,13 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-40 py-3 transition-colors">
+      <header suppressHydrationWarning className="fixed top-0 left-0 right-0 z-40 py-3 transition-colors">
         {/* Layer 1: Ambient top gradient overlay for Hero header */}
         <div
+          suppressHydrationWarning
           className={cn(
             "absolute inset-0 pointer-events-none transition-opacity duration-300 ease-out",
-            isHeroPage && !isScrolled
+            isHeroPage && !(mounted && isScrolled)
               ? "opacity-100 bg-gradient-to-b from-[#0F0F0F]/95 via-[#0F0F0F]/60 to-transparent"
               : "opacity-0"
           )}
@@ -254,9 +255,10 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
 
         {/* Layer 2: Scrolled solid dark blur background with border & shadow (smooth opacity fade-in) */}
         <div
+          suppressHydrationWarning
           className={cn(
             "absolute inset-0 pointer-events-none transition-opacity duration-300 ease-out bg-[#0F0F0F]/95 backdrop-blur-xl border-b border-[#262626] shadow-2xl",
-            isScrolled || !isHeroPage || isMobileMenuOpen ? "opacity-100" : "opacity-0"
+            (mounted && isScrolled) || !isHeroPage || isMobileMenuOpen ? "opacity-100" : "opacity-0"
           )}
         />
 
@@ -278,7 +280,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
             </Link>
 
             {/* Center: StreamVibe Signature Capsule Navigation Bar */}
-            <nav className="hidden lg:flex items-center gap-1 bg-[#0F0F0F] border border-[#262626] rounded-2xl p-1.5 shadow-inner font-sans">
+            <nav suppressHydrationWarning className="hidden lg:flex items-center gap-1 bg-[#0F0F0F] border border-[#262626] rounded-2xl p-1.5 shadow-inner font-sans">
               {navLinks.map((link) => {
                 let isActive = false;
                 if (link.href === "/") {
@@ -304,7 +306,10 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                       key={link.href}
                       href="/"
                       prefetch={true}
+                      onMouseEnter={() => router.prefetch("/")}
+                      onTouchStart={() => router.prefetch("/")}
                       onClick={handleHomeClick}
+                      suppressHydrationWarning
                       className={tabClass}
                     >
                       {link.label}
@@ -317,6 +322,9 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                     key={link.href}
                     href={link.href}
                     prefetch={true}
+                    onMouseEnter={() => router.prefetch(link.href)}
+                    onTouchStart={() => router.prefetch(link.href)}
+                    suppressHydrationWarning
                     className={tabClass}
                   >
                     {link.label}
@@ -349,6 +357,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                           key={g.slug}
                           href={`/genre/${g.slug}`}
                           prefetch={true}
+                          onMouseEnter={() => router.prefetch(`/genre/${g.slug}`)}
                           className="px-2 py-1.5 rounded-lg text-xs text-[#D1D5DB] hover:text-[#E50000] hover:bg-[#1A1A1A] transition-colors font-medium text-center truncate"
                         >
                           {g.name}
@@ -384,6 +393,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                           key={c.slug}
                           href={`/country/${c.slug}`}
                           prefetch={true}
+                          onMouseEnter={() => router.prefetch(`/country/${c.slug}`)}
                           className="px-2 py-1.5 rounded-lg text-xs text-[#D1D5DB] hover:text-[#E50000] hover:bg-[#1A1A1A] transition-colors font-medium text-center truncate"
                         >
                           {c.name}
@@ -601,7 +611,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
 
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
-          <div className="lg:hidden relative bg-[#0F0F0F]/98 backdrop-blur-2xl border-b border-[#262626] px-4 pt-4 pb-6 max-h-[85vh] overflow-y-auto no-scrollbar shadow-2xl animate-in slide-in-from-top-2 duration-300">
+          <div className="lg:hidden relative bg-[#0F0F0F]/98 backdrop-blur-2xl border-b border-[#262626] px-4 pt-4 pb-24 max-h-[85vh] overflow-y-auto no-scrollbar shadow-2xl animate-in slide-in-from-top-2 duration-300">
             {/* Ambient top-right glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-[#E50000]/10 rounded-full blur-3xl pointer-events-none" />
 
@@ -772,7 +782,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
               </button>
             </div>
 
-            <nav className="relative z-10 flex flex-col gap-1.5 pt-1">
+            <nav suppressHydrationWarning className="relative z-10 flex flex-col gap-1.5 pt-1">
               {navLinks.map((link) => {
                 let isActive = false;
                 if (link.href === "/") {
@@ -816,6 +826,7 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                         setIsMobileMenuOpen(false);
                         handleHomeClick(e);
                       }}
+                      suppressHydrationWarning
                       className={linkClasses}
                     >
                       <div className="flex items-center gap-3">
@@ -838,7 +849,9 @@ export function Header({ genres = [], countries = [] }: HeaderProps) {
                     key={link.href}
                     href={link.href}
                     prefetch={true}
+                    onTouchStart={() => router.prefetch(link.href)}
                     onClick={() => setIsMobileMenuOpen(false)}
+                    suppressHydrationWarning
                     className={linkClasses}
                   >
                     <div className="flex items-center gap-3">

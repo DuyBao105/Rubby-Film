@@ -86,7 +86,7 @@ function TrendingCard({ movie, rank, index, total }: TrendingCardProps) {
     <div
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="relative flex-shrink-0 w-[170px] sm:w-[195px] md:w-[215px] lg:w-[230px] select-none"
+      className="relative flex-shrink-0 w-[145px] sm:w-[195px] md:w-[215px] lg:w-[230px] select-none snap-start"
     >
       {/* Base Card Link */}
       <Link href={`/movie/${movie.slug}`} prefetch={true} className="group block w-full">
@@ -311,56 +311,60 @@ export function TrendingSection({
   if (!movies || movies.length === 0) return null;
 
   return (
-    <section id="trending" className="py-6 sm:py-8 relative select-none z-30">
-      {/* Section Header */}
-      <div className="px-4 sm:px-6 lg:px-8 mb-4 sm:mb-5">
-        <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#F9FAFB] tracking-[-0.02em]">
-          {title}
-        </h2>
-      </div>
+    <section id="trending" className="py-6 sm:py-8 relative select-none z-30 w-full">
+      <div className="max-w-7xl mx-auto">
+        {/* Section Header */}
+        <div className="px-4 sm:px-6 lg:px-8 mb-4 sm:mb-5">
+          <h2 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-[#F9FAFB] tracking-[-0.02em]">
+            {title}
+          </h2>
+        </div>
 
-      {/* Relative Carousel Container with Floating Circular Nav Buttons */}
-      <div className="relative group/carousel">
-        {/* Left Floating Arrow Button */}
-        {canScrollLeft && (
-          <button
-            type="button"
-            onClick={() => scroll("left")}
-            aria-label="Xem phim trước"
-            className="absolute left-2 sm:left-4 top-[38%] -translate-y-1/2 z-40 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-black shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 border border-black/10 cursor-pointer"
+        {/* Relative Carousel Container with Floating Circular Nav Buttons */}
+        <div className="relative group/carousel">
+          {/* Left Floating Arrow Button (Desktop only - hidden on mobile so it does not block movie posters) */}
+          {canScrollLeft && (
+            <button
+              type="button"
+              onClick={() => scroll("left")}
+              aria-label="Xem phim trước"
+              className="hidden md:flex absolute left-2 sm:left-4 top-[38%] -translate-y-1/2 z-40 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-black shadow-2xl items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 border border-black/10 cursor-pointer"
+            >
+              <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5]" />
+            </button>
+          )}
+
+          {/* Right Floating Arrow Button (Desktop only - hidden on mobile so it does not block movie posters) */}
+          {canScrollRight && (
+            <button
+              type="button"
+              onClick={() => scroll("right")}
+              aria-label="Xem phim kế tiếp"
+              className="hidden md:flex absolute right-2 sm:right-4 top-[38%] -translate-y-1/2 z-40 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-black shadow-2xl items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 border border-black/10 cursor-pointer"
+            >
+              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5]" />
+            </button>
+          )}
+
+          {/* Carousel Row */}
+          <div
+            ref={scrollRef}
+            onScroll={checkScroll}
+            className="flex gap-3 sm:gap-5 overflow-x-auto scrollbar-none px-4 sm:px-6 lg:px-8 pt-3 pb-6 scroll-smooth no-scrollbar snap-x snap-mandatory touch-pan-x"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
           >
-            <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5]" />
-          </button>
-        )}
-
-        {/* Right Floating Arrow Button */}
-        {canScrollRight && (
-          <button
-            type="button"
-            onClick={() => scroll("right")}
-            aria-label="Xem phim kế tiếp"
-            className="absolute right-2 sm:right-4 top-[38%] -translate-y-1/2 z-40 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-white/95 hover:bg-white text-black shadow-2xl flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 border border-black/10 cursor-pointer"
-          >
-            <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-black stroke-[2.5]" />
-          </button>
-        )}
-
-        {/* Carousel Row */}
-        <div
-          ref={scrollRef}
-          onScroll={checkScroll}
-          className="flex gap-4 sm:gap-5 overflow-x-auto scrollbar-none px-4 sm:px-6 lg:px-8 pt-5 pb-6 scroll-smooth no-scrollbar"
-          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-        >
-          {movies.slice(0, 10).map((movie, index) => (
-            <TrendingCard
-              key={movie.id}
-              movie={movie}
-              rank={index + 1}
-              index={index}
-              total={Math.min(movies.length, 10)}
-            />
-          ))}
+            {movies.slice(0, 10).map((movie, index) => (
+              <TrendingCard
+                key={movie.id}
+                movie={movie}
+                rank={index + 1}
+                index={index}
+                total={Math.min(movies.length, 10)}
+              />
+            ))}
+            {/* End buffer for mobile scroll so last card isn't stuck to right edge */}
+            <div className="w-4 sm:w-6 shrink-0" aria-hidden="true" />
+          </div>
         </div>
       </div>
     </section>

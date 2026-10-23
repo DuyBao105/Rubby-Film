@@ -119,14 +119,16 @@ export async function GET(request: NextRequest) {
     }
 
     const { kkphimService } = await import("@/lib/server/kkphimService");
-    const result = await kkphimService.searchMovies(query, page, limit);
 
-    // 4. On page 1: Check if the query is an actor or director
+    // 4. On page 1: Run movie search AND person search in parallel to reduce latency
     if (page === 1) {
       const { personService } = await import("@/lib/server/personService");
-      const personResult = await personService.searchPerson(query, undefined, true);
+      const [result, personResult] = await Promise.all([
+        kkphimService.searchMovies(query, page, limit),
+        personService.searchPerson(query, undefined, true).catch(() => null),
+      ]);
+
       if (personResult && personResult.movies.length > 0) {
-        // If title search produced zero items or matches a known celebrity
         if (!result.items || result.items.length <= 2 || personResult.person.movieCount >= 3) {
           const meta = {
             totalItems: personResult.movies.length,
@@ -142,8 +144,21 @@ export async function GET(request: NextRequest) {
           });
         }
       }
+
+      const meta = {
+        totalItems: result.pagination.totalItems,
+        totalItemsPerPage: result.pagination.totalItemsPerPage,
+        currentPage: result.pagination.currentPage,
+        totalPages: result.pagination.totalPages,
+      };
+      setToCache(cacheKey, result.items, meta);
+      return apiSuccess(result.items, meta, {
+        "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      });
     }
 
+    // Pages > 1: only movie search needed
+    const result = await kkphimService.searchMovies(query, page, limit);
     const meta = {
       totalItems: result.pagination.totalItems,
       totalItemsPerPage: result.pagination.totalItemsPerPage,

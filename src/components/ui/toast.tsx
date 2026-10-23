@@ -20,6 +20,7 @@ interface ToastContextValue {
   dismissToast: (id: string) => void;
   success: (title: string, message?: string) => string;
   error: (title: string, message?: string) => string;
+  warning: (title: string, message?: string) => string;
   info: (title: string, message?: string) => string;
 }
 
@@ -49,6 +50,21 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [dismissToast]
   );
 
+  // Check for pending toast queued before hard navigation/redirect
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const pending = sessionStorage.getItem("rubbyfilm_pending_toast");
+      if (pending) {
+        sessionStorage.removeItem("rubbyfilm_pending_toast");
+        const parsed = JSON.parse(pending);
+        if (parsed && parsed.title) {
+          showToast(parsed);
+        }
+      }
+    } catch {}
+  }, [showToast]);
+
   const success = React.useCallback(
     (title: string, message?: string) => showToast({ type: "success", title, message }),
     [showToast]
@@ -59,13 +75,18 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   );
 
+  const warning = React.useCallback(
+    (title: string, message?: string) => showToast({ type: "warning", title, message }),
+    [showToast]
+  );
+
   const info = React.useCallback(
     (title: string, message?: string) => showToast({ type: "info", title, message }),
     [showToast]
   );
 
   return (
-    <ToastContext.Provider value={{ toasts, showToast, dismissToast, success, error, info }}>
+    <ToastContext.Provider value={{ toasts, showToast, dismissToast, success, error, warning, info }}>
       {children}
       {/* Toast Container */}
       <div
@@ -150,4 +171,11 @@ export function useToast() {
     throw new Error("useToast must be used within a ToastProvider");
   }
   return context;
+}
+
+export function setPendingToast(toast: Omit<ToastItem, "id">) {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem("rubbyfilm_pending_toast", JSON.stringify(toast));
+  } catch {}
 }

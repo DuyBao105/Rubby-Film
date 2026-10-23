@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { ArrowUp, MessageCircle, ChevronRight, ShieldCheck, Zap, Sparkles, Download } from "lucide-react";
 import { triggerPwaInstall } from "@/components/common/pwa-install-prompt";
+import { cn } from "@/lib/utils";
 
 export function Footer() {
   const router = useRouter();
@@ -12,6 +13,17 @@ export function Footer() {
   const isAuthPage = pathname === "/login" || pathname === "/register" || pathname === "/forgot-password";
 
   const [showFloatingScroll, setShowFloatingScroll] = React.useState(false);
+  const [isPwaVisible, setIsPwaVisible] = React.useState(false);
+
+  React.useEffect(() => {
+    const updatePwaState = () => {
+      setIsPwaVisible(document.body.dataset.pwaVisible === "true");
+    };
+    updatePwaState();
+    const observer = new MutationObserver(updatePwaState);
+    observer.observe(document.body, { attributes: true, attributeFilter: ["data-pwa-visible"] });
+    return () => observer.disconnect();
+  }, []);
 
   React.useEffect(() => {
     const handleScroll = () => {
@@ -50,7 +62,7 @@ export function Footer() {
       <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#E50000]/60 to-transparent" />
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-96 h-12 bg-[#E50000]/10 blur-2xl pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-8 sm:pb-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-24 sm:pb-12">
         {/* Top Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-8 mb-10 sm:mb-14">
 
@@ -310,7 +322,12 @@ export function Footer() {
         <button
           type="button"
           onClick={scrollToTop}
-          className="fixed bottom-6 right-6 z-40 flex items-center justify-center w-11 h-11 rounded-full bg-[#141414]/90 hover:bg-[#E50000] border border-[#2E2E2E] hover:border-[#E50000] text-cinema-300 hover:text-white shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group"
+          className={cn(
+            "fixed right-4 sm:right-6 z-40 flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#141414]/90 hover:bg-[#E50000] border border-[#2E2E2E] hover:border-[#E50000] text-cinema-300 hover:text-white shadow-2xl backdrop-blur-md transition-all duration-300 hover:scale-110 active:scale-95 cursor-pointer group",
+            isPwaVisible
+              ? "bottom-[calc(9.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6"
+              : "bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-6"
+          )}
           title="Cuộn lên đầu trang"
           aria-label="Cuộn lên đầu trang"
         >

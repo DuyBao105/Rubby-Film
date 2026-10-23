@@ -3,8 +3,6 @@
 import * as React from "react";
 import { AuthUser, LoginInput, RegisterInput } from "./authTypes";
 
-import { AuthModal } from "@/components/auth/auth-modal";
-import { LogoutConfirmModal } from "@/components/auth/logout-confirm-modal";
 import { watchHistoryService } from "@/lib/services/watchHistoryService";
 import { myListService } from "@/lib/services/myListService";
 import { searchHistoryService } from "@/lib/services/searchHistoryService";
@@ -47,6 +45,41 @@ function getUserFromHint(): AuthUser | null {
     }
   } catch {}
   return null;
+}
+
+/**
+ * Trích xuất tên hiển thị tốt nhất từ thông tin tài khoản đã xác thực:
+ * 1. Ưu tiên display name (user.name)
+ * 2. Nếu không có, dùng username hoặc tên tài khoản từ email (phần trước @)
+ * 3. Nếu không có hoặc ở chế độ khách, trả về chuỗi rỗng để dùng nội dung dự phòng
+ */
+export function getAuthDisplayName(
+  candidate?: { name?: string | null; email?: string | null; username?: string | null } | null
+): string {
+  if (!candidate) return "";
+
+  // 1. Display name
+  const rawName = typeof candidate.name === "string" ? candidate.name.trim() : "";
+  if (rawName && rawName.toLowerCase() !== "null" && rawName.toLowerCase() !== "undefined") {
+    return rawName;
+  }
+
+  // 2. Username nếu có
+  const rawUsername = typeof candidate.username === "string" ? candidate.username.trim() : "";
+  if (rawUsername && rawUsername.toLowerCase() !== "null" && rawUsername.toLowerCase() !== "undefined") {
+    return rawUsername;
+  }
+
+  // 3. Tên tài khoản từ email (trước @)
+  const email = typeof candidate.email === "string" ? candidate.email.trim() : "";
+  if (email && email.includes("@")) {
+    const localPart = email.split("@")[0].trim();
+    if (localPart && localPart.toLowerCase() !== "null" && localPart.toLowerCase() !== "undefined") {
+      return localPart;
+    }
+  }
+
+  return "";
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -157,13 +190,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const authSuccess = url.searchParams.get("auth_success");
       if (authSuccess) {
-        const providerName =
-          authSuccess === "google"
-            ? "Google"
-            : authSuccess === "facebook"
-            ? "Facebook"
-            : "tài khoản mạng xã hội";
-
         // Read immediately from cookie hint if available
         const hint = getUserFromHint();
         if (hint) {
@@ -174,7 +200,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         fetchSession();
-        toast.success("Đăng nhập thành công!", `Chào mừng bạn đã đăng nhập qua ${providerName}.`);
+        const displayName = getAuthDisplayName(hint);
+        const message = displayName
+          ? `Xin chào, ${displayName}! Chào mừng bạn quay trở lại.`
+          : "Chào mừng bạn quay trở lại RubyFilm.";
+        toast.success("Đăng nhập thành công", message);
         url.searchParams.delete("auth_success");
         const cleanUrl = url.pathname + (url.search ? url.search : "") + url.hash;
         window.history.replaceState({}, "", cleanUrl);
@@ -221,9 +251,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
 
       if (!res.ok || !json.success) {
+        const errorMsg = json?.error?.message || "Email hoặc mật khẩu không chính xác.";
+        toast.error("Đăng nhập thất bại", errorMsg);
         return {
           success: false,
-          error: json?.error?.message || "Đăng nhập không thành công. Vui lòng kiểm tra lại.",
+          error: errorMsg,
         };
       }
 
@@ -235,13 +267,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem("rubbyfilm_token", json.data.token);
         }
       } catch {}
-      toast.success(
-        "Đăng nhập thành công!",
-        `Chào mừng ${json.data?.name || "bạn"} đã quay trở lại RubyFilm.`
-      );
+
+      // Lấy tên từ thông tin tài khoản đã xác thực (ưu tiên display name > tên tài khoản)
+      const displayName = getAuthDisplayName(userData);
+      const message = displayName
+        ? `Xin chào, ${displayName}! Chào mừng bạn quay trở lại.`
+        : "Chào mừng bạn quay trở lại RubyFilm.";
+
+      toast.success("Đăng nhập thành công", message);
       return { success: true };
     } catch (e: any) {
-      return { success: false, error: "Lỗi kết nối máy chủ. Vui lòng thử lại sau." };
+      const errorMsg = "Lỗi kết nối máy chủ. Vui lòng thử lại sau.";
+      toast.error("Đăng nhập thất bại", errorMsg);
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -256,9 +294,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const json = await res.json();
 
       if (!res.ok || !json.success) {
+        const errorMsg = json?.error?.message || "Đăng ký không thành công. Vui lòng thử lại.";
+        toast.error("Đăng ký thất bại", errorMsg);
         return {
           success: false,
-          error: json?.error?.message || "Đăng ký không thành công. Vui lòng thử lại.",
+          error: errorMsg,
         };
       }
 
@@ -270,13 +310,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           localStorage.setItem("rubbyfilm_token", json.data.token);
         }
       } catch {}
-      toast.success(
-        "Đăng ký thành công!",
-        `Chào mừng ${json.data?.name || "bạn"} gia nhập đại gia đình RubyFilm.`
-      );
+
+      const displayName = getAuthDisplayName(userData);
+      const message = displayName
+        ? `Xin chào, ${displayName}! Chào mừng bạn gia nhập RubyFilm.`
+        : "Chào mừng bạn gia nhập RubyFilm.";
+
+      toast.success("Đăng ký thành công", message);
       return { success: true };
     } catch (e: any) {
-      return { success: false, error: "Lỗi kết nối máy chủ. Vui lòng thử lại sau." };
+      const errorMsg = "Lỗi kết nối máy chủ. Vui lòng thử lại sau.";
+      toast.error("Đăng ký thất bại", errorMsg);
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -324,24 +369,51 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const confirmLogout = React.useCallback(async () => {
     setIsLogoutConfirmOpen(false);
+
+    // 1. Lưu lại tên hiển thị của tài khoản hiện tại trong bộ nhớ tạm đủ để tạo thông báo trước khi xóa trạng thái tài khoản khỏi giao diện
+    const currentUser = user || getUserFromHint();
+    const isGuest = !currentUser;
+    const displayName = isGuest ? "" : getAuthDisplayName(currentUser);
+
+    // 2. Gọi API đăng xuất trên máy chủ
+    let logoutSucceeded = false;
     try {
-      await fetch("/api/auth/logout", { method: "POST" });
-    } catch {}
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (res.ok) {
+        logoutSucceeded = true;
+      }
+    } catch (err) {
+      console.warn("Logout request failed:", err);
+    }
+
+    // 3. Xử lý trường hợp đặc biệt: Đăng xuất thất bại
+    if (!logoutSucceeded) {
+      toast.error("Đăng xuất thất bại", "Máy chủ không thể hoàn tất thao tác đăng xuất. Vui lòng thử lại.");
+      return;
+    }
+
+    // 4. Xóa trạng thái tài khoản khỏi giao diện và bộ nhớ client
     setUser(null);
     try {
       localStorage.removeItem("rubbyfilm_cached_user");
       localStorage.removeItem("rubbyfilm_token");
+      localStorage.removeItem("rubbyfilm_user_profile");
       document.cookie = "rubbyfilm_user_hint=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
     } catch {}
+
+    // 5. Đưa các service độc lập về trạng thái khách (guest)
     watchHistoryService.setUser(null);
     myListService.setUser(null);
     searchHistoryService.setUser(null);
     userPreferenceService.setUser(null);
-    toast.success("Đăng xuất thành công", "Hẹn gặp lại bạn sớm tại RubyFilm!");
-    if (typeof window !== "undefined") {
-      window.location.href = "/";
-    }
-  }, [toast]);
+
+    // 6. Hiển thị thông báo đăng xuất thành công có tên người dùng
+    const message = displayName
+      ? `Tạm biệt ${displayName}! Hẹn gặp lại bạn.`
+      : "Hẹn gặp lại bạn sớm tại RubyFilm!";
+
+    toast.success("Đăng xuất thành công", message);
+  }, [user, toast]);
   const updateProfile = React.useCallback(
     async (updates: { name?: string; avatarUrl?: string }) => {
       // 1. Instantly update local React state & cached user for immediate UI reflection
@@ -361,11 +433,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return next;
       });
 
-      // 2. Synchronize to guest profile localStorage key as well
+      // 2. Synchronize to isolated user preference service
       try {
-        const rawProfile = localStorage.getItem("rubbyfilm_user_profile");
-        const existing = rawProfile ? JSON.parse(rawProfile) : {};
-        localStorage.setItem("rubbyfilm_user_profile", JSON.stringify({ ...existing, ...updates }));
+        userPreferenceService.updateUser(updates);
       } catch {}
 
       // 3. Sync to server session if available
@@ -415,8 +485,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return (
     <AuthContext.Provider value={value}>
       {children}
-      <AuthModal />
-      <LogoutConfirmModal />
     </AuthContext.Provider>
   );
 }

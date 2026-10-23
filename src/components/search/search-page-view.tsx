@@ -82,8 +82,9 @@ export function SearchPageView() {
   const [typeFilter, setTypeFilter] = React.useState<MovieType | "all">("all");
   const [sortOption, setSortOption] = React.useState<"default" | "rating" | "year" | "alpha">("default");
 
-  const debouncedVal = useDebounce(inputVal, 250);
+  const debouncedVal = useDebounce(inputVal, 300);
   const abortControllerRef = React.useRef<AbortController | null>(null);
+  const [isPending, startTransition] = React.useTransition();
 
   // Sync input value if URL changes via back/forward buttons
   React.useEffect(() => {
@@ -210,7 +211,7 @@ export function SearchPageView() {
           setIsLoading(false);
         });
     },
-    [addRecentSearch]
+    [addRecentSearch, actorParam, directorParam]
   );
 
   // Trigger search on debounced input change or actor/director param

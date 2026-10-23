@@ -200,7 +200,7 @@ export function EpisodeSelector({
                 type="button"
                 onClick={() => onSelectEpisode(ep)}
                 className={cn(
-                  "relative flex flex-col p-2.5 rounded-xl border text-left transition-all duration-200 select-none overflow-hidden group/item cursor-pointer",
+                  "relative flex flex-col justify-center p-2.5 rounded-xl border text-left transition-all duration-200 select-none overflow-hidden group/item cursor-pointer min-h-[44px]",
                   isActive
                     ? "bg-brand text-cinema-950 font-bold border-brand shadow-md shadow-brand/20 scale-[1.02]"
                     : "bg-cinema-800 text-cinema-200 border-cinema-700/80 hover:bg-cinema-750 hover:text-white hover:border-cinema-500"
@@ -244,7 +244,7 @@ export function EpisodeSelector({
                 type="button"
                 onClick={() => setSelectedUpcomingEp(epNum)}
                 className={cn(
-                  "relative flex flex-col p-2.5 rounded-xl border text-left transition-all duration-200 select-none overflow-hidden cursor-pointer",
+                  "relative flex flex-col justify-center p-2.5 rounded-xl border text-left transition-all duration-200 select-none overflow-hidden cursor-pointer min-h-[44px]",
                   isNext
                     ? "bg-cinema-900/90 border-brand/40 text-cinema-200 hover:border-brand hover:bg-cinema-850 hover:shadow-lg shadow-brand/10"
                     : "bg-cinema-900/60 border-cinema-800 text-cinema-400 hover:bg-cinema-850 hover:border-cinema-700"

@@ -3,6 +3,8 @@ import { SearchPageView } from "@/components/search/search-page-view";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Metadata } from "next";
 
+export const dynamic = "force-dynamic";
+
 export const metadata: Metadata = {
   title: "Tìm Kiếm Phim - RubyFilm",
   description: "Tìm kiếm hàng ngàn bộ phim điện ảnh, phim truyền hình, anime với hệ thống lọc thông minh.",

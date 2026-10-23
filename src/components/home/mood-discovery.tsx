@@ -107,7 +107,7 @@ export function MoodDiscovery() {
             <Link
               key={card.id}
               href={card.href}
-              className="group relative h-[112px] sm:h-[118px] lg:h-[122px] overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between bg-[#121212] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.015] active:scale-[0.985]"
+              className="group relative h-[112px] sm:h-[118px] lg:h-[122px] overflow-hidden rounded-xl sm:rounded-2xl p-3 sm:p-3.5 flex flex-col justify-between bg-[#121212] transition-all duration-300 hover:-translate-y-1 hover:scale-[1.015] active:scale-[0.985] last:col-span-2 sm:last:col-span-1"
               style={{
                 border: `1px solid ${card.borderColor}`,
                 boxShadow: "0 4px 14px rgba(0, 0, 0, 0.4)",

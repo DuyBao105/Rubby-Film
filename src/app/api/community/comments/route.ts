@@ -76,6 +76,8 @@ export async function POST(req: NextRequest) {
       }
       await ensureGuestUser(guestCookie, guestName);
       authorId = guestCookie;
+    } else {
+      await ensureGuestUser(authorId, user.name, user.avatarUrl);
     }
 
     const c = await commentService.create({

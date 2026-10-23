@@ -7,6 +7,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
+export const revalidate = 600;
+
 interface CountryPageProps {
   params: Promise<{ slug: string }>;
   searchParams: Promise<{

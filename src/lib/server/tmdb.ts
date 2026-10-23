@@ -12,6 +12,13 @@ export const TMDB_API_KEY = process.env.TMDB_API_KEY || DEFAULT_TMDB_API_KEY;
 const tmdbBackdropCache = new Map<string, string>();
 const tmdbLogoCache = new Map<string, string>();
 
+async function fetchTmdb(endpoint: string, timeoutMs = 1200): Promise<Response> {
+  return fetch(endpoint, {
+    signal: AbortSignal.timeout(timeoutMs),
+    next: { revalidate: 86400 * 7 },
+  });
+}
+
 export interface TmdbFallbackSearch {
   title?: string;
   originalTitle?: string;
@@ -39,9 +46,7 @@ async function searchTmdbBackdrop(
 
       const q = encodeURIComponent(query.trim());
       const endpoint = `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${q}&include_adult=false&language=vi-VN,en-US`;
-      const res = await fetch(endpoint, {
-        next: { revalidate: 86400 * 7 },
-      });
+      const res = await fetchTmdb(endpoint);
 
       if (res.ok) {
         const data = await res.json();
@@ -85,9 +90,7 @@ export async function getTmdbBackdropUrl(
     try {
       // Step A: Try primary type
       const endpoint = `${TMDB_BASE_URL}/${primaryType}/${idStr}?api_key=${apiKey}&language=vi-VN,en-US`;
-      const res = await fetch(endpoint, {
-        next: { revalidate: 86400 * 7 },
-      });
+      const res = await fetchTmdb(endpoint);
 
       if (res.ok) {
         const data = await res.json();
@@ -99,9 +102,8 @@ export async function getTmdbBackdropUrl(
       }
 
       // Step B: Try secondary type (TV vs Movie mismatch recovery)
-      const fallbackRes = await fetch(
-        `${TMDB_BASE_URL}/${secondaryType}/${idStr}?api_key=${apiKey}&language=vi-VN,en-US`,
-        { next: { revalidate: 86400 * 7 } }
+      const fallbackRes = await fetchTmdb(
+        `${TMDB_BASE_URL}/${secondaryType}/${idStr}?api_key=${apiKey}&language=vi-VN,en-US`
       );
       if (fallbackRes.ok) {
         const fallbackData = await fallbackRes.json();
@@ -114,9 +116,7 @@ export async function getTmdbBackdropUrl(
 
       // Step C: Check /images endpoint for untagged high-res backdrops
       for (const t of [primaryType, secondaryType]) {
-        const imgRes = await fetch(`${TMDB_BASE_URL}/${t}/${idStr}/images?api_key=${apiKey}`, {
-          next: { revalidate: 86400 * 7 },
-        });
+        const imgRes = await fetchTmdb(`${TMDB_BASE_URL}/${t}/${idStr}/images?api_key=${apiKey}`);
         if (imgRes.ok) {
           const imgData = await imgRes.json();
           if (imgData.backdrops && imgData.backdrops.length > 0) {
@@ -168,9 +168,8 @@ export async function getTmdbLogoUrl(
     );
     for (const qStr of queries) {
       try {
-        const sRes = await fetch(
-          `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(qStr)}&include_adult=false`,
-          { next: { revalidate: 86400 * 7 } }
+        const sRes = await fetchTmdb(
+          `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(qStr)}&include_adult=false`
         );
         if (sRes.ok) {
           const sData = await sRes.json();
@@ -193,9 +192,7 @@ export async function getTmdbLogoUrl(
   for (const currentType of [primaryType, secondaryType]) {
     try {
       const endpoint = `${TMDB_BASE_URL}/${currentType}/${resolvedId}/images?api_key=${apiKey}&include_image_language=vi,en,zh,ko,ja,null`;
-      const res = await fetch(endpoint, {
-        next: { revalidate: 86400 * 7 },
-      });
+      const res = await fetchTmdb(endpoint);
 
       if (res.ok) {
         const data = await res.json();
@@ -262,9 +259,8 @@ export async function getTmdbMedia(
     );
     for (const q of queries) {
       try {
-        const sRes = await fetch(
-          `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(q)}&include_adult=false`,
-          { next: { revalidate: 86400 * 7 } }
+        const sRes = await fetchTmdb(
+          `${TMDB_BASE_URL}/search/multi?api_key=${apiKey}&query=${encodeURIComponent(q)}&include_adult=false`
         );
         if (sRes.ok) {
           const sData = await sRes.json();
@@ -292,9 +288,7 @@ export async function getTmdbMedia(
   for (const currentType of [primaryType, secondaryType]) {
     try {
       const endpoint = `${TMDB_BASE_URL}/${currentType}/${resolvedId}?api_key=${apiKey}&append_to_response=images,credits&include_image_language=vi,en,null`;
-      const res = await fetch(endpoint, {
-        next: { revalidate: 86400 * 7 },
-      });
+      const res = await fetchTmdb(endpoint);
 
       if (res.ok) {
         const data = await res.json();

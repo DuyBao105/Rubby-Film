@@ -62,7 +62,10 @@ export function ContinueWatchingRow() {
         </Link>
       </div>
 
-      <div className="flex items-stretch gap-4 overflow-x-auto pb-3 pt-1 scrollbar-none scroll-smooth">
+      <div
+        className="flex items-stretch gap-3 sm:gap-4 overflow-x-auto pb-3 pt-1 scrollbar-none scroll-smooth snap-x snap-mandatory touch-pan-x"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none", WebkitOverflowScrolling: "touch" }}
+      >
         {continueItems.map((item, idx) => {
           const movie = item.movie || {
             id: item.movieId,
@@ -103,7 +106,7 @@ export function ContinueWatchingRow() {
           return (
             <div
               key={`${item.movieId || movie.id || slug}-${item.episodeNumber || 1}-${idx}`}
-              className="group flex-shrink-0 w-64 sm:w-72 rounded-2xl bg-cinema-850/90 border border-cinema-700/80 overflow-hidden hover:border-brand/70 hover:shadow-brand/20 transition-all duration-300 shadow-lg relative flex flex-col justify-between cursor-pointer"
+              className="group flex-shrink-0 w-52 sm:w-72 rounded-2xl bg-cinema-850/90 border border-cinema-700/80 overflow-hidden hover:border-brand/70 hover:shadow-brand/20 transition-all duration-300 shadow-lg relative flex flex-col justify-between cursor-pointer snap-start"
             >
               {/* Full-card link for frictionless navigation */}
               <Link

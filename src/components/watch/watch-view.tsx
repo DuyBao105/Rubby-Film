@@ -110,8 +110,12 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     episodes.find((e) => e.episodeNumber === 1) ||
     episodes[0];
 
-  // Setup sources
-  const sources = React.useMemo(() => currentEpisode?.videoSources || [], [currentEpisode]);
+  // Setup sources - Lọc và ưu tiên các máy chủ có link phát hợp lệ
+  const sources = React.useMemo(() => {
+    const raw = currentEpisode?.videoSources || [];
+    const valid = raw.filter((s) => s && typeof s.url === "string" && s.url.trim() !== "");
+    return valid.length > 0 ? valid : raw;
+  }, [currentEpisode]);
   const [activeSourceIndex, setActiveSourceIndex] = React.useState(0);
 
   // Match serverQuery if provided
@@ -352,10 +356,10 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
     <div
       ref={playerWrapperRef}
       className={cn(
-        "pb-20 mx-auto w-full transition-all duration-500",
+        "pb-28 sm:pb-20 mx-auto w-full transition-all duration-500",
         isCinemaMode
-          ? "pt-14 max-w-[100vw] px-0 sm:px-3 md:px-6"
-          : "pt-20 sm:pt-24 max-w-7xl px-4 sm:px-6 lg:px-8"
+          ? "pt-12 sm:pt-14 max-w-[100vw] px-0 sm:px-3 md:px-6"
+          : "pt-16 sm:pt-24 max-w-7xl px-3 sm:px-6 lg:px-8"
       )}
     >
       {/* Breadcrumbs - hidden during cinema mode to maximize player screen estate */}
@@ -423,12 +427,17 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
         <div className="relative">
           <VideoPlayer
             ref={playerRef}
-            key={movie.id}
+            key={`${movie.id}-ep-${currentEpisode?.episodeNumber ?? 1}`}
             source={activeSource}
             sources={sources}
             activeSourceIndex={activeSourceIndex}
             onSelectSourceIndex={(idx) => setActiveSourceIndex(idx)}
             title={movie.title}
+            originalTitle={movie.originalTitle}
+            year={movie.year}
+            tmdbId={movie.tmdbId}
+            seasonNumber={seasonQuery ? parseInt(seasonQuery, 10) : 1}
+            episodeNumber={currentEpisode?.episodeNumber ?? 1}
             subtitle={
               movie.type === "series" && currentEpisode
                 ? `${currentEpisode.name} (${currentEpisode.duration || "HD"})`
@@ -449,6 +458,8 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
             onSwitchServer={sources.length > 1 ? handleSwitchServer : undefined}
             isCinemaMode={isCinemaMode}
             onToggleCinemaMode={() => setIsCinemaMode(!isCinemaMode)}
+            episodes={episodes}
+            onSelectEpisode={handleSelectEpisode}
           />
 
           {/* Resume Playback Prompt Banner */}
@@ -526,8 +537,17 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
           <ServerSelector
             sources={sources}
             activeSource={activeSource}
+            activeSourceIndex={activeSourceIndex}
+            onSelectSourceIndex={(idx) => {
+              if (idx !== activeSourceIndex) {
+                if (currentPlaybackRef.current && currentPlaybackRef.current.currentTime > 5) {
+                  setInitialTime(currentPlaybackRef.current.currentTime);
+                }
+                setActiveSourceIndex(idx);
+              }
+            }}
             onSelectSource={(src) => {
-              const idx = sources.findIndex((s) => s.serverName === src.serverName);
+              const idx = sources.findIndex((s) => s.url === src.url || s.serverName === src.serverName);
               if (idx !== -1 && idx !== activeSourceIndex) {
                 if (currentPlaybackRef.current && currentPlaybackRef.current.currentTime > 5) {
                   setInitialTime(currentPlaybackRef.current.currentTime);
@@ -557,7 +577,11 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                 <span className="font-bold">{formatRating(movie.rating)}</span>
               </Badge>
               <Badge variant="brand">{movie.quality || "HD"}</Badge>
-              <Badge variant="secondary">{movie.language || "Vietsub"}</Badge>
+              {movie.language && !movie.language.toLowerCase().includes("vietsub") ? (
+                <Badge variant="secondary">{movie.language}</Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-red-500/10 text-red-300 border-red-500/30">Ruby VIP</Badge>
+              )}
               <span className="text-xs text-cinema-400">{movie.year}</span>
               <span className="text-xs text-cinema-400">•</span>
               <span className="text-xs text-cinema-400">{movie.duration}</span>
@@ -818,7 +842,7 @@ export function WatchView({ movie, relatedMovies }: WatchViewProps) {
                 </div>
                 <h4 className="text-sm font-bold text-white">Đã gửi báo cáo thành công!</h4>
                 <p className="text-xs text-cinema-300 max-w-xs mx-auto">
-                  Cảm ơn bạn! Đội ngũ kỹ thuật của RubyFilm đã ghi nhận và sẽ kiểm tra khắc phục nguồn phát sớm nhất.
+                  Cảm ơn bạn! Đội ngũ kỹ thuật của RubyFilm đã ghi nhận và sẽ kiểm tra khắc phục máy chủ phát sớm nhất.
                 </p>
                 <Button
                   variant="primary"

@@ -303,7 +303,7 @@ export default async function HomePage() {
   } = await getPreparedHomePageData();
 
   return (
-    <main className="flex flex-col w-full pb-16 overflow-x-hidden min-h-screen bg-[#0F0F0F] relative">
+    <main className="flex flex-col w-full pb-24 sm:pb-16 overflow-x-hidden min-h-screen bg-[#0F0F0F] relative">
       {/* Ambient Theatrical Background Glows */}
       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[600px] bg-gradient-to-b from-[#E50000]/12 via-[#E50000]/4 to-transparent blur-[140px] pointer-events-none -z-0" />
       <div className="absolute top-[35%] right-0 w-[500px] h-[500px] bg-[#E50000]/5 blur-[160px] pointer-events-none -z-0" />

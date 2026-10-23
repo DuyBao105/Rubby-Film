@@ -27,7 +27,7 @@ export async function generateMetadata({
 
   const epNum = query.episode || query.ep;
   const epTitle = epNum ? ` (Tập ${epNum})` : "";
-  const pageTitle = `Xem Phim ${movie.title}${epTitle} - 4K Vietsub | RubyFilm`;
+  const pageTitle = `Xem Phim ${movie.title}${epTitle} - 4K Ultra HD | RubyFilm`;
   const pageDescription = `Xem online phim ${movie.title}${epTitle} (${movie.originalTitle}) năm ${movie.year || ""}. Thể loại ${movie.genres?.join(", ") || "Phim hay"}, phụ đề / thuyết minh chuẩn, tốc độ cao không giật lag.`;
 
   return {

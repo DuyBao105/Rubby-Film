@@ -33,6 +33,7 @@ class SearchHistoryService implements ISearchHistoryService {
   private currentUserId: string | null = null;
   private lastAutoSyncTime = 0;
   private syncPromise: Promise<void> | null = null;
+  private lastSyncTime = 0;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -67,9 +68,9 @@ class SearchHistoryService implements ISearchHistoryService {
       // Cross-device sync: auto re-sync when switching back to tab/browser window
       const triggerAutoSync = () => {
         const now = Date.now();
-        if (now - this.lastAutoSyncTime > 4000 && this.currentUserId) {
+        if (now - this.lastAutoSyncTime > 15000 && this.currentUserId) {
           this.lastAutoSyncTime = now;
-          this.syncWithServer(true);
+          this.syncWithServer(false);
         }
       };
 
@@ -89,14 +90,13 @@ class SearchHistoryService implements ISearchHistoryService {
   public setUser(userId: string | null): void {
     const normalized = userId ? String(userId).trim() : null;
     const changed = this.currentUserId !== normalized;
+    if (!changed) return;
     this.currentUserId = normalized;
-    if (changed) {
-      this.cache = null;
-      this.notify();
-    }
+    this.cache = null;
+    this.notify();
     if (normalized) {
       this.migrateGuestSearches(normalized);
-      this.syncWithServer(true);
+      this.syncWithServer(false);
     }
   }
 
@@ -212,20 +212,6 @@ class SearchHistoryService implements ISearchHistoryService {
           return this.cache;
         }
       }
-
-      // If user storage is empty, fallback to guest storage if any
-      if (this.currentUserId) {
-        const guestRaw = localStorage.getItem(GUEST_KEY);
-        if (guestRaw) {
-          const parsed = JSON.parse(guestRaw);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            this.cache = parsed
-              .filter((item) => typeof item === "string" && item.trim().length > 0)
-              .filter((item) => !tombstones.has(item.toLowerCase().trim()));
-            return this.cache;
-          }
-        }
-      }
     } catch (e) {
       console.error("[SearchHistoryService] Failed to parse search history:", e);
     }
@@ -259,7 +245,13 @@ class SearchHistoryService implements ISearchHistoryService {
 
   public async syncWithServer(force = false): Promise<void> {
     if (!this.isClient() || !this.currentUserId) return;
-    if (this.syncPromise && !force) return this.syncPromise;
+    if (this.syncPromise) return this.syncPromise;
+
+    const now = Date.now();
+    if (!force && now - this.lastSyncTime < 8000) {
+      return;
+    }
+    this.lastSyncTime = now;
 
     this.syncPromise = (async () => {
       try {

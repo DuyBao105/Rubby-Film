@@ -7,6 +7,8 @@ import { Metadata } from "next";
 import Link from "next/link";
 import { Calendar, ChevronRight, Sparkles } from "lucide-react";
 
+export const revalidate = 600;
+
 interface YearPageProps {
   params: Promise<{ year: string }>;
   searchParams: Promise<{

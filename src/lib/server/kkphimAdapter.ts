@@ -17,73 +17,81 @@ function cleanHtmlText(text?: string | null): string {
     .replace(/&apos;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
+    .replace(/(phimmoi|kkphim|ophim|nguonc|motchill|subnhanh|dongphym|bilutv|tvhay|ghienphim|phim1080)[\w\.\/]*/gi, "")
+    .replace(/(xem phim|xem full|chúc các bạn xem phim vui vẻ).*?(tại|ở)\s+[\w\.\-]+/gi, "")
     .replace(/\s+/g, " ")
     .trim();
 }
 
-function formatBrandServerName(rawName: string, isEmbed = false): string {
-  const clean = (rawName || "").replace(/[#_]/g, "").trim();
-  const lower = clean.toLowerCase();
+function formatBrandServerName(rawName: string, isEmbed = false, serverIndex = 0): string {
+  const lower = (rawName || "").toLowerCase();
 
-  if (lower.includes("hà nội") || lower.includes("vip 1") || clean === "1") {
-    return isEmbed ? "Ruby Embed VIP #1" : "Ruby VIP #1 (4K Ultra)";
+  if (lower.includes("thuyết minh") || lower.includes("thuyet minh") || lower.includes("lồng tiếng")) {
+    return isEmbed ? "Máy chủ Ruby (Thuyết Minh Dự Phòng)" : "Máy chủ Ruby (Thuyết Minh VIP)";
   }
-  if (lower.includes("sài gòn") || lower.includes("vip 2") || clean === "2") {
-    return isEmbed ? "Ruby Embed VIP #2" : "Ruby VIP #2 (HLS Fast)";
+
+  if (isEmbed) {
+    return serverIndex > 0 ? `Máy chủ Ruby #${serverIndex + 1} (Dự phòng)` : "Máy chủ Ruby (Dự phòng VIP)";
   }
-  if (lower.includes("dự phòng") || lower.includes("backup")) {
-    return isEmbed ? "Ruby Embed Backup" : "Ruby Dự Phòng (Backup)";
-  }
-  return isEmbed ? `Ruby Embed (${clean || "VIP"})` : `Ruby VIP (${clean || "HD"})`;
+
+  return serverIndex === 0 ? "Máy chủ Ruby #1 (4K Ultra)" : `Máy chủ Ruby #${serverIndex + 1} (Tốc độ cao)`;
 }
 
 export function mapKkphimVideoSource(
   serverData: any,
-  serverName: string
+  serverName: string,
+  serverIndex: number = 0
 ): VideoSource[] {
   const sources: VideoSource[] = [];
 
-  // M3U8 HLS stream
+  // 1. Native M3U8 HLS stream
   if (serverData.link_m3u8) {
     sources.push({
-      serverName: formatBrandServerName(serverName, false),
-      label: "Chuẩn 4K / Full HD",
+      serverName: formatBrandServerName(serverName, false, serverIndex),
+      label: `Máy chủ Ruby #${serverIndex + 1} (HLS 4K)`,
       url: encryptStreamUrl(serverData.link_m3u8),
       type: "hls",
     });
   }
 
-  // Embed player stream (or extract native HLS stream if it's a player.phimapi.com wrapper)
+  // 2. Embed player stream & fallback
   if (serverData.link_embed) {
-    let embedUrl = String(serverData.link_embed);
-    if (embedUrl.includes("player.phimapi.com") || embedUrl.includes("phimapi.com")) {
-      const match = embedUrl.match(/url=([^&]+)/);
-      if (match && match[1]) {
-        const decoded = decodeURIComponent(match[1]);
-        if (decoded.includes(".m3u8")) {
-          // Convert to native HLS source so our custom Rubby player plays it with zero third-party branding!
-          sources.push({
-            serverName: formatBrandServerName(serverName, false) + " (Dự phòng)",
-            label: "Chuẩn Full HD (Backup)",
-            url: encryptStreamUrl(decoded),
-            type: "hls",
-          });
+    const rawEmbed = String(serverData.link_embed).trim();
+    if (rawEmbed) {
+      let isDuplicateOfM3u8 = false;
+      if (rawEmbed.includes("player.phimapi.com") || rawEmbed.includes("phimapi.com")) {
+        const match = rawEmbed.match(/url=([^&]+)/);
+        if (match && match[1]) {
+          const decoded = decodeURIComponent(match[1]);
+          if (decoded === serverData.link_m3u8) {
+            isDuplicateOfM3u8 = true;
+          } else if (decoded.includes(".m3u8")) {
+            sources.push({
+              serverName: `Máy chủ Ruby #${serverIndex + 2} (HLS VIP)`,
+              label: `Máy chủ Ruby #${serverIndex + 2} (HLS Backup)`,
+              url: encryptStreamUrl(decoded),
+              type: "hls",
+            });
+          }
         }
       }
-    } else {
-      sources.push({
-        serverName: formatBrandServerName(serverName, true),
-        label: "VIP Embed Player",
-        url: encryptStreamUrl(embedUrl),
-        type: "embed",
-      });
+
+      // Only add embed if it provides a distinct fallback stream
+      if (!isDuplicateOfM3u8 && (!serverData.link_m3u8 || !rawEmbed.includes("player.phimapi.com"))) {
+        sources.push({
+          serverName: formatBrandServerName(serverName, true, serverIndex + 1),
+          label: `Máy chủ Ruby #${serverIndex + 2} (Dự phòng VIP)`,
+          url: encryptStreamUrl(rawEmbed),
+          type: "embed",
+        });
+      }
     }
   }
 
   // Fallback if none
   if (sources.length === 0) {
     sources.push({
-      serverName: "Demo Backup",
+      serverName: "Máy chủ Ruby Demo",
       label: "HD (1080p)",
       url: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
       type: "mp4",
@@ -96,23 +104,25 @@ export function mapKkphimVideoSource(
 export function mapKkphimEpisode(
   epItem: any,
   serverName: string,
-  index: number
+  index: number,
+  serverIndex: number = 0
 ): Episode {
   const epNum =
     typeof epItem.slug === "string" && epItem.slug.startsWith("tap-")
       ? parseInt(epItem.slug.replace("tap-", ""), 10) || index + 1
       : index + 1;
 
-  const sources = mapKkphimVideoSource(epItem, serverName);
+  const sources = mapKkphimVideoSource(epItem, serverName, serverIndex);
 
   const rawName = String(epItem.name || "").trim();
-  const isPureNumber = /^\d+$/.test(rawName);
+  const cleanName = rawName.replace(/vietsub/gi, "").replace(/[#_()]/g, "").trim();
+  const isPureNumber = /^\d+$/.test(cleanName);
   const formattedName = isPureNumber
-    ? `Tập ${parseInt(rawName, 10)}`
-    : rawName
-    ? rawName.startsWith("Tập")
-      ? rawName
-      : `Tập ${rawName}`
+    ? `Tập ${parseInt(cleanName, 10)}`
+    : cleanName
+    ? cleanName.startsWith("Tập")
+      ? cleanName
+      : `Tập ${cleanName}`
     : `Tập ${epNum}`;
 
   return {
@@ -134,19 +144,19 @@ export function mapKkphimEpisodes(rawEpisodes: any[]): Episode[] {
   // Merge or group episodes by episode slug
   const epMap = new Map<string, Episode>();
 
-  rawEpisodes.forEach((serverGroup: any) => {
+  rawEpisodes.forEach((serverGroup: any, groupIndex: number) => {
     const serverName = serverGroup.server_name || "VIP Fast";
     const serverDataList = Array.isArray(serverGroup.server_data) ? serverGroup.server_data : [];
 
     serverDataList.forEach((dataItem: any, idx: number) => {
       const slug = dataItem.slug || `tap-${idx + 1}`;
-      const sources = mapKkphimVideoSource(dataItem, serverName);
+      const sources = mapKkphimVideoSource(dataItem, serverName, groupIndex);
 
       if (epMap.has(slug)) {
         const existing = epMap.get(slug)!;
         existing.videoSources.push(...sources);
       } else {
-        const mapped = mapKkphimEpisode(dataItem, serverName, idx);
+        const mapped = mapKkphimEpisode(dataItem, serverName, idx, groupIndex);
         epMap.set(slug, mapped);
       }
     });
@@ -239,13 +249,18 @@ export function mapKkphimMovie(raw: any, cdnDomain?: string): Movie {
     genres: genres.length > 0 ? genres : ["Điện ảnh"],
     genreSlugs: genreSlugs.length > 0 ? genreSlugs : ["dien-anh"],
     quality: raw.quality || "4K UHD",
-    language: raw.lang || "Vietsub",
+    language:
+      raw.lang && !raw.lang.toLowerCase().includes("vietsub")
+        ? raw.lang
+        : "Ruby VIP",
     type,
     rawType: raw.type || undefined,
     director: director || undefined,
     cast: cast.length > 0 ? cast : undefined,
     totalEpisodes,
-    currentEpisode: raw.episode_current || undefined,
+    currentEpisode: raw.episode_current
+      ? raw.episode_current.replace(/vietsub/gi, "").replace(/[()]/g, "").trim()
+      : undefined,
     showtimes: typeof raw.showtimes === "string" && raw.showtimes.trim() ? raw.showtimes.trim() : undefined,
     notify: typeof raw.notify === "string" && raw.notify.trim() ? raw.notify.trim() : undefined,
     isHot: raw.chieurap === true || rating >= 8.5,

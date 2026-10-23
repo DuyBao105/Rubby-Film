@@ -8,12 +8,12 @@ interface MovieGridProps {
   showProgress?: boolean;
 }
 
-export function MovieGrid({ movies, className, showProgress }: MovieGridProps) {
+export const MovieGrid = React.memo(function MovieGrid({ movies, className, showProgress }: MovieGridProps) {
   if (!movies || movies.length === 0) return null;
 
   return (
     <div
-      className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3.5 sm:gap-4.5 md:gap-5 ${
+      className={`grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2.5 sm:gap-4 md:gap-5 ${
         className || ""
       }`}
     >
@@ -22,8 +22,9 @@ export function MovieGrid({ movies, className, showProgress }: MovieGridProps) {
           key={movie.id}
           movie={movie}
           priority={index < 6}
+          showProgress={showProgress}
         />
       ))}
     </div>
   );
-}
+});

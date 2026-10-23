@@ -5,10 +5,22 @@ const nextConfig: NextConfig = {
   devIndicators: false,
   compress: true,
   poweredByHeader: false,
+  ...(process.env.NODE_ENV !== "production"
+    ? {
+        allowedDevOrigins: [
+          "192.168.1.24",
+          "192.168.1.24:3000",
+          "192.168.1.20",
+          "192.168.1.20:3000",
+          "localhost",
+          "localhost:3000",
+        ],
+      }
+    : {}),
   experimental: {
     staleTimes: {
-      dynamic: 30,
-      static: 180,
+      dynamic: process.env.NODE_ENV === "production" ? 60 : 0,
+      static: process.env.NODE_ENV === "production" ? 300 : 0,
     },
   },
   images: {
@@ -40,7 +52,10 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Cache-Control",
-            value: "public, max-age=31536000, immutable",
+            value:
+              process.env.NODE_ENV === "production"
+                ? "public, max-age=31536000, immutable"
+                : "no-cache, no-store, max-age=0, must-revalidate",
           },
         ],
       },
@@ -91,10 +106,14 @@ const nextConfig: NextConfig = {
             key: "X-DNS-Prefetch-Control",
             value: "on",
           },
-          {
-            key: "Strict-Transport-Security",
-            value: "max-age=63072000; includeSubDomains; preload",
-          },
+          ...(process.env.NODE_ENV === "production"
+            ? [
+                {
+                  key: "Strict-Transport-Security",
+                  value: "max-age=63072000; includeSubDomains; preload",
+                },
+              ]
+            : []),
           {
             key: "X-Frame-Options",
             value: "SAMEORIGIN",
@@ -115,7 +134,7 @@ const nextConfig: NextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://ssl.p.jwpcdn.com https://challenges.cloudflare.com",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' data: https://fonts.gstatic.com",
               "img-src 'self' data: blob: https: http:",
@@ -124,7 +143,7 @@ const nextConfig: NextConfig = {
               "frame-src 'self' https://www.youtube.com https://www.youtube-nocookie.com https://*.youtube.com https://*.googlevideo.com https: blob:",
               "worker-src 'self' blob:",
               "frame-ancestors 'self'",
-              "base-uri 'self'",
+              "base-uri 'self' https:",
               "form-action 'self'",
             ].join("; "),
           },

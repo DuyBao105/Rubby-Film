@@ -47,6 +47,7 @@ export function MovieFilterToolbar({
 
   // Mobile drawer state
   const [isMobileOpen, setIsMobileOpen] = React.useState(false);
+  const [isPending, startTransition] = React.useTransition();
 
   // Local draft state for mobile sheet
   const [draftGenre, setDraftGenre] = React.useState(currentGenre || "");
@@ -105,11 +106,15 @@ export function MovieFilterToolbar({
       .map(([k, v]) => `${k}=${encodeURIComponent(v!)}`)
       .join("&");
 
-    router.push(qs ? `${targetBase}?${qs}` : targetBase);
+    startTransition(() => {
+      router.push(qs ? `${targetBase}?${qs}` : targetBase);
+    });
   };
 
   const resetAllFilters = () => {
-    router.push(basePath);
+    startTransition(() => {
+      router.push(basePath);
+    });
     setIsMobileOpen(false);
   };
 

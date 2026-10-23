@@ -52,3 +52,8 @@ data/watch-history.json
 data/user-preferences.json
 data/search-history.json
 data/*.migrated-*
+
+# Scratch & temporary artifacts
+scratch/
+mobile_preview.png
+*.png.tmp

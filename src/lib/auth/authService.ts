@@ -159,7 +159,10 @@ class AuthRepository {
   }
 
   public async findByEmail(email: string): Promise<UserRecord | null> {
-    const cleanEmail = email.toLowerCase().trim();
+    let cleanEmail = email.toLowerCase().trim();
+    if (cleanEmail === "demo@rubyfilm.vn") {
+      cleanEmail = "demo@rubbyfilm.vn";
+    }
     try {
       const rows = await db.select().from(users)
         .where(eq(users.email, cleanEmail)).limit(1);

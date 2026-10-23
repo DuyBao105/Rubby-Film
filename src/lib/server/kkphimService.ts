@@ -5,6 +5,7 @@ import {
   mapKkphimPagination,
 } from "./kkphimAdapter";
 import { getTmdbMedia } from "./tmdb";
+import { nguoncService } from "./nguoncService";
 import {
   Movie,
   Genre,
@@ -525,6 +526,11 @@ export class KkphimService {
       );
 
       if (!raw || !raw.movie) {
+        const failover = await nguoncService.getMovieFailover(cleanSlug);
+        if (failover) {
+          this.setInCache(this.movieDetailCache, cleanSlug, failover, 30 * 60 * 1000);
+          return failover;
+        }
         this.setInCache(this.movieDetailCache, cleanSlug, null, 10 * 60 * 1000);
         return null;
       }
@@ -547,10 +553,42 @@ export class KkphimService {
         }
       } catch {}
 
-      // Map episodes and servers
+      // Map episodes and servers from primary source (KKPhim)
       if (Array.isArray(raw.episodes)) {
         movie.episodes = mapKkphimEpisodes(raw.episodes);
       }
+
+      // Always query backup sources from NguonC to provide high-availability failover servers
+      try {
+        const backupMap = await nguoncService.getBackupSourcesForMovie(cleanSlug, movie.title);
+        if (backupMap.size > 0) {
+          if (!movie.episodes || movie.episodes.length === 0) {
+            movie.episodes = Array.from(backupMap.entries())
+              .map(([epNum, sources]) => ({
+                id: `ep-${epNum}`,
+                name: `Tập ${epNum}`,
+                slug: `tap-${epNum}`,
+                episodeNumber: epNum,
+                seasonNumber: 1,
+                duration: "Full HD",
+                videoSources: sources,
+              }))
+              .sort((a, b) => a.episodeNumber - b.episodeNumber);
+          } else {
+            movie.episodes.forEach((ep) => {
+              const backupSources = backupMap.get(ep.episodeNumber);
+              if (backupSources && backupSources.length > 0) {
+                const existingUrls = new Set(ep.videoSources.map((s) => s.url));
+                backupSources.forEach((bs) => {
+                  if (!existingUrls.has(bs.url)) {
+                    ep.videoSources.push(bs);
+                  }
+                });
+              }
+            });
+          }
+        }
+      } catch {}
 
       // Fetch keywords / tags from KKPhim
       try {
@@ -564,6 +602,13 @@ export class KkphimService {
       return movie;
     } catch (err: any) {
       if (err.statusCode === 404 || err.code === "NOT_FOUND") {
+        try {
+          const failover = await nguoncService.getMovieFailover(cleanSlug);
+          if (failover) {
+            this.setInCache(this.movieDetailCache, cleanSlug, failover, 30 * 60 * 1000);
+            return failover;
+          }
+        } catch {}
         this.setInCache(this.movieDetailCache, cleanSlug, null, 10 * 60 * 1000);
         return null;
       }
@@ -634,8 +679,20 @@ export class KkphimService {
     const cdnDomain = raw?.data?.APP_DOMAIN_CDN_IMAGE || "https://phimimg.com";
     const mappedApiMovies = apiItems.map((item: any) => mapKkphimMovie(item, cdnDomain));
 
-    // 4. Relevance scoring for smart re-ranking on page 1
-    const merged = mappedApiMovies;
+    // 4. Multi-Source Search Integration: Merge NguonC catalog for broader coverage
+    let merged = [...mappedApiMovies];
+    if (page === 1) {
+      try {
+        const backupSearchResults = await nguoncService.searchMovies(apiSearchKeyword);
+        if (backupSearchResults && backupSearchResults.length > 0) {
+          const existingSlugs = new Set(merged.map((m: Movie) => m.slug));
+          const newFromBackup = backupSearchResults.filter((m: Movie) => !existingSlugs.has(m.slug));
+          merged = [...merged, ...newFromBackup];
+        }
+      } catch {}
+    }
+
+    // 5. Relevance scoring for smart re-ranking on page 1
     if (page === 1 && merged.length > 0) {
       const baseSlug = cleanQuery
         .normalize("NFD")

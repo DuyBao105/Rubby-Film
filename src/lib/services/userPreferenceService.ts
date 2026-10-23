@@ -54,6 +54,8 @@ class UserPreferenceService implements IUserPreferenceService {
   private listeners: Set<(prefs: UserPreferences, user: User) => void> = new Set();
   private currentUserId: string | null = null;
   private lastAutoSyncTime = 0;
+  private syncPromise: Promise<void> | null = null;
+  private lastSyncTime = 0;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -71,7 +73,7 @@ class UserPreferenceService implements IUserPreferenceService {
       // Cross-device sync: auto re-sync when switching back to tab/browser window or PWA app
       const triggerAutoSync = () => {
         const now = Date.now();
-        if (now - this.lastAutoSyncTime > 3000 && this.currentUserId) {
+        if (now - this.lastAutoSyncTime > 15000 && this.currentUserId) {
           this.lastAutoSyncTime = now;
           this.syncWithServer().catch(() => {});
         }
@@ -93,18 +95,23 @@ class UserPreferenceService implements IUserPreferenceService {
   public setUser(userId: string | null): void {
     const normalized = userId ? String(userId).trim() : null;
     const changed = this.currentUserId !== normalized;
+    if (!changed) return;
     this.currentUserId = normalized;
-    if (changed) {
-      this.prefsCache = null;
-      this.notify();
-    }
+    this.userCache = null;
+    this.prefsCache = null;
+    this.notify();
     if (normalized) {
       this.syncWithServer().catch(() => {});
     }
   }
 
+  private getUserStorageKey(): string {
+    if (!this.currentUserId) return "rubbyfilm_user_profile_guest";
+    return `rubbyfilm_user_profile_${this.currentUserId}`;
+  }
+
   private getStorageKey(): string {
-    if (!this.currentUserId) return PREFS_KEY;
+    if (!this.currentUserId) return "rubbyfilm_user_preferences_guest";
     return `${PREFS_KEY}_${this.currentUserId}`;
   }
 
@@ -113,7 +120,8 @@ class UserPreferenceService implements IUserPreferenceService {
     if (this.userCache !== null) return this.userCache;
 
     try {
-      const raw = localStorage.getItem(USER_KEY);
+      const key = this.getUserStorageKey();
+      const raw = localStorage.getItem(key);
       if (raw) {
         this.userCache = { ...DEFAULT_USER, ...JSON.parse(raw) };
         return this.userCache!;
@@ -133,7 +141,8 @@ class UserPreferenceService implements IUserPreferenceService {
 
     if (this.isClient()) {
       try {
-        localStorage.setItem(USER_KEY, JSON.stringify(updated));
+        const key = this.getUserStorageKey();
+        localStorage.setItem(key, JSON.stringify(updated));
       } catch (e) {
         console.error("[UserPreferenceService] Failed to save user:", e);
       }
@@ -147,11 +156,7 @@ class UserPreferenceService implements IUserPreferenceService {
 
     try {
       const key = this.getStorageKey();
-      let raw = localStorage.getItem(key);
-      if (!raw && this.currentUserId) {
-        // Fallback to general guest preferences if user key not yet set
-        raw = localStorage.getItem(PREFS_KEY);
-      }
+      const raw = localStorage.getItem(key);
       if (raw) {
         this.prefsCache = { ...DEFAULT_PREFERENCES, ...JSON.parse(raw) };
         return this.prefsCache!;
@@ -194,29 +199,41 @@ class UserPreferenceService implements IUserPreferenceService {
 
   public async syncWithServer(): Promise<void> {
     if (!this.isClient() || !this.currentUserId) return;
-    try {
-      const res = await fetch(`/api/user/preferences?_t=${Date.now()}`, {
-        method: "GET",
-        headers: getAuthHeaders(),
-        credentials: "include",
-      });
-      if (res.ok) {
-        const json = await res.json();
-        if (json.success && json.data?.preferences) {
-          const serverPrefs = json.data.preferences as UserPreferences;
-          const current = this.getPreferences();
-          const merged: UserPreferences = { ...current, ...serverPrefs };
-          this.prefsCache = merged;
-          try {
-            localStorage.setItem(this.getStorageKey(), JSON.stringify(merged));
-            localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
-          } catch {}
-          this.notify();
+    if (this.syncPromise) return this.syncPromise;
+
+    const now = Date.now();
+    if (now - this.lastSyncTime < 8000) return;
+    this.lastSyncTime = now;
+
+    this.syncPromise = (async () => {
+      try {
+        const res = await fetch(`/api/user/preferences?_t=${Date.now()}`, {
+          method: "GET",
+          headers: getAuthHeaders(),
+          credentials: "include",
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.success && json.data?.preferences) {
+            const serverPrefs = json.data.preferences as UserPreferences;
+            const current = this.getPreferences();
+            const merged: UserPreferences = { ...current, ...serverPrefs };
+            this.prefsCache = merged;
+            try {
+              localStorage.setItem(this.getStorageKey(), JSON.stringify(merged));
+              localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+            } catch {}
+            this.notify();
+          }
         }
+      } catch (err) {
+        console.warn("[UserPreferenceService] syncWithServer failed:", err);
+      } finally {
+        this.syncPromise = null;
       }
-    } catch (err) {
-      console.warn("[UserPreferenceService] syncWithServer failed:", err);
-    }
+    })();
+
+    return this.syncPromise;
   }
 
   private notify(): void {

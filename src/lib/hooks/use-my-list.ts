@@ -7,76 +7,90 @@ import { useAuth } from "@/lib/auth/authContext";
 import { useToast } from "@/components/ui/toast";
 
 export function useMyList() {
-  const { user } = useAuth();
+  const { user, isAuthenticated, openAuthModal } = useAuth();
   const toast = useToast();
   const [list, setList] = useState<Movie[]>([]);
   const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
-    // Initial fetch from service
-    setList(myListService.getList());
-    setIsLoaded(true);
-    if (user?.id) {
-      myListService.syncWithServer(true);
+    // Only load list if authenticated
+    if (isAuthenticated && user?.id) {
+      setList(myListService.getList());
+      myListService.syncWithServer(false);
+    } else {
+      setList([]);
     }
+    setIsLoaded(true);
 
     // Subscribe to cross-component updates
     const unsubscribe = myListService.subscribe((updated) => {
-      setList(updated);
+      if (isAuthenticated && user?.id) {
+        setList(updated);
+      }
     });
 
     return unsubscribe;
-  }, [user]);
+  }, [user?.id, isAuthenticated]);
 
   const addMovie = useCallback(
     (movie: Movie) => {
-      myListService.add(movie);
-      if (user) {
-        toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
-      } else {
-        toast.success(
-          "Đã thêm vào yêu thích",
-          `"${movie.title}" đã lưu trên máy. Đăng nhập để đồng bộ qua điện thoại!`
+      if (!isAuthenticated && !user) {
+        toast.warning(
+          "Yêu cầu đăng nhập",
+          "Vui lòng đăng nhập tài khoản để lưu phim vào danh sách yêu thích!"
         );
+        openAuthModal("login");
+        return;
       }
+      myListService.add(movie);
+      toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
     },
-    [user, toast]
+    [user, isAuthenticated, openAuthModal, toast]
   );
 
   const removeMovie = useCallback(
     (id: string) => {
+      if (!isAuthenticated && !user) {
+        toast.warning(
+          "Yêu cầu đăng nhập",
+          "Vui lòng đăng nhập tài khoản để thao tác danh sách yêu thích!"
+        );
+        openAuthModal("login");
+        return;
+      }
       myListService.remove(id);
       toast.info("Đã xóa khỏi yêu thích", "Phim đã được gỡ khỏi danh sách yêu thích.");
     },
-    [toast]
+    [user, isAuthenticated, openAuthModal, toast]
   );
 
   const toggleMovie = useCallback(
     (movie: Movie) => {
+      if (!isAuthenticated && !user) {
+        toast.warning(
+          "Yêu cầu đăng nhập",
+          "Vui lòng đăng nhập tài khoản để lưu phim vào danh sách yêu thích!"
+        );
+        openAuthModal("login");
+        return false;
+      }
       const added = myListService.toggle(movie);
       if (added) {
-        if (user) {
-          toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
-        } else {
-          toast.success(
-            "Đã thêm vào yêu thích",
-            `"${movie.title}" đã lưu trên máy. Đăng nhập để đồng bộ qua điện thoại!`
-          );
-        }
+        toast.success("Đã thêm vào yêu thích", `"${movie.title}" đã được lưu vào danh sách.`);
       } else {
         toast.info("Đã xóa khỏi yêu thích", `"${movie.title}" đã được gỡ khỏi danh sách.`);
       }
       return added;
     },
-    [user, toast]
+    [user, isAuthenticated, openAuthModal, toast]
   );
 
   const isInList = useCallback(
     (id: string): boolean => {
+      if (!isAuthenticated && !user) return false;
       return myListService.has(id);
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [list]
+    [list, isAuthenticated, user]
   );
 
   const clearList = useCallback(() => {

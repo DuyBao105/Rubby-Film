@@ -12,10 +12,15 @@ interface AuthSyncBannerProps {
 }
 
 export function AuthSyncBanner({ className }: AuthSyncBannerProps) {
+  const [mounted, setMounted] = React.useState(false);
   const { user, isAuthenticated, openAuthModal } = useAuth();
 
-  // Hide banner completely once user is logged in
-  if (isAuthenticated) {
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Avoid hydration mismatch: render nothing until mounted on client, and hide if logged in
+  if (!mounted || isAuthenticated) {
     return null;
   }
 

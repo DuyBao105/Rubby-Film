@@ -16,14 +16,16 @@ interface MovieCardProps {
   className?: string;
   progressPercent?: number;
   rank?: number;
+  showProgress?: boolean;
 }
 
-export function MovieCard({
+export const MovieCard = React.memo(function MovieCard({
   movie,
   priority = false,
   className,
   progressPercent,
   rank,
+  showProgress = true,
 }: MovieCardProps) {
   const [mounted, setMounted] = React.useState(false);
   const [justToggled, setJustToggled] = React.useState(false);
@@ -51,9 +53,11 @@ export function MovieCard({
   const handleToggleList = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleMovie(movie);
-    setJustToggled(true);
-    setTimeout(() => setJustToggled(false), 800);
+    const added = toggleMovie(movie);
+    if (added) {
+      setJustToggled(true);
+      setTimeout(() => setJustToggled(false), 800);
+    }
   };
 
   const { primaryTitle, secondaryTitle } = getBilingualTitles({
@@ -64,64 +68,89 @@ export function MovieCard({
 
   return (
     <div
+      suppressHydrationWarning
       className={cn(
-        "group relative flex flex-col justify-between p-3 sm:p-3.5 rounded-2xl bg-gradient-to-b from-[#1C1C1C] via-[#161616] to-[#111111] border border-[#282828] hover:border-[#E50000]/70 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_15px_35px_rgba(229,0,0,0.2)] shadow-lg select-none",
+        "group relative flex flex-col justify-between p-2 sm:p-3.5 rounded-xl sm:rounded-2xl bg-gradient-to-b from-[#1C1C1C] via-[#161616] to-[#111111] border border-[#282828] hover:border-[#E50000]/70 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_15px_35px_rgba(229,0,0,0.2)] shadow-lg select-none",
         className
       )}
     >
       {/* Poster Container */}
-      <Link
-        href={`/movie/${movie.slug}`}
-        prefetch={true}
-        className="block relative aspect-poster w-full rounded-xl overflow-hidden bg-[#111111]"
+      <div
+        suppressHydrationWarning
+        className="relative aspect-poster w-full rounded-xl overflow-hidden bg-[#111111]"
       >
-        <Image
-          src={imgSrc}
-          alt={movie.title}
-          fill
-          unoptimized={true}
-          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
-          priority={priority}
-          onError={() =>
-            setImgSrc(
-              "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80"
-            )
-          }
-        />
+        <Link
+          href={`/movie/${movie.slug}`}
+          prefetch={true}
+          className="block relative w-full h-full"
+          aria-label={movie.title}
+        >
+          <Image
+            src={imgSrc}
+            alt={movie.title}
+            fill
+            unoptimized={true}
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 20vw"
+            className="object-cover transition-transform duration-700 group-hover:scale-105"
+            priority={priority}
+            onError={() =>
+              setImgSrc(
+                "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=800&auto=format&fit=crop&q=80"
+              )
+            }
+          />
 
-        {/* Subtle Cinematic Vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F0F]/90 via-transparent to-black/30 opacity-70 group-hover:opacity-90 transition-opacity" />
+          {/* Subtle Cinematic Vignette */}
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0F0F0F]/90 via-transparent to-black/30 opacity-70 group-hover:opacity-90 transition-opacity" />
 
-        {/* StreamVibe Rank Badge / 4K Badge */}
-        {typeof rank === "number" && rank > 0 ? (
-          <div className="absolute top-2 left-2 z-20 flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-[#E50000] text-white font-black text-[11px] shadow-lg shadow-[#E50000]/50 border border-[#FF3333]/50 select-none">
-            #{rank < 10 ? `0${rank}` : rank}
-          </div>
-        ) : typeof movie?.quality === "string" && movie.quality.includes("4K") ? (
-          <div className="absolute top-2 left-2 z-10">
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 backdrop-blur-md border border-amber-500/40 text-amber-300 flex items-center gap-1 shadow-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              <span>4K</span>
+          {/* StreamVibe Rank Badge / 4K Badge */}
+          {typeof rank === "number" && rank > 0 ? (
+            <div className="absolute top-2 left-2 z-20 flex items-center justify-center min-w-[28px] h-6 px-1.5 rounded-md bg-[#E50000] text-white font-black text-[11px] shadow-lg shadow-[#E50000]/50 border border-[#FF3333]/50 select-none">
+              #{rank < 10 ? `0${rank}` : rank}
+            </div>
+          ) : typeof movie?.quality === "string" && movie.quality.includes("4K") ? (
+            <div className="absolute top-2 left-2 z-10">
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-amber-500/20 backdrop-blur-md border border-amber-500/40 text-amber-300 flex items-center gap-1 shadow-sm">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+                <span>4K</span>
+              </span>
+            </div>
+          ) : null}
+
+          {/* Episode / Year Pill Top Right */}
+          <div className="absolute top-2 right-2 z-10">
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#0F0F0F]/80 backdrop-blur-md border border-[#2E2E2E] text-[#D1D5DB] shadow-sm">
+              {movie.type === "series" && movie.currentEpisode ? movie.currentEpisode : movie.year || "Full"}
             </span>
           </div>
-        ) : null}
 
-        {/* Episode / Year Pill Top Right */}
-        <div className="absolute top-2 right-2 z-10">
-          <span className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-[#0F0F0F]/80 backdrop-blur-md border border-[#2E2E2E] text-[#D1D5DB] shadow-sm">
-            {movie.type === "series" && movie.currentEpisode ? movie.currentEpisode : movie.year || "Full"}
-          </span>
-        </div>
+        </Link>
 
-        {/* Center Glowing Play Button on Hover */}
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 z-10">
-          <div className="w-12 h-12 rounded-full bg-[#E50000] text-white flex items-center justify-center shadow-[0_0_30px_rgba(229,0,0,0.7)] ring-4 ring-white/20">
+        {/* Center Glowing Play Button - Direct Link to Watch page on hover */}
+        <Link
+          href={`/watch/${movie.slug}`}
+          prefetch={true}
+          title={`Xem ngay ${movie.title}`}
+          aria-label={`Xem ngay ${movie.title}`}
+          className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 scale-90 group-hover:scale-100 z-10 cursor-pointer pointer-events-none group-hover:pointer-events-auto"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="w-12 h-12 rounded-full bg-[#E50000] text-white flex items-center justify-center shadow-[0_0_30px_rgba(229,0,0,0.7)] ring-4 ring-white/20 hover:scale-110 active:scale-95 transition-transform">
             <Play className="w-5 h-5 fill-current ml-0.5" />
           </div>
-        </div>
+        </Link>
 
-        {/* Quick Add To Favorites (Heart) button */}
+        {/* Continue Watching Progress Bar - Outside Link to guarantee 100% hydration match */}
+        {mounted && typeof effectiveProgress === "number" && effectiveProgress > 0 && (
+          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#262626] z-20 pointer-events-none">
+            <div
+              className="h-full bg-[#E50000] transition-all"
+              style={{ width: `${effectiveProgress}%` }}
+            />
+          </div>
+        )}
+
+        {/* Quick Add To Favorites (Heart) button - Outside Link to prevent invalid nested interactive controls */}
         <button
           type="button"
           onClick={handleToggleList}
@@ -164,20 +193,10 @@ export function MovieCard({
             <span>{inList ? "Đã thêm yêu thích!" : "Đã bỏ yêu thích"}</span>
           </div>
         )}
-
-        {/* Continue Watching Progress Bar */}
-        {typeof effectiveProgress === "number" && effectiveProgress > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 h-1 bg-[#262626] z-20">
-            <div
-              className="h-full bg-[#E50000] transition-all"
-              style={{ width: `${effectiveProgress}%` }}
-            />
-          </div>
-        )}
-      </Link>
+      </div>
 
       {/* Card Bottom Details */}
-      <div className="pt-3 flex flex-col justify-between gap-1.5">
+      <div className="pt-2 sm:pt-3 flex flex-col justify-between gap-1 sm:gap-1.5">
         <div>
           <Link
             href={`/movie/${movie.slug}`}
@@ -188,7 +207,7 @@ export function MovieCard({
             {primaryTitle}
           </Link>
           <span
-            className="text-[10px] sm:text-[11px] text-[#9CA3AF] font-normal italic truncate block mt-0.5"
+            className="text-[9px] sm:text-[11px] text-[#9CA3AF] font-normal italic truncate block mt-0.5"
             title={secondaryTitle}
           >
             {secondaryTitle}
@@ -196,22 +215,22 @@ export function MovieCard({
         </div>
 
         {/* Metadata Badges Container */}
-        <div className="flex items-center justify-between gap-1 pt-2 border-t border-[#262626] text-xs">
+        <div className="flex items-center justify-between gap-1 pt-1.5 sm:pt-2 border-t border-[#262626] text-xs">
           {/* Duration Badge */}
-          <div className="flex items-center gap-1 bg-[#141414] border border-[#262626] rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-[#D1D5DB] truncate min-w-0">
-            <Clock className="w-3 h-3 text-[#9CA3AF] flex-shrink-0" />
+          <div className="flex items-center gap-1 bg-[#141414] border border-[#262626] rounded-full px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[11px] font-medium text-[#D1D5DB] truncate min-w-0">
+            <Clock className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[#9CA3AF] flex-shrink-0" />
             <span className="truncate">
               {movie.type === "series" ? movie.currentEpisode || "Phim bộ" : movie.duration || `${movie.year}`}
             </span>
           </div>
 
           {/* Rating Badge */}
-          <div className="flex items-center gap-1 bg-[#141414] border border-[#262626] rounded-full px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-semibold text-[#F9FAFB] flex-shrink-0">
-            <Star className="w-3 h-3 fill-[#E50000] text-[#E50000]" />
+          <div className="flex items-center gap-1 bg-[#141414] border border-[#262626] rounded-full px-1.5 sm:px-2.5 py-0.5 text-[9px] sm:text-[11px] font-semibold text-[#F9FAFB] flex-shrink-0">
+            <Star className="w-2.5 h-2.5 sm:w-3 sm:h-3 fill-[#E50000] text-[#E50000]" />
             <span>{formatRating(movie.rating)}</span>
           </div>
         </div>
       </div>
     </div>
   );
-}
+});

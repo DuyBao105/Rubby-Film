@@ -3,6 +3,7 @@ import * as React from "react";
 import "./globals.css";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
+import { BottomNav } from "@/components/layout/bottom-nav";
 import { movieProvider } from "@/lib/providers";
 import { Be_Vietnam_Pro, Space_Grotesk } from "next/font/google";
 
@@ -95,6 +96,8 @@ export const metadata: Metadata = {
 
 import { ToastProvider } from "@/components/ui/toast";
 import { AuthProvider } from "@/lib/auth/authContext";
+import { AuthModal } from "@/components/auth/auth-modal";
+import { LogoutConfirmModal } from "@/components/auth/logout-confirm-modal";
 import { SwipeBackNavigation } from "@/components/common/swipe-back-navigation";
 
 import { NavigationProgressBar } from "@/components/common/navigation-progress-bar";
@@ -113,7 +116,7 @@ export default async function RootLayout({
   ]);
 
   return (
-    <html lang="vi" className="dark" suppressHydrationWarning>
+    <html lang="vi" className="dark" data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         {/* Preconnect & DNS-prefetch for public media CDNs */}
         <link rel="preconnect" href="https://phimimg.com" crossOrigin="anonymous" />
@@ -126,9 +129,24 @@ export default async function RootLayout({
         <script
           dangerouslySetInnerHTML={{
             __html: `
+              // Auto-unregister any stale service worker & clear caches to prevent hydration mismatches
+              if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(regs) {
+                  for (var i = 0; i < regs.length; i++) {
+                    regs[i].unregister();
+                  }
+                });
+              }
+              if ('caches' in window) {
+                caches.keys().then(function(keys) {
+                  for (var i = 0; i < keys.length; i++) {
+                    caches.delete(keys[i]);
+                  }
+                });
+              }
               window.addEventListener('error', function(e) {
                 var msg = (e && e.message) ? e.message.toLowerCase() : '';
-                if (msg.indexOf('loading chunk') !== -1 || msg.indexOf('chunkloaderror') !== -1 || msg.indexOf('unexpected token') !== -1) {
+                if (msg.indexOf('hydration') !== -1 || msg.indexOf('loading chunk') !== -1 || msg.indexOf('chunkloaderror') !== -1 || msg.indexOf('unexpected token') !== -1) {
                   var lastReload = sessionStorage.getItem('rubyfilm_chunk_reload');
                   var now = Date.now();
                   if (!lastReload || now - parseInt(lastReload, 10) > 10000) {
@@ -161,11 +179,14 @@ export default async function RootLayout({
             <AntiDevtools />
             <SwipeBackNavigation />
             <PwaInstallPrompt />
+            <AuthModal />
+            <LogoutConfirmModal />
             <React.Suspense fallback={null}>
               <Header genres={genres} countries={countries} />
             </React.Suspense>
-            <main className="flex-grow flex flex-col">{children}</main>
+            <main className="flex-grow flex flex-col pb-20 md:pb-0">{children}</main>
             <Footer />
+            <BottomNav />
           </AuthProvider>
         </ToastProvider>
       </body>

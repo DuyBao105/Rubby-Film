@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 interface ServerSelectorProps {
   sources: VideoSource[];
   activeSource: VideoSource;
-  onSelectSource: (source: VideoSource) => void;
+  activeSourceIndex?: number;
+  onSelectSource?: (source: VideoSource) => void;
+  onSelectSourceIndex?: (index: number) => void;
   isSeries?: boolean;
   hasPrevEpisode?: boolean;
   hasNextEpisode?: boolean;
@@ -23,7 +25,9 @@ interface ServerSelectorProps {
 export function ServerSelector({
   sources,
   activeSource,
+  activeSourceIndex,
   onSelectSource,
+  onSelectSourceIndex,
   isSeries = false,
   hasPrevEpisode,
   hasNextEpisode,
@@ -33,58 +37,81 @@ export function ServerSelector({
   onToggleAutoNext,
   className,
 }: ServerSelectorProps) {
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   // Clean up server labels for clean, user-friendly presentation
-  const getCleanServerName = (name: string, idx: number) => {
-    let clean = name || `Server #${idx + 1}`;
-    clean = clean.replace(/#Hà Nội/gi, "#1");
-    clean = clean.replace(/#Sài Gòn/gi, "#2");
-    clean = clean.replace(/#Đà Nẵng/gi, "#3");
-    return clean;
+  const getCleanServerName = (src: VideoSource, idx: number) => {
+    const raw = src.serverName || "";
+    const isTM =
+      raw.toLowerCase().includes("thuyết minh") ||
+      raw.toLowerCase().includes("lồng tiếng");
+
+    if (isTM) {
+      return `Máy chủ #${idx + 1} (Thuyết Minh VIP)`;
+    }
+
+    if (idx === 0) {
+      return "Máy chủ Ruby #1 (4K Ultra)";
+    }
+    return `Máy chủ Ruby #${idx + 1} (Dự phòng Fast)`;
   };
 
   return (
     <div
+      suppressHydrationWarning
       className={cn(
-        "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 rounded-2xl bg-cinema-850/80 border border-cinema-700/70 shadow-lg backdrop-blur-md",
+        "flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 p-4 rounded-2xl bg-cinema-850/80 border border-cinema-700/70 shadow-lg backdrop-blur-md min-h-[58px]",
         className
       )}
     >
       {/* Server list */}
-      <div className="flex flex-wrap items-center gap-2">
-        <div className="flex items-center gap-1.5 text-xs text-cinema-400 font-semibold mr-1">
+      <div suppressHydrationWarning className="flex flex-wrap items-center gap-2">
+        <div suppressHydrationWarning className="flex items-center gap-1.5 text-xs text-cinema-400 font-semibold mr-1">
           <Server className="w-4 h-4 text-brand" />
-          <span>Nguồn phát:</span>
+          <span suppressHydrationWarning>Máy chủ:</span>
         </div>
 
-        {sources.map((src, index) => {
-          const isActive = src.serverName === activeSource.serverName;
-          const label = getCleanServerName(src.serverName, index);
+        {mounted &&
+          sources.map((src, index) => {
+            const isActive =
+              typeof activeSourceIndex === "number"
+                ? index === activeSourceIndex
+                : src.url === activeSource.url || src.serverName === activeSource.serverName;
+            const label = getCleanServerName(src, index);
 
-          return (
-            <button
-              key={`${src.serverName}-${index}`}
-              type="button"
-              onClick={() => onSelectSource(src)}
-              className={cn(
-                "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-1.5",
-                isActive
-                  ? "bg-brand text-white border-brand shadow-sm shadow-brand/20 font-bold scale-[1.02]"
-                  : "bg-cinema-800 text-cinema-300 border-cinema-700 hover:bg-cinema-750 hover:text-white hover:border-cinema-600"
-              )}
-            >
-              <span>{label}</span>
-              {src.type === "embed" && (
-                <span className={cn("text-[10px] px-1 rounded", isActive ? "bg-black/30 text-white/90" : "bg-cinema-700 text-cinema-300")}>
-                  Embed
-                </span>
-              )}
-            </button>
-          );
-        })}
+            return (
+              <button
+                key={`${src.serverName}-${index}`}
+                type="button"
+                onClick={() => {
+                  if (onSelectSourceIndex) {
+                    onSelectSourceIndex(index);
+                  } else if (onSelectSource) {
+                    onSelectSource(src);
+                  }
+                }}
+                className={cn(
+                  "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all duration-200 border flex items-center gap-1.5",
+                  isActive
+                    ? "bg-brand text-white border-brand shadow-sm shadow-brand/20 font-bold scale-[1.02]"
+                    : "bg-cinema-800 text-cinema-300 border-cinema-700 hover:bg-cinema-750 hover:text-white hover:border-cinema-600"
+                )}
+              >
+                {isActive && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse shrink-0" />
+                )}
+                <span>{label}</span>
+              </button>
+            );
+          })}
       </div>
 
       {/* Navigation & Auto-Next Toggle (Series only) */}
-      {isSeries && (
+      {mounted && isSeries && (
         <div className="flex items-center gap-2.5 justify-between md:justify-end border-t md:border-t-0 pt-3 md:pt-0 border-cinema-750">
           {/* Auto Next Switch */}
           {onToggleAutoNext && (
@@ -134,3 +161,5 @@ export function ServerSelector({
     </div>
   );
 }
+
+

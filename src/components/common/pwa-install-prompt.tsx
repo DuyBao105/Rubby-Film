@@ -92,13 +92,26 @@ export function PwaInstallPrompt() {
       }, 1000);
     }
 
-    // Đăng ký Service Worker
+    // Đăng ký Service Worker (chỉ trên production; trên dev thì unregister để tránh cache stale chunks)
     if ("serviceWorker" in navigator) {
-      window.addEventListener("load", () => {
-        navigator.serviceWorker
-          .register("/sw.js")
-          .catch((err) => console.warn("[PWA] SW register error:", err));
-      });
+      if (process.env.NODE_ENV === "development") {
+        navigator.serviceWorker.getRegistrations().then((registrations) => {
+          for (const registration of registrations) {
+            registration.unregister();
+          }
+        });
+        if ("caches" in window) {
+          caches.keys().then((keys) => {
+            keys.forEach((key) => caches.delete(key));
+          });
+        }
+      } else {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .catch((err) => console.warn("[PWA] SW register error:", err));
+        });
+      }
     }
 
     // Bắt sự kiện cài đặt trên Android / Chrome
@@ -154,6 +167,22 @@ export function PwaInstallPrompt() {
   }, [deferredPrompt]);
 
   // Khi người dùng bấm tắt -> chỉ ẩn trong phiên duyệt web này, vào lại web sẽ hiện lại
+  // Sync PWA banner visibility to document.body so floating buttons (like scroll-to-top) don't overlap
+  React.useEffect(() => {
+    if (typeof document !== "undefined") {
+      if (isVisible && !showGuideModal) {
+        document.body.dataset.pwaVisible = "true";
+      } else {
+        document.body.dataset.pwaVisible = "false";
+      }
+    }
+    return () => {
+      if (typeof document !== "undefined") {
+        document.body.dataset.pwaVisible = "false";
+      }
+    };
+  }, [isVisible, showGuideModal]);
+
   const handleDismiss = () => {
     setIsVisible(false);
     setShowGuideModal(false);
@@ -187,60 +216,11 @@ export function PwaInstallPrompt() {
 
   return (
     <>
-      {/* Floating Bottom Prompt Bar (Mobile Only) */}
-      {isVisible && !showGuideModal && (
-        <div className="md:hidden fixed bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] left-3 right-3 z-50 animate-in fade-in slide-in-from-bottom-5 duration-300">
-          <div className="bg-[#121212]/95 backdrop-blur-2xl border border-[#2A2A2A] rounded-2xl p-3.5 shadow-2xl shadow-black/80 flex items-center justify-between gap-3 text-white">
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="relative w-11 h-11 rounded-xl overflow-hidden shrink-0 border border-white/10 shadow-md">
-                <Image
-                  src="/icon-192x192.png"
-                  alt="RubyFilm Icon"
-                  width={44}
-                  height={44}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h4 className="text-xs font-bold text-white tracking-wide truncate">
-                    Cài RubyFilm vào máy
-                  </h4>
-                  <span className="inline-flex items-center px-1.5 py-0.2 text-[9px] font-semibold bg-[#E50000]/20 text-[#FF4D4D] border border-[#E50000]/30 rounded">
-                    App
-                  </span>
-                </div>
-                <p className="text-[11px] text-[#A3A3A3] truncate mt-0.5">
-                  Trải nghiệm tràn viền, mượt mà như app gốc
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1.5 shrink-0">
-              <button
-                type="button"
-                onClick={handleInstallClick}
-                className="px-3 py-1.5 bg-[#E50000] hover:bg-[#CC0000] active:scale-95 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-[#E50000]/25 flex items-center gap-1.5 cursor-pointer"
-              >
-                <Download className="w-3.5 h-3.5" />
-                <span>Cài đặt</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleDismiss}
-                className="p-1.5 text-[#888] hover:text-white rounded-lg transition-colors cursor-pointer"
-                title="Đóng thông báo"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Floating prompt bar is hidden on mobile screen per user request; install action is cleanly accessible via mobile drawer menu */}
 
       {/* Cross-Platform Installation Guide Modal */}
       {showGuideModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-200">
           <div className="bg-[#141414] border border-[#2E2E2E] rounded-3xl p-5 sm:p-6 w-full max-w-sm sm:max-w-md shadow-2xl relative text-white animate-in zoom-in-95 duration-200">
             {/* Close Button */}
             <button

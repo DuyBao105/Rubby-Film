@@ -111,9 +111,9 @@ class WatchHistoryService implements IWatchHistoryService {
       // Cross-device sync: auto re-sync when switching back to tab/browser window
       const triggerAutoSync = () => {
         const now = Date.now();
-        if (now - this.lastAutoSyncTime > 4000 && this.currentUserId) {
+        if (now - this.lastAutoSyncTime > 15000 && this.currentUserId) {
           this.lastAutoSyncTime = now;
-          this.syncWithServer(true);
+          this.syncWithServer(false);
         }
       };
 
@@ -129,14 +129,13 @@ class WatchHistoryService implements IWatchHistoryService {
   public setUser(userId: string | null): void {
     const normalized = userId ? String(userId).trim() : null;
     const changed = this.currentUserId !== normalized;
+    if (!changed) return;
     this.currentUserId = normalized;
-    if (changed) {
-      this.cache = null;
-      this.notify();
-    }
+    this.cache = null;
+    this.notify();
     if (normalized) {
       this.migrateGuestHistory(normalized);
-      this.syncWithServer(true);
+      this.syncWithServer(false);
     }
   }
 
@@ -289,7 +288,7 @@ class WatchHistoryService implements IWatchHistoryService {
     if (this.syncPromise) return this.syncPromise;
 
     const now = Date.now();
-    if (!force && now - this.lastSyncTime < 3000) {
+    if (!force && now - this.lastSyncTime < 8000) {
       return;
     }
     this.lastSyncTime = now;
